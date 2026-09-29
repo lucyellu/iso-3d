@@ -125,7 +125,7 @@
 </section>
 
 <nav class="chapters" id="chapters" aria-label="Sections"></nav>
-<div class="hint" id="hint">Drag to break the illusion</div>
+<div class="hint" id="hint">Drag to turn it · it keeps closing</div>
 <div class="angle" id="angle">35.26° up · 45° round · the only angle where it closes</div>
 <div class="fallback" id="fallback">This page needs WebGL to draw its impossible waterway.</div>
 
@@ -165,7 +165,7 @@ const ZSPLIT = L * 0.45;              // z-bar beyond this is drawn in the "impo
 // lands on the same pixels; in first person the copies join up into one endless descending path.
 const STEP = new THREE.Vector3(L, L, L);
 const COPIES = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
-const P = new THREE.Vector3(L / 3, 0, 2 * L / 3);   // projects to the triangle's centre
+const P = new THREE.Vector3(L / 3, 0, 2 * L / 3);   // projects to the triangle's centre (refit per frame)
 const ISO_AZ = Math.PI / 4, ISO_EL = Math.atan(1 / Math.SQRT2);
 const OVERLAY = 1;
 
@@ -443,19 +443,46 @@ const BOBBER = new THREE.Vector3(3.55, YW, L + 0.05);
 const lineGeo = new THREE.BufferGeometry().setFromPoints([FISH_TIP, BOBBER]);
 const LEDGE_Y = L - 1.5 * W;
 
+// ─────────────────────────────────────────────────────────────
+//  Keeping the illusion from any angle
+//  The seam at the origin and the pillar top at (b, c, a) coincide on screen only when that gap
+//  points straight at the camera. So instead of forbidding other angles, the loop re-proportions
+//  its three arms (a = z-channel, b = x-channel, c = pillar) to keep the gap on the view axis.
+//  Everything is built at nominal size (all arms L) and pushed through per-axis maps: identity
+//  below a zone, shifted by (arm - L) above it, stretched linearly across it.
+// ─────────────────────────────────────────────────────────────
+const D = { a: L, b: L, c: L };
+const MIN_ARM = { a: 4, b: 5, c: 6 };
+const ZONES = { x: [1.2, XP0], y: [2.2, LEDGE_Y - 0.4], z: [1.2, L - W / 2 - 0.3] };
+const ARM = { x: 'b', y: 'c', z: 'a' };
+function mapAxis(ax, v) {
+  const [z0, z1] = ZONES[ax], d = D[ARM[ax]] - L;
+  if (v <= z0) return v;
+  if (v >= z1) return v + d;
+  return z0 + (v - z0) * (z1 + d - z0) / (z1 - z0);
+}
+function slopeAxis(ax, v) {
+  const [z0, z1] = ZONES[ax];
+  return v > z0 && v < z1 ? (z1 + D[ARM[ax]] - L - z0) / (z1 - z0) : 1;
+}
+function mapV(p, out = p) { return out.set(mapAxis('x', p.x), mapAxis('y', p.y), mapAxis('z', p.z)); }
+
 function buildLevel(M) {
   const g = new THREE.Group();
-  const over = [], details = [];
-  const add = (o, layer = 0) => { g.add(o); if (layer) over.push(o); return o; };
+  const over = [], details = [], pieces = [];
+  // fit: 'stretch' for long axis-aligned pieces that span a zone; otherwise the piece moves rigidly
+  // with its anchor (its own position unless given)
+  const add = (o, layer = 0, fit = null) => { g.add(o); if (layer) over.push(o); pieces.push({ o, fit }); return o; };
+  const live = o => { g.add(o); return o; };   // positioned every frame in already-mapped space
   const X0 = -W / 2, X1 = W / 2, IW = W - 2 * RIM;
 
   // z-bar (seam part is overlay)
   const zbar = (z0, z1, layer) => {
     const cap = layer ? 4 : -1;   // the overlay piece must not draw its +z cap over the main piece
-    add(box(M.stone, X0, X1, -W / 2, FLOOR, z0, z1, cap), layer);
-    add(box(M.rim, X0, X0 + RIM, FLOOR, TOP, z0, z1, cap), layer);
-    add(box(M.rim, X1 - RIM, X1, FLOOR, TOP, z0, z1, cap), layer);
-    add(waterRect(M.water, X0 + RIM, X1 - RIM, z0, z1, YW, (x, z) => [(x - X0 - RIM) / IW, 2 * L - z]), layer);
+    add(box(M.stone, X0, X1, -W / 2, FLOOR, z0, z1, cap), layer, 'stretch');
+    add(box(M.rim, X0, X0 + RIM, FLOOR, TOP, z0, z1, cap), layer, 'stretch');
+    add(box(M.rim, X1 - RIM, X1, FLOOR, TOP, z0, z1, cap), layer, 'stretch');
+    add(waterRect(M.water, X0 + RIM, X1 - RIM, z0, z1, YW, (x, z) => [(x - X0 - RIM) / IW, 2 * L - z]), layer, 'stretch');
   };
   zbar(-W / 2, ZSPLIT + 0.01, OVERLAY);
   zbar(ZSPLIT, L - W / 2, 0);
@@ -467,10 +494,10 @@ function buildLevel(M) {
   add(waterRect(M.water, X0 + RIM, X1, L - W / 2, L + W / 2 - RIM, YW, (x, z) => [(z - L + W / 2) / (W - RIM), 2 * L - z]));
 
   // x-bar
-  add(box(M.stone, X1, XP0, -W / 2, FLOOR, L - W / 2, L + W / 2));
-  add(box(M.rim, X1, XP0, FLOOR, TOP, L - W / 2, L - W / 2 + RIM));
-  add(box(M.rim, X1, XP0, FLOOR, TOP, L + W / 2 - RIM, L + W / 2));
-  add(waterRect(M.water, X1, XP0, L - W / 2 + RIM, L + W / 2 - RIM, YW, (x, z) => [(z - (L - W / 2 + RIM)) / IW, L + W / 2 - x]));
+  add(box(M.stone, X1, XP0, -W / 2, FLOOR, L - W / 2, L + W / 2), 0, 'stretch');
+  add(box(M.rim, X1, XP0, FLOOR, TOP, L - W / 2, L - W / 2 + RIM), 0, 'stretch');
+  add(box(M.rim, X1, XP0, FLOOR, TOP, L + W / 2 - RIM, L + W / 2), 0, 'stretch');
+  add(waterRect(M.water, X1, XP0, L - W / 2 + RIM, L + W / 2 - RIM, YW, (x, z) => [(z - (L - W / 2 + RIM)) / IW, L + W / 2 - x]), 0, 'stretch');
 
   // pool at the foot of the waterfall
   const PX1 = L + W / 2, PZ1 = L + 1.5 * W;
@@ -487,7 +514,7 @@ function buildLevel(M) {
 
   // pillar
   const PT = L + W / 2;
-  add(box(M.stone, L - W / 2, L + W / 2, FLOOR, PT - GROOVE, L - W / 2, L + W / 2));
+  add(box(M.stone, L - W / 2, L + W / 2, FLOOR, PT - GROOVE, L - W / 2, L + W / 2), 0, 'stretch');
   const pillarTop = [];
   pillarTop.push(add(box(M.rim, L - W / 2, L - W / 2 + RIM, PT - GROOVE, PT, L - W / 2, L + W / 2)));
   pillarTop.push(add(box(M.rim, L + W / 2 - RIM, L + W / 2, PT - GROOVE, PT, L - W / 2, L + W / 2)));
@@ -497,7 +524,7 @@ function buildLevel(M) {
   // waterfall down the +z face
   const fx0 = L - W / 2 + RIM, fx1 = L + W / 2 - RIM, fz = L + W / 2 + 0.03, fy0 = L + YW, fy1 = YW;
   const fall = quad(M.fall, [[fx0, fy0, fz], [fx1, fy0, fz], [fx1, fy1, fz], [fx0, fy1, fz]], [[0, 0], [1, 0], [1, fy0 - fy1], [0, fy0 - fy1]]);
-  fall.renderOrder = 2; add(fall);
+  fall.renderOrder = 2; add(fall, 0, 'stretch');
   const foam = [];
   for (let i = 0; i < 7; i++) {
     const f = box(M.foam, -0.09, 0.09, -0.05, 0.05, -0.09, 0.09);
@@ -516,12 +543,13 @@ function buildLevel(M) {
   fisher.g.position.set(X0 + 0.34, TOP, L + W / 2 - 0.34); fisher.g.rotation.y = Math.PI / 4; fisher.g.scale.setScalar(0.85);
   add(fisher.g);
   const hand = new THREE.Vector3(X0 + 0.78, TOP + 0.42, L + W / 2 - 0.3);
-  details.push(add(stick(M.wood, hand, FISH_TIP, 0.045)));
-  details.push(add(new THREE.Line(lineGeo, M.line)));
+  const fisherAt = fisher.g.position;   // rod, line and bobber travel with the fisher
+  details.push(add(stick(M.wood, hand, FISH_TIP, 0.045), 0, fisherAt));
+  details.push(add(new THREE.Line(lineGeo, M.line), 0, fisherAt));
   const bobber = new THREE.Group();
   const bb = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), M.bobber);
   const bt = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), M.paper); bt.position.y = 0.02;
-  bobber.add(bb, bt); bobber.position.copy(BOBBER); add(bobber);
+  bobber.add(bb, bt); bobber.position.copy(BOBBER); add(bobber, 0, fisherAt);
 
   // lanterns (glow at night)
   const glows = [];
@@ -540,20 +568,44 @@ function buildLevel(M) {
   rider.g.scale.setScalar(0.82); rider.g.position.y = -0.04;
   boat.add(rider.g);
   boat.rotation.order = 'YZX';
-  add(boat);
+  live(boat);
 
-  const fshades = shadesMesh(M); add(fshades);
+  const fshades = shadesMesh(M); live(fshades);
 
   const rings = [];
   for (let i = 0; i < 7; i++) {
     const m = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.42, 28), new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false }));
-    m.rotation.x = -Math.PI / 2; rings.push(add(m));
+    m.rotation.x = -Math.PI / 2; rings.push(live(m));
   }
   const splash = [];
-  for (let i = 0; i < 12; i++) splash.push(add(box(M.foam, -0.06, 0.06, -0.06, 0.06, -0.06, 0.06)));
+  for (let i = 0; i < 12; i++) splash.push(live(box(M.foam, -0.06, 0.06, -0.06, 0.06, -0.06, 0.06)));
 
   over.forEach(o => setLayer(o, OVERLAY));
-  return { g, M, boat, rider, fshades, rings, splash, bobber, lookout, fisher, foam, details, pillarTop };
+  for (const p of pieces) {
+    p.o.updateMatrix();
+    p.pos0 = p.o.position.clone(); p.scale0 = p.o.scale.clone();
+    if (p.fit === 'stretch') { p.o.geometry.computeBoundingBox(); p.box = p.o.geometry.boundingBox.clone().applyMatrix4(p.o.matrix); }
+    else if (p.fit) p.anchor = p.fit.clone();
+    else if (p.o.isMesh && !p.o.position.lengthSq()) { p.o.geometry.computeBoundingBox(); p.anchor = p.o.geometry.boundingBox.getCenter(new THREE.Vector3()); }
+    else p.anchor = p.o.position.clone();
+  }
+  return { g, M, boat, rider, fshades, rings, splash, bobber, lookout, fisher, foam, details, pillarTop, pieces };
+}
+
+const _fa = new THREE.Vector3(), _fb = new THREE.Vector3();
+function fitLevel(lv) {
+  for (const p of lv.pieces) {
+    if (p.box) {
+      mapV(p.box.min, _fa); mapV(p.box.max, _fb);
+      for (const ax of 'xyz') {
+        const span = p.box.max[ax] - p.box.min[ax], s = span > 1e-6 ? (_fb[ax] - _fa[ax]) / span : 1;
+        p.o.scale[ax] = p.scale0[ax] * s;
+        p.o.position[ax] = _fa[ax] + (p.pos0[ax] - p.box.min[ax]) * s;
+      }
+    } else {
+      p.o.position.copy(p.pos0).add(mapV(p.anchor, _fa).sub(p.anchor));
+    }
+  }
 }
 
 const MATS = makeMats();
@@ -577,13 +629,15 @@ const YAW0 = yawOf(curve.getTangentAt(0));
 const smooth = u => u * u * (3 - 2 * u);
 const clamp01 = u => Math.min(1, Math.max(0, u));
 function lerpAngle(a, b, u) { let d = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI; if (d < -Math.PI) d += Math.PI * 2; return a + d * u; }
-const tV = new THREE.Vector3();
+const tV = new THREE.Vector3(), nV = new THREE.Vector3();
+const P1m = new THREE.Vector3(), GFm = new THREE.Vector3();
+// Boat path in nominal space, pushed through the current arm lengths
 function boatAt(t, out) {
   let tl = ((t % T_LOOP) + T_LOOP) % T_LOOP;
   out.t = tl;
   if (tl < SETTLE) {
     const u = tl / SETTLE;
-    out.phase = 'settle'; out.u = u; out.pos.copy(P1);
+    out.phase = 'settle'; out.u = u; mapV(P1, out.pos);
     out.pos.y += -0.2 * Math.sin(Math.PI * Math.min(1, u * 1.4)) * (1 - u);
     out.yaw = lerpAngle(-Math.PI / 2, YAW0, smooth(u)); out.pitch = 0.3 * (1 - smooth(Math.min(1, u * 2))); out.layer = 0;
     return out;
@@ -591,21 +645,24 @@ function boatAt(t, out) {
   tl -= SETTLE;
   if (tl < ROUTE) {
     const u = tl / ROUTE;
-    curve.getPointAt(u, out.pos); out.yaw = yawOf(curve.getTangentAt(u, tV)); out.pitch = 0;
-    out.pos.y += 0.03 * Math.sin(tl * 4);
-    out.phase = 'route'; out.u = u; out.layer = (out.pos.x < W / 2 + 0.2 && out.pos.z < ZSPLIT) ? OVERLAY : 0;
+    curve.getPointAt(u, nV); curve.getTangentAt(u, tV);
+    tV.x *= slopeAxis('x', nV.x); tV.z *= slopeAxis('z', nV.z);
+    out.yaw = yawOf(tV); out.pitch = 0;
+    out.layer = (nV.x < W / 2 + 0.2 && nV.z < ZSPLIT) ? OVERLAY : 0;
+    mapV(nV, out.pos); out.pos.y += 0.03 * Math.sin(tl * 4);
+    out.phase = 'route'; out.u = u;
     return out;
   }
   tl -= ROUTE;
   if (tl < TIP) {
     const u = tl / TIP;
-    out.pos.copy(PEND); out.pos.z -= 0.2 * u; out.pos.y -= 0.45 * u * u;
+    mapV(PEND, out.pos); out.pos.z -= 0.2 * u; out.pos.y -= 0.45 * u * u;
     out.yaw = Math.PI / 2; out.pitch = 0.7 * u; out.layer = OVERLAY; out.phase = 'tip'; out.u = u;
     return out;
   }
   tl -= TIP;
   const u = tl / FALL;
-  out.pos.set(L, L + YW - L * u * u, L + W / 2 + 0.3 + 0.25 * u);
+  out.pos.set(D.b, D.c + YW - D.c * u * u, mapAxis('z', L + W / 2 + 0.3 + 0.25 * u));
   out.yaw = -Math.PI / 2; out.pitch = 1.2 - 0.9 * u; out.layer = 0; out.phase = 'fall'; out.u = u;
   return out;
 }
@@ -620,6 +677,7 @@ const blink = (t, off) => (((t + off) % 3.9) < 0.12 ? 0.12 : 1);
 const headPos = new THREE.Vector3();
 
 function animate(t) {
+  mapV(P1, P1m); mapV(G_FLOAT, GFm);
   boatAt(t, A);
   // Where the rider's face is (level-local), for the shades to fly back to
   lv0.boat.position.copy(A.pos); lv0.boat.rotation.set(0, A.yaw, -A.pitch);
@@ -633,15 +691,15 @@ function animate(t) {
   if (A.phase === 'settle') {
     shadesOn = false; fsVis = true;
     const v = clamp01(A.u / 0.6);
-    fsPos.lerpVectors(new THREE.Vector3(P1.x, P1.y + 0.9, P1.z), G_FLOAT, v); fsPos.y += 1.3 * Math.sin(Math.PI * v);
+    fsPos.lerpVectors(new THREE.Vector3(P1m.x, P1m.y + 0.9, P1m.z), GFm, v); fsPos.y += 1.3 * Math.sin(Math.PI * v);
     fsRot.set(-Math.PI / 2 * v, v * 9, 0);
   } else if (A.phase === 'route' && A.u < UB1) {
     shadesOn = false; fsVis = true;
     if (A.u < UB0) {
-      fsPos.copy(G_FLOAT); fsPos.y += 0.03 * Math.sin(t * 3); fsRot.set(-Math.PI / 2, 9 + Math.sin(t) * 0.2, 0);
+      fsPos.copy(GFm); fsPos.y += 0.03 * Math.sin(t * 3); fsRot.set(-Math.PI / 2, 9 + Math.sin(t) * 0.2, 0);
     } else {
       const v = smooth((A.u - UB0) / (UB1 - UB0));
-      fsPos.lerpVectors(G_FLOAT, headPos, v); fsPos.y += 0.8 * Math.sin(Math.PI * v);
+      fsPos.lerpVectors(GFm, headPos, v); fsPos.y += 0.8 * Math.sin(Math.PI * v);
       fsRot.set(-Math.PI / 2 * (1 - v), (9 + Math.PI / 4 * 0) * (1 - v) + (Math.PI / 4) * v, 0);
     }
   }
@@ -658,6 +716,7 @@ function animate(t) {
   const bobY = YW + 0.03 * Math.sin(t * 2.6) - (((t % 7.3) < 0.35) ? 0.12 : 0);
 
   for (const lv of levels) {
+    fitLevel(lv);
     lv.boat.position.copy(A.pos); lv.boat.rotation.set(0, A.yaw, -A.pitch);
     setLayer(lv.boat, A.layer);
     lv.rider.g.rotation.y = Math.PI / 4 - A.yaw;
@@ -667,8 +726,8 @@ function animate(t) {
     lv.fshades.visible = fsVis; lv.fshades.position.copy(fsPos); lv.fshades.rotation.copy(fsRot);
     lv.fisher.eyes.forEach(e => e.scale.y = blink(t, 1.7));
     lv.lookout.eyes.forEach(e => e.scale.y = blink(t, 2.9));
-    lv.lookout.g.rotation.y = Math.PI / 4 + 0.35 * Math.sin(Math.atan2(A.pos.x - L, A.pos.z - L) * 0.5 + 0.4);
-    lv.lookout.g.position.y = LEDGE_Y + Math.abs(Math.sin(t * 2.2)) * 0.04;
+    lv.lookout.g.rotation.y = Math.PI / 4 + 0.35 * Math.sin(Math.atan2(A.pos.x - D.b, A.pos.z - D.a) * 0.5 + 0.4);
+    lv.lookout.g.position.y += Math.abs(Math.sin(t * 2.2)) * 0.04;
     lv.bobber.position.y = bobY;
     lv.foam.forEach((f, i) => { f.position.y = YW + 0.03 + 0.04 * Math.sin(t * 7 + i * 1.7); f.scale.setScalar(0.8 + 0.3 * Math.sin(t * 5 + i)); });
     for (let i = 0; i < lv.rings.length; i++) {
@@ -684,7 +743,7 @@ function animate(t) {
       const age = splashAge;
       if (age < 0 || age > 0.8) { p.visible = false; continue; }
       const v = SPLASH_V[i];
-      p.position.set(P1.x + v.x * age, P1.y + v.y * age - 4.9 * age * age, P1.z + v.z * age);
+      p.position.set(P1m.x + v.x * age, P1m.y + v.y * age - 4.9 * age * age, P1m.z + v.z * age);
       p.visible = p.position.y > YW - 0.05;
       p.scale.setScalar(1 - age);
     }
@@ -692,17 +751,39 @@ function animate(t) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Camera: iso (orbit breaks the illusion), ride, first person
+//  Camera: iso (orbit reshapes the loop), ride, first person
 // ─────────────────────────────────────────────────────────────
 scene.fog = new THREE.FogExp2(0x000000, 0);
 const state = {
   mode: 'still', chapter: 0,
-  yaw: 0, pitch: 0, vy: 0, vp: 0, dragging: false,
+  yaw: 0, pitch: 0, vy: 0, vp: 0, dragging: false, home: false,
   ride: 0,
 };
 const camTarget = new THREE.Vector3();
 const dir = new THREE.Vector3();
-let aligned = true;
+// aim: the angle nearest the camera from which the loop can still close; ok when the camera is there
+const aim = { yaw: 0, pitch: 0, ok: true };
+
+// Choose arm lengths so the gap (b, c, a) is parallel to the view direction, total length 3L.
+// An arm that would get shorter than its minimum is pinned there, and the illusion gives way.
+function fitLoop() {
+  const fpOn = state.mode === 'fp';   // in first person, drag is looking around, not orbiting
+  const az = ISO_AZ + (fpOn ? 0 : state.yaw), el = ISO_EL + (fpOn ? 0 : state.pitch);
+  const v = { a: Math.cos(el) * Math.cos(az), b: Math.cos(el) * Math.sin(az), c: Math.sin(el) };
+  let free = ['a', 'b', 'c'], budget = 3 * L;
+  while (free.length) {
+    const sum = free.reduce((s, k) => s + v[k], 0);
+    const short = free.filter(k => v[k] * budget / sum < MIN_ARM[k]);
+    if (!short.length) { for (const k of free) D[k] = v[k] * budget / sum; break; }
+    for (const k of short) { D[k] = MIN_ARM[k]; budget -= MIN_ARM[k]; }
+    free = free.filter(k => !short.includes(k));
+  }
+  aim.yaw = Math.atan2(D.b, D.a) - ISO_AZ;
+  aim.pitch = Math.atan2(D.c, Math.hypot(D.a, D.b)) - ISO_EL;
+  aim.ok = fpOn || Math.abs(aim.yaw - state.yaw) + Math.abs(aim.pitch - state.pitch) < 0.004;
+  STEP.set(D.b, D.c, D.a);
+  P.set(D.b / 3, 0, 2 * D.a / 3);
+}
 
 function viewParams() {
   const w = innerWidth, h = innerHeight, aspect = w / h;
@@ -725,7 +806,6 @@ function updateCamera() {
   camera.left = cx - vp.aspect * halfH; camera.right = cx + vp.aspect * halfH;
   camera.top = cy + halfH; camera.bottom = cy - halfH;
   camera.updateProjectionMatrix();
-  aligned = Math.abs(state.yaw) < 0.002 && Math.abs(state.pitch) < 0.002;
 }
 
 // First person: ride along with the rider on the paper boat.
@@ -770,6 +850,7 @@ function updateCopies() {
   applyHaze(MATS, 0);
   for (const lv of levels) {
     lv.g.visible = lv.k === 0 || fpOn;
+    lv.g.position.copy(STEP).multiplyScalar(lv.k);
     lv.pillarTop.forEach(m => m.visible = !fpOn);
     lv.rider.g.visible = !(fpOn && lv.k === fp.copy);
     lv.boat.visible = !(fpOn && lv.k === fp.copy && A.phase === 'fall');
@@ -778,16 +859,16 @@ function updateCopies() {
   scene.fog.color.copy(cur.bgTop).lerp(cur.bgBot, 0.6);
 }
 
-// drag to orbit; springs back to the true angle
+// drag to orbit; the loop reshapes to follow, and springs back only if pulled past where it can close
 const el = renderer.domElement;
 let lastX = 0, lastY = 0;
-el.addEventListener('pointerdown', e => { state.dragging = true; lastX = e.clientX; lastY = e.clientY; el.setPointerCapture(e.pointerId); stage.classList.add('dragging'); hint.style.opacity = 0; });
+el.addEventListener('pointerdown', e => { state.dragging = true; state.home = false; lastX = e.clientX; lastY = e.clientY; el.setPointerCapture(e.pointerId); stage.classList.add('dragging'); hint.style.opacity = 0; });
 el.addEventListener('pointermove', e => {
   if (!state.dragging) return;
   const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY;
   const fpOn = state.mode === 'fp';
   state.yaw = THREE.MathUtils.clamp(state.yaw - dx * 0.005, fpOn ? -2.6 : -0.9, fpOn ? 2.6 : 0.9);
-  state.pitch = THREE.MathUtils.clamp(state.pitch + dy * 0.004, fpOn ? -1.0 : -0.45, fpOn ? 1.0 : 0.6);
+  state.pitch = THREE.MathUtils.clamp(state.pitch + dy * 0.004, fpOn ? -1.0 : -0.45, fpOn ? 1.0 : 0.85);
   state.vy = -dx * 0.005 * 60; state.vp = dy * 0.004 * 60;
 });
 const endDrag = () => { state.dragging = false; stage.classList.remove('dragging'); };
@@ -795,12 +876,15 @@ el.addEventListener('pointerup', endDrag); el.addEventListener('pointercancel', 
 
 function updateOrbit(dt) {
   if (state.dragging) return;
-  const k = state.mode === 'fp' ? 3 : 38, c = 2 * Math.sqrt(k) * 0.82;
-  for (const [x, v] of [['yaw', 'vy'], ['pitch', 'vp']]) {
-    const a = -k * state[x] - c * state[v];
+  const home = state.mode === 'fp' || state.home, pull = home || !aim.ok;
+  // free glide with friction inside the closable range; a spring otherwise
+  const k = state.mode === 'fp' ? 3 : pull ? 38 : 0, c = pull ? 2 * Math.sqrt(k) * 0.82 : 5;
+  for (const [x, v, to] of [['yaw', 'vy', home ? 0 : aim.yaw], ['pitch', 'vp', home ? 0 : aim.pitch]]) {
+    const a = -k * (state[x] - to) - c * state[v];
     state[v] += a * dt; state[x] += state[v] * dt;
-    if (Math.abs(state[x]) < 0.0015 && Math.abs(state[v]) < 0.01) { state[x] = 0; state[v] = 0; }
+    if (Math.abs(state[x] - to) < 0.0015 && Math.abs(state[v]) < 0.01) { state[x] = to; state[v] = 0; }
   }
+  if (state.home && !state.yaw && !state.pitch) state.home = false;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -839,12 +923,11 @@ function renderCard(i, instant) {
 function goChapter(i) { state.chapter = mod(i, N); }
 function setMode(m, instant) {
   const apply = () => {
+    if ((m === 'fp') !== (state.mode === 'fp')) { state.yaw = state.pitch = state.vy = state.vp = 0; fp.snap = true; }
     state.mode = m;
-    state.yaw = state.pitch = state.vy = state.vp = 0;
-    fp.snap = true;
     document.body.dataset.mode = m;
     document.querySelectorAll('#modeSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m ? 'true' : 'false'));
-    hint.textContent = m === 'fp' ? 'Drag to look around' : 'Drag to break the illusion';
+    hint.textContent = m === 'fp' ? 'Drag to look around' : 'Drag to turn it · it keeps closing';
     if (m !== 'fp') { underEl.style.opacity = 0; tintEl.style.opacity = 0; }
   };
   if (instant || reduceMotion || (m === 'fp') === (state.mode === 'fp')) return apply();
@@ -859,13 +942,22 @@ function setTime(name) {
   document.querySelectorAll('#timeSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.time === name ? 'true' : 'false'));
 }
 document.querySelectorAll('#timeSeg button').forEach(b => b.addEventListener('click', () => setTime(b.dataset.time)));
-$('trueAngle').addEventListener('click', () => { state.vy = -state.yaw * 6; state.vp = -state.pitch * 6; });
+$('trueAngle').addEventListener('click', () => { state.home = true; });
 addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') goChapter(mod(currentChapter() + 1, N));
   if (e.key === 'ArrowLeft') goChapter(mod(currentChapter() - 1, N));
   if (e.key === ' ' || e.key === 'f') { e.preventDefault(); setMode(state.mode === 'fp' ? 'still' : 'fp'); }
 });
 renderCard(0, true);
+const deg = r => Math.round(r * 180 / Math.PI);
+let tagText = '';
+function updateAngleTag(fpOn) {
+  const turned = Math.abs(state.yaw) + Math.abs(state.pitch) > 0.01;
+  angleTag.classList.toggle('show', turned && !fpOn);
+  if (!turned) return;
+  const txt = `${deg(ISO_EL + state.pitch)}° up · ${deg(ISO_AZ + state.yaw)}° round · ${aim.ok ? 'still closes' : 'too far to close'}`;
+  if (txt !== tagText) angleTag.textContent = tagText = txt;
+}
 let simT = 0;
 const qs = new URLSearchParams(location.search);
 if (PALETTES[qs.get('time')]) { setTime(qs.get('time')); Object.assign(cur, toPalette(PALETTES[qs.get('time')])); }
@@ -946,6 +1038,7 @@ function frame(nowMs) {
   uTime.value = simT;
   updatePalette(dt);
   updateOrbit(dt);
+  fitLoop();
 
   state.ride += ((state.mode === 'ride' ? 1 : 0) - state.ride) * (1 - Math.exp(-dt * 2.2));
 
@@ -955,12 +1048,12 @@ function frame(nowMs) {
   if (fpOn) updateFP(dt, simT);
   updateCopies();
   renderCard(currentChapter());
-  angleTag.classList.toggle('show', !aligned && !fpOn);
+  updateAngleTag(fpOn);
 
   renderer.clear();
   if (fpOn) {
     renderer.render(scene, fpCam);
-  } else if (aligned) {
+  } else if (aim.ok) {
     camera.layers.set(0); renderer.render(scene, camera);
     renderer.clearDepth();
     camera.layers.set(OVERLAY); renderer.render(scene, camera);
@@ -971,7 +1064,7 @@ function frame(nowMs) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__iso = { state, setTime, setMode, goChapter };
+window.__iso = { state, setTime, setMode, goChapter, D, aim };
 </script>
 </body>
 </html>
