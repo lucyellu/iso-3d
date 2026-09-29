@@ -48,6 +48,10 @@
 
   .card { position: fixed; left: 34px; bottom: 104px; max-width: 420px; z-index: 4; transition: opacity .45s ease, transform .45s ease; }
   .card.out { opacity: 0; transform: translateY(8px); }
+  /* close-ups put busy scenery behind the card; a soft scrim keeps it readable */
+  .card::before { content: ""; position: absolute; inset: -60px -90px -50px -70px; z-index: -1; pointer-events: none;
+    background: radial-gradient(ellipse at 40% 55%, rgba(8,14,10,.62), rgba(8,14,10,0) 70%); opacity: 0; transition: opacity .6s; }
+  body.close .card::before { opacity: 1; }
   .kicker { display: flex; align-items: center; gap: 12px; font-size: 11px; font-weight: 700; letter-spacing: .26em; color: var(--ink-dim); }
   .kicker .line { width: 34px; height: 1px; background: currentColor; }
   .card h1 { font-family: "Instrument Serif", serif; font-weight: 400; font-size: clamp(44px, 5.4vw, 68px); line-height: 1; margin: 12px 0 12px; letter-spacing: -.01em; }
@@ -138,19 +142,27 @@ import * as THREE from 'three';
 // ─────────────────────────────────────────────────────────────
 //  Site content: edit this block to make it yours.
 // ─────────────────────────────────────────────────────────────
+// Each chapter has a camera view: yaw/pitch away from the true isometric angle (radians; the loop
+// reshapes to keep closing within about ±0.5 yaw and -0.3..0.7 pitch), zoom (1 = whole loop) and
+// focus ('loop', 'lookout', 'fisher' or 'rider').
 const SITE = {
   name: 'Your Name',
   role: 'studio',
   chapters: [
-    { title: 'Hello', body: 'I design and build small, impossible things for the web. Objects that only make sense from one particular angle.', links: [] },
+    { title: 'Hello', body: 'I design and build small, impossible things for the web. Objects that only make sense from one particular angle.', links: [],
+      view: { yaw: 0, pitch: 0 } },
     { title: 'Work', body: 'Selected projects: interactive pieces, tools and experiments. Each one sits a level deeper than the last.',
-      links: [{ label: 'Project one', href: '#' }, { label: 'Project two', href: '#' }, { label: 'Project three', href: '#' }] },
+      links: [{ label: 'Project one', href: '#' }, { label: 'Project two', href: '#' }, { label: 'Project three', href: '#' }],
+      view: { yaw: 0.42, pitch: 0.06 } },
     { title: 'Writing', body: 'Notes on rendering, interfaces, and the craft of making the web feel handmade.',
-      links: [{ label: 'Latest essay', href: '#' }, { label: 'Archive', href: '#' }] },
+      links: [{ label: 'Latest essay', href: '#' }, { label: 'Archive', href: '#' }],
+      view: { yaw: -0.25, pitch: 0.48, zoom: 1.12 } },
     { title: 'Lab', body: 'Unfinished loops, sketches and shaders. Things that almost close.',
-      links: [{ label: 'Sketchbook', href: '#' }] },
+      links: [{ label: 'Sketchbook', href: '#' }],
+      view: { yaw: -0.3, pitch: -0.25 } },
     { title: 'Contact', body: 'Say hello. I read everything, eventually, once the boat comes back around.',
-      links: [{ label: 'Email', href: 'mailto:hello@example.com' }, { label: 'GitHub', href: '#' }] },
+      links: [{ label: 'Email', href: 'mailto:hello@example.com' }, { label: 'GitHub', href: '#' }],
+      view: { yaw: 0.25, pitch: 0.12, zoom: 0.3, focus: 'lookout' } },
   ],
 };
 
@@ -766,6 +778,7 @@ scene.fog = new THREE.FogExp2(0x000000, 0);
 const state = {
   mode: 'still', chapter: 0,
   yaw: 0, pitch: 0, vy: 0, vp: 0, dragging: false, home: false,
+  zoom: 1, focus: 'loop',
   ride: 0,
 };
 const camTarget = new THREE.Vector3();
@@ -800,12 +813,45 @@ function viewParams() {
   return { halfH: 8.6, ox: Math.min(0.34, 0.12 + (aspect - 1) * 0.25), oy: 0.02, aspect };
 }
 
+// Chapter views: glide angle, zoom and focus to the chapter's view. Grabbing the camera mid-glide
+// hands the angle back to the user while zoom and focus finish arriving.
+const tween = { on: false, s: 0, e: 0, dur: 1.5, angles: true, to: null,
+  from: { yaw: 0, pitch: 0, zoom: 1, focus: new THREE.Vector3() } };
+const focusNow = new THREE.Vector3(), focusGoal = new THREE.Vector3(), HEAD = new THREE.Vector3(0, 0.45, 0);
+function focusPoint(key, out) {
+  if (key === 'loop') return out.copy(P);
+  const o = key === 'rider' ? lv0.rider.g : lv0[key].g;
+  return o.getWorldPosition(out).add(HEAD);
+}
+function goView(v, instant) {
+  const to = { yaw: v.yaw || 0, pitch: v.pitch || 0, zoom: v.zoom || 1, focus: v.focus || 'loop' };
+  state.home = false; state.vy = state.vp = 0;
+  if (instant || reduceMotion) {
+    Object.assign(state, { yaw: to.yaw, pitch: to.pitch, zoom: to.zoom, focus: to.focus });
+    tween.on = false; return;
+  }
+  Object.assign(tween.from, { yaw: state.yaw, pitch: state.pitch, zoom: state.zoom });
+  tween.from.focus.copy(focusNow);
+  Object.assign(tween, { on: true, s: 0, e: 0, angles: true, to });
+}
+function updateTween(dt) {
+  if (!tween.on) return;
+  tween.s = Math.min(1, tween.s + dt / tween.dur);
+  const e = tween.e = tween.s < 0.5 ? 4 * tween.s ** 3 : 1 - (-2 * tween.s + 2) ** 3 / 2;
+  const f = tween.from, to = tween.to;
+  if (tween.angles) { state.yaw = f.yaw + (to.yaw - f.yaw) * e; state.pitch = f.pitch + (to.pitch - f.pitch) * e; }
+  state.zoom = f.zoom + (to.zoom - f.zoom) * e;
+  if (tween.s >= 1) { tween.on = false; state.focus = to.focus; }
+}
+
 function updateCamera() {
   const vp = viewParams();
   const b = smooth(clamp01(state.ride));
-  const halfH = THREE.MathUtils.lerp(vp.halfH, 3.1, b);
+  const halfH = THREE.MathUtils.lerp(vp.halfH * state.zoom, 3.1, b);
   const ox = THREE.MathUtils.lerp(vp.ox, 0, b), oy = THREE.MathUtils.lerp(vp.oy, 0, b);
-  camTarget.copy(P).lerp(A.pos, b);
+  if (tween.on) focusNow.lerpVectors(tween.from.focus, focusPoint(tween.to.focus, focusGoal), tween.e);
+  else focusPoint(state.focus, focusNow);
+  camTarget.copy(focusNow).lerp(A.pos, b);
   const az = ISO_AZ + state.yaw, el = ISO_EL + state.pitch;
   dir.set(Math.cos(el) * Math.sin(az), Math.sin(el), Math.cos(el) * Math.cos(az));
   camera.position.copy(camTarget).addScaledVector(dir, 600);
@@ -871,7 +917,7 @@ function updateCopies() {
 // drag to orbit; the loop reshapes to follow, and springs back only if pulled past where it can close
 const el = renderer.domElement;
 let lastX = 0, lastY = 0;
-el.addEventListener('pointerdown', e => { state.dragging = true; state.home = false; lastX = e.clientX; lastY = e.clientY; el.setPointerCapture(e.pointerId); stage.classList.add('dragging'); hint.style.opacity = 0; });
+el.addEventListener('pointerdown', e => { state.dragging = true; state.home = false; tween.angles = false; lastX = e.clientX; lastY = e.clientY; el.setPointerCapture(e.pointerId); stage.classList.add('dragging'); hint.style.opacity = 0; });
 el.addEventListener('pointermove', e => {
   if (!state.dragging) return;
   const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY;
@@ -880,11 +926,18 @@ el.addEventListener('pointermove', e => {
   state.pitch = THREE.MathUtils.clamp(state.pitch + dy * 0.004, fpOn ? -1.0 : -0.45, fpOn ? 1.0 : 0.85);
   state.vy = -dx * 0.005 * 60; state.vp = dy * 0.004 * 60;
 });
+el.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (state.mode === 'fp') return;
+  const k = Math.exp(e.deltaY * 0.0012), cl = z => THREE.MathUtils.clamp(z, 0.2, 1.6);
+  if (tween.on) { tween.from.zoom = cl(tween.from.zoom * k); tween.to.zoom = cl(tween.to.zoom * k); }
+  else state.zoom = cl(state.zoom * k);
+}, { passive: false });
 const endDrag = () => { state.dragging = false; stage.classList.remove('dragging'); };
 el.addEventListener('pointerup', endDrag); el.addEventListener('pointercancel', endDrag);
 
 function updateOrbit(dt) {
-  if (state.dragging) return;
+  if (state.dragging || (tween.on && tween.angles)) return;
   const home = state.mode === 'fp' || state.home, pull = home || !aim.ok;
   // free glide with friction inside the closable range; a spring otherwise
   const k = state.mode === 'fp' ? 3 : pull ? 38 : 0, c = pull ? 2 * Math.sqrt(k) * 0.82 : 5;
@@ -929,10 +982,16 @@ function renderCard(i, instant) {
   if (instant) return fill();
   card.classList.add('out'); setTimeout(fill, 260);
 }
-function goChapter(i) { state.chapter = mod(i, N); }
+function goChapter(i) {
+  state.chapter = mod(i, N);
+  if (state.mode !== 'fp') goView(SITE.chapters[state.chapter].view || {});
+}
 function setMode(m, instant) {
   const apply = () => {
-    if ((m === 'fp') !== (state.mode === 'fp')) { state.yaw = state.pitch = state.vy = state.vp = 0; fp.snap = true; }
+    if ((m === 'fp') !== (state.mode === 'fp')) {
+      state.yaw = state.pitch = state.vy = state.vp = 0; fp.snap = true; tween.on = false;
+      if (m !== 'fp') goView(SITE.chapters[state.chapter].view || {}, true);   // come back to this chapter's view
+    }
     state.mode = m;
     document.body.dataset.mode = m;
     document.querySelectorAll('#modeSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m ? 'true' : 'false'));
@@ -955,6 +1014,7 @@ $('trueAngle').addEventListener('click', () => { state.home = true; });
 addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') goChapter(mod(currentChapter() + 1, N));
   if (e.key === 'ArrowLeft') goChapter(mod(currentChapter() - 1, N));
+  if (e.key >= '1' && e.key <= String(Math.min(N, 9))) goChapter(+e.key - 1);
   if (e.key === ' ' || e.key === 'f') { e.preventDefault(); setMode(state.mode === 'fp' ? 'still' : 'fp'); }
 });
 renderCard(0, true);
@@ -1047,6 +1107,7 @@ function frame(nowMs) {
   uTime.value = simT;
   updatePalette(dt);
   updateOrbit(dt);
+  updateTween(dt);
   fitLoop();
 
   state.ride += ((state.mode === 'ride' ? 1 : 0) - state.ride) * (1 - Math.exp(-dt * 2.2));
@@ -1058,6 +1119,7 @@ function frame(nowMs) {
   updateCopies();
   renderCard(currentChapter());
   updateAngleTag(fpOn);
+  document.body.classList.toggle('close', !fpOn && state.zoom * (1 - state.ride) < 0.6);
 
   renderer.clear();
   if (fpOn) {
@@ -1073,7 +1135,7 @@ function frame(nowMs) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__iso = { state, setTime, setMode, goChapter, D, aim };
+window.__iso = { state, setTime, setMode, goChapter, goView, D, aim, tween, updateTween };
 </script>
 </body>
 </html>
