@@ -146,22 +146,38 @@ import * as THREE from 'three';
 // reshapes to keep closing within about ±0.5 yaw and -0.3..0.7 pitch), zoom (1 = whole loop) and
 // focus ('loop', 'lookout', 'fisher' or 'rider').
 const SITE = {
-  name: 'Your Name',
-  role: 'studio',
+  name: 'Lucy Lu',
+  role: '3D animator · indie dev',
   chapters: [
-    { title: 'Hello', body: 'I design and build small, impossible things for the web. Objects that only make sense from one particular angle.', links: [],
+    { title: 'Hello', body: '3D animator turned indie app and game developer, currently studying numbers and making things. Animated on Beat Bugs (Netflix) and Little Charmers (Nick Jr., Treehouse TV); studied at Vancouver Film School and the University of Alberta.',
+      links: [{ label: 'Beat Bugs', href: 'https://www.imdb.com/title/tt4716268/' },
+              { label: 'Little Charmers', href: 'https://www.youtube.com/channel/UCEoqKEAWLwabpdzhnp6Qh5Q' },
+              { label: 'Freelance reel', href: 'https://vimeo.com/lucylu' }],
       view: { yaw: 0, pitch: 0 } },
-    { title: 'Work', body: 'Selected projects: interactive pieces, tools and experiments. Each one sits a level deeper than the last.',
-      links: [{ label: 'Project one', href: '#' }, { label: 'Project two', href: '#' }, { label: 'Project three', href: '#' }],
+    { title: 'Games & Apps', body: 'Lunescape, Starbreaker and Math Gym on the App Store as Paperbox Studio, plus small web tools: a 3D periodic table, a read-aloud ebook reader, and Neuralens, a computer-vision checkout that takes one snap.',
+      links: [{ label: 'Lunescape', href: 'https://apps.apple.com/gb/app/lunescape/id6444033013' },
+              { label: 'Starbreaker', href: 'https://apps.apple.com/gb/app/starbreaker/id1661733093' },
+              { label: 'Math Gym', href: 'https://apps.apple.com/gb/app/math-gym/id1673668699' },
+              { label: '3D Periodic Table', href: 'https://www.lulucy.org/3d-table' },
+              { label: 'Neuralens', href: 'https://paperboxstudio.wixsite.com/neuralens2' }],
       view: { yaw: 0.42, pitch: 0.06 } },
-    { title: 'Writing', body: 'Notes on rendering, interfaces, and the craft of making the web feel handmade.',
-      links: [{ label: 'Latest essay', href: '#' }, { label: 'Archive', href: '#' }],
+    { title: 'Writing', body: 'Lately: the Rosetta Stone read as engineering rather than metaphor, the Geminids as a yearly delivery of space dust we barely measure, and a slider that rewrites any article at your reading level.',
+      links: [{ label: 'Rosetta Stone', href: 'https://www.lulucy.org/post/rosetta-stone-architecture-as-language' },
+              { label: 'The Geminids', href: 'https://www.lulucy.org/post/the-geminids-a-yearly-delivery-of-non-earth-material-we-barely-instrument' },
+              { label: 'Reading Level Slider', href: 'https://www.lulucy.org/post/reading-level-slider' },
+              { label: 'All posts', href: 'https://www.lulucy.org/lately' }],
       view: { yaw: -0.25, pitch: 0.48, zoom: 1.12 } },
-    { title: 'Lab', body: 'Unfinished loops, sketches and shaders. Things that almost close.',
-      links: [{ label: 'Sketchbook', href: '#' }],
+    { title: 'Math', body: 'On the Prime Pairs, with Suqin Ao: a modified Sieve of Eratosthenes that ties the Twin Prime Conjecture to Goldbach. Loops that almost close, one prime at a time.',
+      links: [{ label: 'Read the paper', href: 'https://www.lulucy.org/post/study-of-prime-pairs-paper' },
+              { label: 'Colab', href: 'https://colab.research.google.com/drive/1rCmKD5afjBGVD_aEKufKGqePYt_Jmh0w?usp=sharing' },
+              { label: 'Code on GitHub', href: 'https://github.com/lucyellu/A-Novel-Sieve-in-the-Study-of-Prime-Numbers' }],
       view: { yaw: -0.3, pitch: -0.25 } },
     { title: 'Contact', body: 'Say hello. I read everything, eventually, once the boat comes back around.',
-      links: [{ label: 'Email', href: 'mailto:hello@example.com' }, { label: 'GitHub', href: '#' }],
+      links: [{ label: 'Email', href: 'mailto:lucylu@ualberta.net' },
+              { label: 'GitHub', href: 'https://github.com/lucyellu' },
+              { label: 'YouTube', href: 'https://www.youtube.com/@xlumao' },
+              { label: 'Instagram', href: 'https://instagram.com/lucyellu' },
+              { label: 'lulucy.org', href: 'https://www.lulucy.org' }],
       view: { yaw: 0.25, pitch: 0.12, zoom: 0.3, focus: 'lookout' } },
   ],
 };
@@ -999,7 +1015,7 @@ function renderCard(i, instant) {
     $('kicker').textContent = `${String(i + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`;
     $('title').textContent = c.title; $('body').textContent = c.body;
     const ul = $('links'); ul.innerHTML = '';
-    for (const l of c.links) { const li = document.createElement('li'); const a = document.createElement('a'); a.href = l.href; a.textContent = l.label; li.appendChild(a); ul.appendChild(li); }
+    for (const l of c.links) { const li = document.createElement('li'); const a = document.createElement('a'); a.href = l.href; a.textContent = l.label; if (/^https?:/.test(l.href)) { a.target = '_blank'; a.rel = 'noopener'; } li.appendChild(a); ul.appendChild(li); }
     card.classList.remove('out');
   };
   if (instant) return fill();
