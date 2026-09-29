@@ -168,6 +168,8 @@ const COPIES = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
 const P = new THREE.Vector3(L / 3, 0, 2 * L / 3);   // projects to the triangle's centre (refit per frame)
 const ISO_AZ = Math.PI / 4, ISO_EL = Math.atan(1 / Math.SQRT2);
 const OVERLAY = 1;
+const PRIME = 2;   // depth-only twins of the main z-bar, so the overlay pass still tucks behind its near rim
+const DEPTH_ONLY = new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide });
 
 const PALETTES = {
   dawn:  { bgTop: '#f6d6c6', bgBot: '#a9bcdc', bokeh: ['#fff0dc', '#f6b9a6', '#cfdcf3', '#ffe6bf'], stone: '#f6e8dd', rim: '#fcf3ea', creature: '#ef7a5f',
@@ -485,7 +487,14 @@ function buildLevel(M) {
     add(waterRect(M.water, X0 + RIM, X1 - RIM, z0, z1, YW, (x, z) => [(x - X0 - RIM) / IW, 2 * L - z]), layer, 'stretch');
   };
   zbar(-W / 2, ZSPLIT + 0.01, OVERLAY);
+  const nMain = g.children.length;
   zbar(ZSPLIT, L - W / 2, 0);
+  // The overlay pass clears depth; re-lay the main z-bar's depth first so the two halves meet cleanly
+  for (const m of g.children.slice(nMain)) {
+    const twin = new THREE.Mesh(m.geometry, DEPTH_ONLY);
+    twin.position.copy(m.position); twin.layers.set(PRIME); twin.renderOrder = -1;
+    add(twin, 0, 'stretch');
+  }
 
   // corner B
   add(box(M.stone, X0, X1, -W / 2, FLOOR, L - W / 2, L + W / 2));
@@ -812,7 +821,7 @@ function updateCamera() {
 // Route and tip happen in copy 0; the fall happens in copy -1, whose pillar top is exactly where
 // copy 0's channel ends. When the loop wraps, the eye jumps back up one period, which is invisible.
 const fpCam = new THREE.PerspectiveCamera(72, 1, 0.03, 500);
-fpCam.layers.enableAll();
+fpCam.layers.enableAll(); fpCam.layers.disable(PRIME);
 const fp = { yaw: 0, pitch: 0, phase: '', copy: 0, snap: true };
 const fpDir = new THREE.Vector3(), fpEye = new THREE.Vector3(), fpFwd = new THREE.Vector3();
 function fpTarget() {   // [heading, look-down angle]
@@ -1056,9 +1065,9 @@ function frame(nowMs) {
   } else if (aim.ok) {
     camera.layers.set(0); renderer.render(scene, camera);
     renderer.clearDepth();
-    camera.layers.set(OVERLAY); renderer.render(scene, camera);
+    camera.layers.set(OVERLAY); camera.layers.enable(PRIME); renderer.render(scene, camera);
   } else {
-    camera.layers.enableAll(); renderer.render(scene, camera);
+    camera.layers.enableAll(); camera.layers.disable(PRIME); renderer.render(scene, camera);
   }
   drawBg(simT); drawFx(simT);
   requestAnimationFrame(frame);
