@@ -442,14 +442,19 @@ function paperBoat(M) {
 // ─────────────────────────────────────────────────────────────
 const P1 = new THREE.Vector3(L, YW, L + W / 2 + 0.55);          // landing point in the pool
 const G_FLOAT = new THREE.Vector3(L - 0.45, YW + 0.03, L + W * 1.18);
-const PEND = new THREE.Vector3(0, YW, 0.05);
+// A sluice gate closes the channel just behind the waterfall's lip (which, on screen, sits at z = W/2),
+// so the boat stops against it and tips over right where the fall picks up.
+const GATE_Z = W / 2 - 0.14;
+const LIP_Z = W / 2 + 0.3;                           // where the fall phase starts, in channel terms
+const PEND = new THREE.Vector3(0, YW, LIP_Z + 0.4);
+const TIP_DROP = 0.3;
 const curve = new THREE.CatmullRomCurve3([
   P1,
   new THREE.Vector3(L - 1.6, YW, L + W / 2 + 0.42),
   new THREE.Vector3(XP0 - 0.2, YW, L),
   new THREE.Vector3(W * 0.4, YW, L),
   new THREE.Vector3(0, YW, L - W * 0.4),
-  new THREE.Vector3(0, YW, W * 0.6),
+  new THREE.Vector3(0, YW, W * 1.6),
   PEND,
 ], false, 'centripetal');
 const FISH_TIP = new THREE.Vector3(3.3, TOP + 1.95, L - 0.15);
@@ -572,6 +577,20 @@ function buildLevel(M) {
   const bt = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), M.paper); bt.position.y = 0.02;
   bobber.add(bb, bt); bobber.position.copy(BOBBER); add(bobber, 0, fisherAt);
 
+  // sluice gate and the stone end-cap behind it (seam side, so drawn in the overlay pass)
+  add(box(M.rim, X0 + RIM, X1 - RIM, FLOOR, TOP, -W / 2, GATE_Z - 0.04), OVERLAY);
+  add(box(M.wood, X0 + RIM, X1 - RIM, YW - 0.12, TOP + 0.2, GATE_Z - 0.04, GATE_Z + 0.05), OVERLAY);
+  for (const x of [X0 + RIM / 2, X1 - RIM / 2]) {
+    add(box(M.wood, x - 0.07, x + 0.07, TOP, TOP + 0.5, GATE_Z - 0.06, GATE_Z + 0.07), OVERLAY);
+    add(box(M.ink, x - 0.09, x + 0.09, TOP + 0.5, TOP + 0.56, GATE_Z - 0.08, GATE_Z + 0.09), OVERLAY);
+  }
+  add(box(M.wood, X0 + RIM / 2 - 0.07, X1 - RIM / 2 + 0.07, TOP + 0.36, TOP + 0.44, GATE_Z - 0.03, GATE_Z + 0.05), OVERLAY);
+  for (let i = 0; i < 5; i++) {   // churn where the water meets the gate
+    const f = box(M.foam, -0.08, 0.08, -0.04, 0.04, -0.08, 0.08);
+    f.position.set(X0 + RIM + (i + 0.5) * IW / 5, YW + 0.03, GATE_Z + 0.14 + (i % 2) * 0.1);
+    foam.push(add(f, OVERLAY));
+  }
+
   // lanterns (glow at night)
   const glows = [];
   for (const p of [[X1 - RIM / 2, TOP, L * 0.72], [L * 0.5, TOP, L + W / 2 - RIM / 2], [PX1 - RIM / 2, TOP, PZ1 - RIM / 2], [L + W / 2 + 0.85, LEDGE_Y, L - 0.45]]) {
@@ -677,13 +696,13 @@ function boatAt(t, out) {
   tl -= ROUTE;
   if (tl < TIP) {
     const u = tl / TIP;
-    mapV(PEND, out.pos); out.pos.z -= 0.2 * u; out.pos.y -= 0.45 * u * u;
-    out.yaw = Math.PI / 2; out.pitch = 0.7 * u; out.layer = OVERLAY; out.phase = 'tip'; out.u = u;
+    mapV(PEND, out.pos); out.pos.z += (LIP_Z - out.pos.z) * u; out.pos.y -= TIP_DROP * u * u;
+    out.yaw = Math.PI / 2; out.pitch = 1.2 * u; out.layer = OVERLAY; out.phase = 'tip'; out.u = u;
     return out;
   }
   tl -= TIP;
   const u = tl / FALL;
-  out.pos.set(D.b, D.c + YW - D.c * u * u, mapAxis('z', L + W / 2 + 0.3 + 0.25 * u));
+  out.pos.set(D.b, D.c + YW - TIP_DROP - (D.c - TIP_DROP) * u * u, mapAxis('z', L + LIP_Z + 0.25 * u));   // picks up where the tip left off
   out.yaw = -Math.PI / 2; out.pitch = 1.2 - 0.9 * u; out.layer = 0; out.phase = 'fall'; out.u = u;
   return out;
 }
@@ -1135,7 +1154,7 @@ function frame(nowMs) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__iso = { state, setTime, setMode, goChapter, goView, D, aim, tween, updateTween };
+window.__iso = { state, setTime, setMode, goChapter, goView, D, aim, tween, updateTween, timing: { SETTLE, ROUTE, TIP, FALL } };
 </script>
 </body>
 </html>
