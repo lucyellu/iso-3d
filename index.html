@@ -72,6 +72,11 @@
     text-transform: uppercase; padding: 8px 14px; border-radius: 999px; background: var(--pill); color: #efe9dc;
     border: 1px solid var(--pill-line); opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
   .angle.show { opacity: 1; }
+  .veil { position: fixed; inset: 0; pointer-events: none; opacity: 0; z-index: 3; }
+  #tint { background: radial-gradient(ellipse at center, rgba(10,8,6,.18) 40%, rgba(10,8,6,.62) 100%); transition: opacity .5s; }
+  #fade { background: #0d1f15; transition: opacity .26s ease; z-index: 6; }
+  #fade.on { opacity: 1; }
+  body[data-mode="fp"] #trueAngle { display: none; }
   .fallback { position: fixed; inset: 0; display: none; place-items: center; text-align: center; padding: 24px; }
 
   @media (max-width: 1100px) { .crumb { display: none; } }
@@ -91,10 +96,13 @@
   }
 </style>
 </head>
-<body data-time="day">
+<body data-time="day" data-mode="still">
 <canvas id="bg"></canvas>
 <div id="stage"></div>
 <canvas id="fx"></canvas>
+<div class="veil" id="under"></div>
+<div class="veil" id="tint"></div>
+<div class="veil" id="fade"></div>
 
 <header class="top">
   <div class="brand"><span class="mark" id="brandMark">Y</span><b id="brandName">Your Name</b><span class="dim" id="brandRole">studio</span></div>
@@ -104,7 +112,7 @@
     <button data-time="dawn">Dawn</button><button data-time="day" aria-pressed="true">Day</button><button data-time="dusk">Dusk</button><button data-time="night">Night</button>
   </div>
   <div class="seg" id="modeSeg" role="group" aria-label="Camera mode">
-    <button data-mode="still" aria-pressed="true">Still</button><button data-mode="descend">Descend</button><button data-mode="ride">Ride</button>
+    <button data-mode="still" aria-pressed="true">Still</button><button data-mode="ride">Ride</button><button data-mode="fp">First person</button>
   </div>
   <button class="pill" id="trueAngle" title="Snap back to the true angle">⌖ True angle</button>
 </header>
@@ -153,8 +161,10 @@ const L = 12, W = 1.8, RIM = 0.26, GROOVE = 0.45;
 const TOP = W / 2, FLOOR = TOP - GROOVE, YW = TOP - 0.3;
 const XP0 = L - 1.5 * W;              // where the x-channel meets the pool
 const ZSPLIT = L * 0.45;              // z-bar beyond this is drawn in the "impossible" overlay pass
-const S = 0.27;                       // recursion scale: each level sits in the hole of its parent
-const LEVELS = [-2, -1, 0, 1, 2, 3, 4, 5];
+// The loop is periodic along the view diagonal: copy k sits at k*(L,L,L). In the iso view every copy
+// lands on the same pixels; in first person the copies join up into one endless descending path.
+const STEP = new THREE.Vector3(L, L, L);
+const COPIES = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
 const P = new THREE.Vector3(L / 3, 0, 2 * L / 3);   // projects to the triangle's centre
 const ISO_AZ = Math.PI / 4, ISO_EL = Math.atan(1 / Math.SQRT2);
 const OVERLAY = 1;
@@ -221,13 +231,19 @@ const glowTex = (() => {
 //  Water shaders
 // ─────────────────────────────────────────────────────────────
 const uTime = { value: 0 };
-const VERT = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
+const VERT = `#include <fog_pars_vertex>
+varying vec2 vUv; void main(){ vUv = uv; vec4 mvPosition = modelViewMatrix * vec4(position,1.0); gl_Position = projectionMatrix * mvPosition;
+#include <fog_vertex>
+}`;
+const fogU = () => THREE.UniformsUtils.clone(THREE.UniformsLib.fog);
 const HASH = `float h1(float n){ return fract(sin(n*127.1)*43758.5453); }`;
 function waterMat() {
   return new THREE.ShaderMaterial({
-    uniforms: { uTime, uA: { value: new THREE.Color() }, uB: { value: new THREE.Color() }, uFoam: { value: new THREE.Color() } },
+    uniforms: { ...fogU(), uTime, uA: { value: new THREE.Color() }, uB: { value: new THREE.Color() }, uFoam: { value: new THREE.Color() } }, fog: true,
     vertexShader: VERT,
-    fragmentShader: `uniform float uTime; uniform vec3 uA; uniform vec3 uB; uniform vec3 uFoam; varying vec2 vUv; ${HASH}
+    fragmentShader: `#include <common>
+#include <fog_pars_fragment>
+uniform float uTime; uniform vec3 uA; uniform vec3 uB; uniform vec3 uFoam; varying vec2 vUv; ${HASH}
       void main(){
         float across = vUv.x, along = vUv.y;
         float lane = floor(across*6.0); float r = h1(lane+1.0);
@@ -239,15 +255,18 @@ function waterMat() {
         col = mix(col, uFoam, clamp(streak*0.55 + edge*0.5, 0.0, 1.0));
         gl_FragColor = vec4(col,1.0);
         #include <colorspace_fragment>
+        #include <fog_fragment>
       }`,
     side: THREE.DoubleSide,
   });
 }
 function fallMat() {
   return new THREE.ShaderMaterial({
-    uniforms: { uTime, uA: { value: new THREE.Color() }, uFoam: { value: new THREE.Color() } },
+    uniforms: { ...fogU(), uTime, uA: { value: new THREE.Color() }, uFoam: { value: new THREE.Color() } }, fog: true,
     vertexShader: VERT,
-    fragmentShader: `uniform float uTime; uniform vec3 uA; uniform vec3 uFoam; varying vec2 vUv; ${HASH}
+    fragmentShader: `#include <common>
+#include <fog_pars_fragment>
+uniform float uTime; uniform vec3 uA; uniform vec3 uFoam; varying vec2 vUv; ${HASH}
       void main(){
         float lane = floor(vUv.x*18.0); float r = h1(lane+3.0);
         float s = fract(vUv.y*(0.22+0.2*r) - uTime*(1.1+r*0.9) + r*5.0);
@@ -257,6 +276,7 @@ function fallMat() {
         vec3 col = mix(uA, uFoam, clamp(0.35 + 0.55*streak + edge*0.4 + lip*0.3, 0.0, 1.0));
         gl_FragColor = vec4(col, 0.8 + 0.18*streak);
         #include <colorspace_fragment>
+        #include <fog_fragment>
       }`,
     transparent: true, depthWrite: false, side: THREE.DoubleSide,
   });
@@ -468,10 +488,11 @@ function buildLevel(M) {
   // pillar
   const PT = L + W / 2;
   add(box(M.stone, L - W / 2, L + W / 2, FLOOR, PT - GROOVE, L - W / 2, L + W / 2));
-  add(box(M.rim, L - W / 2, L - W / 2 + RIM, PT - GROOVE, PT, L - W / 2, L + W / 2));
-  add(box(M.rim, L + W / 2 - RIM, L + W / 2, PT - GROOVE, PT, L - W / 2, L + W / 2));
-  add(box(M.rim, L - W / 2 + RIM, L + W / 2 - RIM, PT - GROOVE, PT, L - W / 2, L - W / 2 + RIM));
-  add(waterRect(M.water, L - W / 2 + RIM, L + W / 2 - RIM, L - W / 2 + RIM, L + W / 2, L + YW, (x, z) => [(x - L + W / 2 - RIM) / IW, z]));
+  const pillarTop = [];
+  pillarTop.push(add(box(M.rim, L - W / 2, L - W / 2 + RIM, PT - GROOVE, PT, L - W / 2, L + W / 2)));
+  pillarTop.push(add(box(M.rim, L + W / 2 - RIM, L + W / 2, PT - GROOVE, PT, L - W / 2, L + W / 2)));
+  pillarTop.push(add(box(M.rim, L - W / 2 + RIM, L + W / 2 - RIM, PT - GROOVE, PT, L - W / 2, L - W / 2 + RIM)));
+  pillarTop.push(add(waterRect(M.water, L - W / 2 + RIM, L + W / 2 - RIM, L - W / 2 + RIM, L + W / 2, L + YW, (x, z) => [(x - L + W / 2 - RIM) / IW, z])));
 
   // waterfall down the +z face
   const fx0 = L - W / 2 + RIM, fx1 = L + W / 2 - RIM, fz = L + W / 2 + 0.03, fy0 = L + YW, fy1 = YW;
@@ -532,16 +553,14 @@ function buildLevel(M) {
   for (let i = 0; i < 12; i++) splash.push(add(box(M.foam, -0.06, 0.06, -0.06, 0.06, -0.06, 0.06)));
 
   over.forEach(o => setLayer(o, OVERLAY));
-  return { g, M, boat, rider, fshades, rings, splash, bobber, lookout, fisher, foam, details };
+  return { g, M, boat, rider, fshades, rings, splash, bobber, lookout, fisher, foam, details, pillarTop };
 }
 
-const levels = LEVELS.map(k => {
-  const M = makeMats();
-  const lv = buildLevel(M);
+const MATS = makeMats();
+const levels = COPIES.map(k => {
+  const lv = buildLevel(MATS);
   lv.k = k;
-  const sc = Math.pow(S, k);
-  lv.g.scale.setScalar(sc);
-  lv.g.position.copy(P).multiplyScalar(1 - sc);
+  lv.g.position.copy(STEP).multiplyScalar(k);
   scene.add(lv.g);
   return lv;
 });
@@ -607,7 +626,6 @@ function animate(t) {
   lv0.rider.g.rotation.y = Math.PI / 4 - A.yaw;
   lv0.boat.updateMatrixWorld(true);
   lv0.rider.shades.getWorldPosition(headPos);
-  headPos.sub(lv0.g.position).divideScalar(lv0.g.scale.x);
 
   // shades state
   let shadesOn = true, fsVis = false; const fsPos = new THREE.Vector3(), fsRot = new THREE.Euler();
@@ -658,7 +676,7 @@ function animate(t) {
       m.visible = r.ok && r.o > 0;
       if (!m.visible) continue;
       m.position.set(r.x, YW + 0.012, r.z); m.scale.setScalar(r.s);
-      m.material.opacity = r.o; m.material.color.copy(lv.M.foam.color);
+      m.material.opacity = r.o; m.material.color.copy(MATS.foam.color);
       m.layers.set(r.layer);
     }
     for (let i = 0; i < lv.splash.length; i++) {
@@ -674,10 +692,11 @@ function animate(t) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Camera: depth (recursion), orbit (breaking the illusion), ride
+//  Camera: iso (orbit breaks the illusion), ride, first person
 // ─────────────────────────────────────────────────────────────
+scene.fog = new THREE.FogExp2(0x000000, 0);
 const state = {
-  mode: 'still', depth: 0, tween: null,
+  mode: 'still', chapter: 0,
   yaw: 0, pitch: 0, vy: 0, vp: 0, dragging: false,
   ride: 0,
 };
@@ -693,9 +712,8 @@ function viewParams() {
 
 function updateCamera() {
   const vp = viewParams();
-  const phi = state.depth - Math.floor(state.depth);
   const b = smooth(clamp01(state.ride));
-  const halfH = THREE.MathUtils.lerp(vp.halfH * Math.pow(S, phi), 3.1, b);
+  const halfH = THREE.MathUtils.lerp(vp.halfH, 3.1, b);
   const ox = THREE.MathUtils.lerp(vp.ox, 0, b), oy = THREE.MathUtils.lerp(vp.oy, 0, b);
   camTarget.copy(P).lerp(A.pos, b);
   const az = ISO_AZ + state.yaw, el = ISO_EL + state.pitch;
@@ -710,17 +728,54 @@ function updateCamera() {
   aligned = Math.abs(state.yaw) < 0.002 && Math.abs(state.pitch) < 0.002;
 }
 
-function updateHaze() {
-  const phi = state.depth - Math.floor(state.depth);
-  for (const lv of levels) {
-    const x = lv.k - phi;
-    const h = x < 0 ? 1 - Math.exp(3.2 * x) : 0;
-    applyHaze(lv.M, h);
-    for (const d of lv.details) d.visible = h < 0.45;
-    // off-angle, the ghosted parents would physically block the view, so fade them out
-    const off = Math.abs(state.yaw) + Math.abs(state.pitch);
-    lv.g.visible = x > -2.6 && (x > -0.35 || off < 0.04);
+// First person: ride along with the rider on the paper boat.
+// Route and tip happen in copy 0; the fall happens in copy -1, whose pillar top is exactly where
+// copy 0's channel ends. When the loop wraps, the eye jumps back up one period, which is invisible.
+const fpCam = new THREE.PerspectiveCamera(72, 1, 0.03, 500);
+fpCam.layers.enableAll();
+const fp = { yaw: 0, pitch: 0, phase: '', copy: 0, snap: true };
+const fpDir = new THREE.Vector3(), fpEye = new THREE.Vector3(), fpFwd = new THREE.Vector3();
+function fpTarget() {   // [heading, look-down angle]
+  switch (A.phase) {
+    case 'route': return [A.yaw, 0.22];
+    case 'tip': return [Math.PI / 2, 0.12 + 0.9 * A.u];
+    case 'fall': return [-Math.PI / 2, 1.45 - 0.6 * A.u * A.u];
+    default: return [A.yaw, 0.3 * (1 - A.u) + 0.12 * A.u];
   }
+}
+function updateFP(dt, t) {
+  const [ty, tp] = fpTarget();
+  if (fp.snap || (A.phase !== fp.phase && A.phase === 'fall')) { fp.yaw = ty; fp.pitch = tp; fp.snap = false; }
+  fp.phase = A.phase;
+  const k = 1 - Math.exp(-dt * (A.phase === 'route' ? 3.5 : 8));
+  fp.yaw = lerpAngle(fp.yaw, ty, k); fp.pitch += (tp - fp.pitch) * k;
+  fp.copy = A.phase === 'fall' ? -1 : 0;
+  const yaw = fp.yaw + state.yaw, pd = THREE.MathUtils.clamp(fp.pitch - state.pitch, -1.2, 1.45);
+  fpDir.set(Math.cos(yaw) * Math.cos(pd), -Math.sin(pd), -Math.sin(yaw) * Math.cos(pd));
+  fpFwd.set(Math.cos(fp.yaw), 0, -Math.sin(fp.yaw));
+  fpEye.copy(A.pos).addScaledVector(STEP, fp.copy).addScaledVector(fpFwd, 0.12);
+  fpEye.y += 0.62 + 0.02 * Math.sin(t * 3.1);
+  fpCam.position.copy(fpEye);
+  fpCam.lookAt(fpEye.x + fpDir.x, fpEye.y + fpDir.y, fpEye.z + fpDir.z);
+  fpCam.aspect = innerWidth / innerHeight; fpCam.updateProjectionMatrix();
+  // dunked under at the lip, surfacing partway down the waterfall
+  const under = A.phase === 'tip' ? smooth(clamp01((A.u - 0.3) / 0.6)) : A.phase === 'fall' ? 1 - smooth(clamp01(A.u / 0.28)) : 0;
+  underEl.style.opacity = under.toFixed(3);
+  underEl.style.background = `linear-gradient(${rgba(cur.water, 0.92)}, ${rgba(cur.waterDeep, 0.98)})`;
+  tintEl.style.opacity = lv0.rider.shades.visible ? 1 : 0;
+}
+
+function updateCopies() {
+  const fpOn = state.mode === 'fp';
+  applyHaze(MATS, 0);
+  for (const lv of levels) {
+    lv.g.visible = lv.k === 0 || fpOn;
+    lv.pillarTop.forEach(m => m.visible = !fpOn);
+    lv.rider.g.visible = !(fpOn && lv.k === fp.copy);
+    lv.boat.visible = !(fpOn && lv.k === fp.copy && A.phase === 'fall');
+  }
+  scene.fog.density = fpOn ? 0.011 : 0;
+  scene.fog.color.copy(cur.bgTop).lerp(cur.bgBot, 0.6);
 }
 
 // drag to orbit; springs back to the true angle
@@ -730,8 +785,9 @@ el.addEventListener('pointerdown', e => { state.dragging = true; lastX = e.clien
 el.addEventListener('pointermove', e => {
   if (!state.dragging) return;
   const dx = e.clientX - lastX, dy = e.clientY - lastY; lastX = e.clientX; lastY = e.clientY;
-  state.yaw = THREE.MathUtils.clamp(state.yaw - dx * 0.005, -0.9, 0.9);
-  state.pitch = THREE.MathUtils.clamp(state.pitch + dy * 0.004, -0.45, 0.6);
+  const fpOn = state.mode === 'fp';
+  state.yaw = THREE.MathUtils.clamp(state.yaw - dx * 0.005, fpOn ? -2.6 : -0.9, fpOn ? 2.6 : 0.9);
+  state.pitch = THREE.MathUtils.clamp(state.pitch + dy * 0.004, fpOn ? -1.0 : -0.45, fpOn ? 1.0 : 0.6);
   state.vy = -dx * 0.005 * 60; state.vp = dy * 0.004 * 60;
 });
 const endDrag = () => { state.dragging = false; stage.classList.remove('dragging'); };
@@ -739,7 +795,7 @@ el.addEventListener('pointerup', endDrag); el.addEventListener('pointercancel', 
 
 function updateOrbit(dt) {
   if (state.dragging) return;
-  const k = 38, c = 2 * Math.sqrt(k) * 0.82;
+  const k = state.mode === 'fp' ? 3 : 38, c = 2 * Math.sqrt(k) * 0.82;
   for (const [x, v] of [['yaw', 'vy'], ['pitch', 'vp']]) {
     const a = -k * state[x] - c * state[v];
     state[v] += a * dt; state[x] += state[v] * dt;
@@ -751,7 +807,7 @@ function updateOrbit(dt) {
 //  UI
 // ─────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-const hint = $('hint'), angleTag = $('angle');
+const hint = $('hint'), angleTag = $('angle'), underEl = $('under'), tintEl = $('tint'), fadeEl = $('fade');
 $('brandName').textContent = SITE.name; $('brandRole').textContent = SITE.role;
 $('brandMark').textContent = SITE.name.trim()[0] || '◬';
 const N = SITE.chapters.length;
@@ -764,14 +820,14 @@ SITE.chapters.forEach((c, i) => {
 });
 const mod = (a, n) => ((a % n) + n) % n;
 let shownChapter = -1;
-function currentChapter() { return mod(Math.round(state.depth), N); }
+function currentChapter() { return state.chapter; }
 function renderCard(i, instant) {
   if (i === shownChapter) return;
   shownChapter = i;
   const c = SITE.chapters[i], card = $('card');
   [...chapNav.children].forEach((b, j) => b.setAttribute('aria-current', j === i ? 'true' : 'false'));
   const fill = () => {
-    $('kicker').textContent = `${String(i + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')} · DEPTH ${Math.round(state.depth)}`;
+    $('kicker').textContent = `${String(i + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`;
     $('title').textContent = c.title; $('body').textContent = c.body;
     const ul = $('links'); ul.innerHTML = '';
     for (const l of c.links) { const li = document.createElement('li'); const a = document.createElement('a'); a.href = l.href; a.textContent = l.label; li.appendChild(a); ul.appendChild(li); }
@@ -780,21 +836,21 @@ function renderCard(i, instant) {
   if (instant) return fill();
   card.classList.add('out'); setTimeout(fill, 260);
 }
-function goChapter(i) {
-  if (state.mode !== 'still') setMode('still');
-  const cur = currentChapter();
-  let d = i - cur;
-  const to = Math.round(state.depth) + d;
-  tweenDepth(to);
-}
-function tweenDepth(to) {
-  const from = state.depth, dur = reduceMotion ? 0.01 : 1.2 + 0.45 * Math.abs(to - from);
-  state.tween = { from, to, t: 0, dur };
-}
-function setMode(m) {
-  state.mode = m;
-  document.querySelectorAll('#modeSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m ? 'true' : 'false'));
-  if (m === 'ride' || m === 'still') tweenDepth(Math.round(state.depth));
+function goChapter(i) { state.chapter = mod(i, N); }
+function setMode(m, instant) {
+  const apply = () => {
+    state.mode = m;
+    state.yaw = state.pitch = state.vy = state.vp = 0;
+    fp.snap = true;
+    document.body.dataset.mode = m;
+    document.querySelectorAll('#modeSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m ? 'true' : 'false'));
+    hint.textContent = m === 'fp' ? 'Drag to look around' : 'Drag to break the illusion';
+    if (m !== 'fp') { underEl.style.opacity = 0; tintEl.style.opacity = 0; }
+  };
+  if (instant || reduceMotion || (m === 'fp') === (state.mode === 'fp')) return apply();
+  fadeEl.style.background = cur.bgBot.getStyle();
+  fadeEl.classList.add('on');
+  setTimeout(() => { apply(); fadeEl.classList.remove('on'); }, 280);
 }
 document.querySelectorAll('#modeSeg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 function setTime(name) {
@@ -807,14 +863,16 @@ $('trueAngle').addEventListener('click', () => { state.vy = -state.yaw * 6; stat
 addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') goChapter(mod(currentChapter() + 1, N));
   if (e.key === 'ArrowLeft') goChapter(mod(currentChapter() - 1, N));
-  if (e.key === ' ') { e.preventDefault(); setMode(state.mode === 'descend' ? 'still' : 'descend'); }
+  if (e.key === ' ' || e.key === 'f') { e.preventDefault(); setMode(state.mode === 'fp' ? 'still' : 'fp'); }
 });
 renderCard(0, true);
+let simT = 0;
 const qs = new URLSearchParams(location.search);
 if (PALETTES[qs.get('time')]) { setTime(qs.get('time')); Object.assign(cur, toPalette(PALETTES[qs.get('time')])); }
-if (['still', 'descend', 'ride'].includes(qs.get('mode'))) setMode(qs.get('mode'));
-if (qs.has('depth')) { state.depth = +qs.get('depth'); state.tween = null; }
+if (['still', 'ride', 'fp'].includes(qs.get('mode'))) setMode(qs.get('mode'), true);
 if (qs.has('yaw')) { state.yaw = +qs.get('yaw'); state.dragging = qs.has('hold'); }
+if (qs.has('pitch')) { state.pitch = +qs.get('pitch'); state.dragging = qs.has('hold'); }
+if (qs.has('t')) simT = +qs.get('t');
 
 function updatePalette(dt) {
   const k = 1 - Math.exp(-dt * 3.2);
@@ -881,32 +939,28 @@ function drawFx(t) {
 // ─────────────────────────────────────────────────────────────
 //  Main loop
 // ─────────────────────────────────────────────────────────────
-let last = performance.now() / 1000, simT = 0;
+let last = performance.now() / 1000;
 function frame(nowMs) {
   const now = nowMs / 1000, dt = Math.min(0.05, now - last); last = now;
-  simT += dt * (reduceMotion ? 0.6 : 1);
+  if (!qs.has('freeze')) simT += dt * (reduceMotion ? 0.6 : 1);
   uTime.value = simT;
   updatePalette(dt);
   updateOrbit(dt);
 
-  if (state.tween) {
-    const tw = state.tween; tw.t += dt;
-    const u = clamp01(tw.t / tw.dur), e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
-    state.depth = tw.from + (tw.to - tw.from) * e;
-    if (u >= 1) { state.depth = tw.to; state.tween = null; }
-  } else if (state.mode === 'descend') {
-    state.depth += dt * 0.16;
-  }
   state.ride += ((state.mode === 'ride' ? 1 : 0) - state.ride) * (1 - Math.exp(-dt * 2.2));
 
   animate(simT);
-  updateHaze();
   updateCamera();
+  const fpOn = state.mode === 'fp';
+  if (fpOn) updateFP(dt, simT);
+  updateCopies();
   renderCard(currentChapter());
-  angleTag.classList.toggle('show', !aligned);
+  angleTag.classList.toggle('show', !aligned && !fpOn);
 
   renderer.clear();
-  if (aligned) {
+  if (fpOn) {
+    renderer.render(scene, fpCam);
+  } else if (aligned) {
     camera.layers.set(0); renderer.render(scene, camera);
     renderer.clearDepth();
     camera.layers.set(OVERLAY); renderer.render(scene, camera);
