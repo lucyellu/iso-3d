@@ -24,7 +24,7 @@ for %%P in (
 )
 
 if defined CHROME (
-    start "" %CHROME% --app="http://localhost:%PORT%/%PAGE%"
+    start "" %CHROME% --new-window "http://localhost:%PORT%/%PAGE%"
 ) else (
     start "" "http://localhost:%PORT%/%PAGE%"
 )
