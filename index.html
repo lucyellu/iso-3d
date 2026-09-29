@@ -661,7 +661,7 @@ const lv0 = levels.find(l => l.k === 0);
 // ─────────────────────────────────────────────────────────────
 //  Loop timeline (a pure function of time, so every level agrees)
 // ─────────────────────────────────────────────────────────────
-const SETTLE = 1.0, TIP = 0.45, FALL = 0.95, SPEED = 2.1;
+const SETTLE = 1.0, TIP = 0.45, FALL = 1.25, SPEED = 2.1;
 const ROUTE = curve.getLength() / SPEED;
 const T_LOOP = SETTLE + ROUTE + TIP + FALL;
 const yawOf = d => Math.atan2(-d.z, d.x);
@@ -703,7 +703,9 @@ function boatAt(t, out) {
   tl -= TIP;
   const u = tl / FALL;
   out.pos.set(D.b, D.c + YW - TIP_DROP - (D.c - TIP_DROP) * u * u, mapAxis('z', L + LIP_Z + 0.25 * u));   // picks up where the tip left off
-  out.yaw = -Math.PI / 2; out.pitch = 1.2 - 0.9 * u; out.layer = 0; out.phase = 'fall'; out.u = u;
+  // goes over nose-first, then turns round (via +x, past the lookout) to face away from the falls
+  out.yaw = Math.PI / 2 - Math.PI * smooth(clamp01((u - 0.2) / 0.7));
+  out.pitch = 1.2 - 0.9 * u; out.layer = 0; out.phase = 'fall'; out.u = u;
   return out;
 }
 const mkState = () => ({ pos: new THREE.Vector3(), yaw: 0, pitch: 0, layer: 0, phase: '', u: 0, t: 0 });
@@ -893,13 +895,13 @@ function fpTarget() {   // [heading, look-down angle]
   switch (A.phase) {
     case 'route': return [A.yaw, 0.22];
     case 'tip': return [Math.PI / 2, 0.12 + 0.9 * A.u];
-    case 'fall': return [-Math.PI / 2, 1.45 - 0.6 * A.u * A.u];
+    case 'fall': return [A.yaw, 1.02 + 0.55 * Math.sin(Math.PI * A.u) - 0.5 * A.u];   // watch the pool rush up, then level out
     default: return [A.yaw, 0.3 * (1 - A.u) + 0.12 * A.u];
   }
 }
 function updateFP(dt, t) {
   const [ty, tp] = fpTarget();
-  if (fp.snap || (A.phase !== fp.phase && A.phase === 'fall')) { fp.yaw = ty; fp.pitch = tp; fp.snap = false; }
+  if (fp.snap) { fp.yaw = ty; fp.pitch = tp; fp.snap = false; }
   fp.phase = A.phase;
   const k = 1 - Math.exp(-dt * (A.phase === 'route' ? 3.5 : 8));
   fp.yaw = lerpAngle(fp.yaw, ty, k); fp.pitch += (tp - fp.pitch) * k;
@@ -913,7 +915,9 @@ function updateFP(dt, t) {
   fpCam.lookAt(fpEye.x + fpDir.x, fpEye.y + fpDir.y, fpEye.z + fpDir.z);
   fpCam.aspect = innerWidth / innerHeight; fpCam.updateProjectionMatrix();
   // dunked under at the lip, surfacing partway down the waterfall
-  const under = A.phase === 'tip' ? smooth(clamp01((A.u - 0.3) / 0.6)) : A.phase === 'fall' ? 1 - smooth(clamp01(A.u / 0.28)) : 0;
+  // the eye drops through the channel's stonework just below the lip, so stay under until it's clear
+  const uClear = Math.sqrt((YW - TIP_DROP + 0.62 + W / 2 + 0.1) / (D.c - TIP_DROP));
+  const under = A.phase === 'tip' ? smooth(clamp01((A.u - 0.3) / 0.6)) : A.phase === 'fall' ? 1 - smooth(clamp01((A.u - uClear) / 0.08)) : 0;
   underEl.style.opacity = under.toFixed(3);
   underEl.style.background = `linear-gradient(${rgba(cur.water, 0.92)}, ${rgba(cur.waterDeep, 0.98)})`;
   tintEl.style.opacity = lv0.rider.shades.visible ? 1 : 0;
