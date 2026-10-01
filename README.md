@@ -37,6 +37,13 @@ python -m http.server 8765
 
 On Windows, `launch-waterway.bat` starts that server if it isn't already running and opens the page in a normal Chrome window, so DevTools are available. `setup-desktop-shortcut.ps1` builds `waterway.ico` from `waterway-icon.png` and puts an **Impossible Waterway** shortcut on the Desktop that runs the launcher.
 
+## Sound
+
+The **Sound** button (off by default, remembered per device) turns on two things, both synthesized live with Web Audio:
+
+- Interface cues from [Cuelume](https://github.com/danielwh2/cuelume) (MIT), built from the repo and vendored in `vendor/cuelume/`.
+- A harbour ambience: the waterfall (louder in close-ups and near it in first person), the sea's wash, rain in the Rain mode, gulls now and then (not at night), a splash when the paper boat lands, and everything muffled while the rider is underwater.
+
 ## Hosting
 
 The site is served by GitHub Pages from the root of `main`. `CNAME` holds the custom domain and `.nojekyll` turns off Jekyll processing.

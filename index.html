@@ -81,6 +81,15 @@
   #fade { background: #4a6662; transition: opacity .26s ease; z-index: 6; }
   #fade.on { opacity: 1; }
   body[data-mode="fp"] #trueAngle { display: none; }
+  #soundBtn { display: flex; align-items: center; gap: 8px; }
+  .snd-ico { display: inline-flex; align-items: flex-end; justify-content: space-between; width: 10px; height: 11px;
+    background: linear-gradient(currentColor, currentColor) center bottom / 2px 7px no-repeat; }
+  .snd-ico::before, .snd-ico::after { content: ""; width: 2px; height: 4px; background: currentColor; border-radius: 1px; }
+  #soundBtn[aria-pressed="true"] { color: #fff; }
+  #soundBtn[aria-pressed="true"] .snd-ico::before, #soundBtn[aria-pressed="true"] .snd-ico::after { animation: eq 1.1s ease-in-out infinite alternate; }
+  #soundBtn[aria-pressed="true"] .snd-ico::after { animation-delay: -.5s; }
+  @keyframes eq { from { height: 3px; } to { height: 11px; } }
+  @media (prefers-reduced-motion: reduce) { #soundBtn .snd-ico::before, #soundBtn .snd-ico::after { animation: none !important; } }
   .fallback { position: fixed; inset: 0; display: none; place-items: center; text-align: center; padding: 24px; }
 
   @media (max-width: 1100px) { .crumb { display: none; } }
@@ -90,6 +99,8 @@
     .spacer { display: none; }
     .seg button { padding: 6px 9px; font-size: 11px; }
     #trueAngle { display: none; }
+    #soundBtn { padding: 8px 10px; }
+    #soundBtn .snd-lbl { display: none; }
     .card { left: 16px; right: 16px; bottom: 86px; max-width: none; }
     .card h1 { font-size: 40px; margin: 8px 0; }
     .card p { font-size: 14px; }
@@ -119,6 +130,7 @@
     <button data-mode="still" aria-pressed="true">Still</button><button data-mode="ride">Ride</button><button data-mode="fp">First person</button>
   </div>
   <button class="pill" id="trueAngle" title="Snap back to the true angle">⌖ True angle</button>
+  <button class="pill" id="soundBtn" aria-pressed="false" title="Harbour sounds and interface cues"><span class="snd-ico" aria-hidden="true"></span><span class="snd-lbl">Sound off</span></button>
 </header>
 
 <section class="card" id="card" aria-live="polite">
@@ -138,6 +150,7 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
+import { bind as bindCues, play as cue, setEnabled as setCues, setVolume as setCueVolume } from './vendor/cuelume/index.js';
 
 // ─────────────────────────────────────────────────────────────
 //  Site content: edit this block to make it yours.
@@ -1472,6 +1485,7 @@ function fpTarget() {   // [heading, look-down angle]
     default: return [A.yaw, 0.3 * (1 - A.u) + 0.12 * A.u];
   }
 }
+let fpUnder = 0;
 function updateFP(dt, t) {
   const [ty, tp] = fpTarget();
   if (fp.snap) { fp.yaw = ty; fp.pitch = tp; fp.snap = false; }
@@ -1491,7 +1505,7 @@ function updateFP(dt, t) {
   // the eye drops through the channel's stonework just below the lip, so stay under until it's clear
   const uClear = Math.sqrt((YW - TIP_DROP + 0.62 + W / 2 + 0.1) / (D.c - TIP_DROP));
   const under = A.phase === 'tip' ? smooth(clamp01((A.u - 0.3) / 0.6)) : A.phase === 'fall' ? 1 - smooth(clamp01((A.u - uClear) / 0.08)) : 0;
-  underEl.style.opacity = under.toFixed(3);
+  underEl.style.opacity = under.toFixed(3); fpUnder = under;
   underEl.style.background = `linear-gradient(${rgba(cur.water, 0.92)}, ${rgba(cur.waterDeep, 0.98)})`;
   tintEl.style.opacity = lv0.rider.shades.visible ? 1 : 0;
 }
@@ -1597,7 +1611,7 @@ const chapNav = $('chapters');
 SITE.chapters.forEach((c, i) => {
   const b = document.createElement('button');
   b.innerHTML = `<span>${i + 1}</span>${c.title}`;
-  b.addEventListener('click', () => goChapter(i));
+  b.addEventListener('click', () => goChapter(i, true));
   chapNav.appendChild(b);
 });
 const mod = (a, n) => ((a % n) + n) % n;
@@ -1618,8 +1632,10 @@ function renderCard(i, instant) {
   if (instant) return fill();
   card.classList.add('out'); setTimeout(fill, 260);
 }
-function goChapter(i) {
-  state.chapter = mod(i, N);
+function goChapter(i, fromClick) {
+  const to = mod(i, N);
+  if (to !== state.chapter || fromClick) cue('navigate', { direction: to < state.chapter ? 'back' : 'forward', emphasis: to === state.chapter ? 'subtle' : 'normal' });
+  state.chapter = to;
   if (state.mode !== 'fp') goView(SITE.chapters[state.chapter].view || {});
 }
 function setMode(m, instant) {
@@ -1747,6 +1763,157 @@ function drawFx(t) {
 }
 
 // ─────────────────────────────────────────────────────────────
+//  Sound: interface cues (Cuelume) and a synthesized harbour ambience
+// ─────────────────────────────────────────────────────────────
+// Off until the visitor turns it on; the choice is remembered on this device.
+// Everything is generated live with Web Audio: no audio files.
+const soundBtn = $('soundBtn');
+let soundOn = false;
+try { soundOn = localStorage.getItem('harbour-sound') === 'on'; } catch (e) {}
+const amb = { ctx: null, gain: 0 };
+function noiseBuffer(ctx, sec, brown) {
+  const b = ctx.createBuffer(2, Math.floor(ctx.sampleRate * sec), ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = b.getChannelData(ch); let last = 0;
+    for (let i = 0; i < d.length; i++) {
+      const w = Math.random() * 2 - 1;
+      if (brown) { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w;
+    }
+  }
+  return b;
+}
+function loopNoise(ctx, buf, ...nodes) {
+  const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+  src.start(0, Math.random() * buf.duration);
+  let n = src; for (const m of nodes) { n.connect(m); n = m; }
+  return n;
+}
+function startAmbience() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  const ctx = amb.ctx = new AC();
+  const master = ctx.createGain(); master.gain.value = 0;
+  const muffle = ctx.createBiquadFilter(); muffle.type = 'lowpass'; muffle.frequency.value = 18000;
+  const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 3;
+  master.connect(muffle).connect(comp).connect(ctx.destination);
+  const white = noiseBuffer(ctx, 3, false), brown = noiseBuffer(ctx, 4, true);
+  const g = () => { const n = ctx.createGain(); n.gain.value = 0; n.connect(master); return n; };
+  const filt = (type, f, q = 0.7) => { const n = ctx.createBiquadFilter(); n.type = type; n.frequency.value = f; n.Q.value = q; return n; };
+  // waterfall: a hiss band over a rumble, both breathing slightly
+  const fallHiss = g(), fallRum = g();
+  loopNoise(ctx, white, filt('bandpass', 1100, 0.45), filt('lowpass', 4200)).connect(fallHiss);
+  loopNoise(ctx, brown, filt('lowpass', 380)).connect(fallRum);
+  // the sea: a low wash that swells and laps
+  const sea = g(), seaLP = filt('lowpass', 520);
+  loopNoise(ctx, brown, seaLP).connect(sea);
+  // rain: bright patter over a soft roar
+  const rainHi = g(), rainLo = g();
+  loopNoise(ctx, white, filt('highpass', 3200), filt('lowpass', 9000)).connect(rainHi);
+  loopNoise(ctx, white, filt('bandpass', 700, 0.5)).connect(rainLo);
+  Object.assign(amb, { master, muffle, fallHiss, fallRum, sea, seaLP, rainHi, rainLo, white, nextGull: ctx.currentTime + 2 + Math.random() * 4, lastPhase: '' });
+}
+// a gull: a few falling "kee-ow" cries, a nasal glide through a band filter
+function gullCall(when, vol, pan) {
+  const ctx = amb.ctx, out = ctx.createGain(), p = ctx.createStereoPanner(), bp = ctx.createBiquadFilter();
+  p.pan.value = pan; bp.type = 'bandpass'; bp.frequency.value = 1900; bp.Q.value = 1.6;
+  out.connect(bp).connect(p).connect(amb.master); out.gain.value = 0;
+  const n = 2 + Math.floor(Math.random() * 3), base = 0.85 + Math.random() * 0.3;
+  let t = when;
+  for (let i = 0; i < n; i++) {
+    const len = (i === 0 ? 0.42 : 0.26) * (0.9 + Math.random() * 0.2);
+    for (const det of [0, 7]) {
+      const o = ctx.createOscillator(); o.type = 'sawtooth'; o.detune.value = det;
+      o.frequency.setValueAtTime(1500 * base, t);
+      o.frequency.exponentialRampToValueAtTime((i === 0 ? 2350 : 2050) * base, t + len * 0.18);
+      o.frequency.exponentialRampToValueAtTime(1150 * base, t + len);
+      const vib = ctx.createOscillator(), vg = ctx.createGain(); vib.frequency.value = 28; vg.gain.value = 40;
+      vib.connect(vg).connect(o.frequency);
+      o.connect(out); o.start(t); o.stop(t + len + 0.05); vib.start(t); vib.stop(t + len + 0.05);
+    }
+    out.gain.setValueAtTime(0, t);
+    out.gain.linearRampToValueAtTime(vol, t + 0.03);
+    out.gain.setValueAtTime(vol * 0.8, t + len * 0.6);
+    out.gain.linearRampToValueAtTime(0, t + len);
+    t += len + 0.07 + Math.random() * 0.08;
+  }
+}
+// the paper boat landing in the pool at the foot of the falls
+function splash(vol) {
+  const ctx = amb.ctx, t = ctx.currentTime;
+  const src = ctx.createBufferSource(); src.buffer = amb.white;
+  const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(3800, t); f.frequency.exponentialRampToValueAtTime(380, t + 0.6);
+  const e = ctx.createGain(); e.gain.setValueAtTime(0, t); e.gain.linearRampToValueAtTime(vol, t + 0.012); e.gain.exponentialRampToValueAtTime(0.001, t + 0.75);
+  src.connect(f).connect(e).connect(amb.master); src.start(t, Math.random()); src.stop(t + 0.8);
+  const o = ctx.createOscillator(), og = ctx.createGain(); o.type = 'sine';   // the plop
+  o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(110, t + 0.18);
+  og.gain.setValueAtTime(vol * 0.9, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+  o.connect(og).connect(amb.master); o.start(t); o.stop(t + 0.25);
+}
+const fallPt = new THREE.Vector3(), tmpEar = new THREE.Vector3();
+function updateAmbience(dt, fpOn) {
+  if (!amb.ctx) return;
+  const ctx = amb.ctx, t = ctx.currentTime, k = 1 - Math.exp(-dt * 2.5);
+  amb.gain += ((soundOn && !document.hidden ? 1 : 0) - amb.gain) * k;
+  amb.master.gain.setTargetAtTime(amb.gain * 0.9, t, 0.05);
+  if (amb.gain < 0.002) return;
+  const set = (node, v) => node.gain.setTargetAtTime(v, t, 0.25);
+  // how near the waterfall the listener is: close-ups and first person bring it up
+  let near;
+  if (fpOn) {
+    fallPt.set(D.b, YW + D.c * 0.5, mapAxis('z', L + W / 2));
+    let d = 1e9;
+    for (const c of [-1, 0, 1]) d = Math.min(d, tmpEar.copy(fallPt).addScaledVector(STEP, c).distanceTo(fpEye));
+    near = clamp01(1.4 / (0.6 + d * 0.35));
+  } else near = THREE.MathUtils.lerp(0.45, 0.85, clamp01((1 - state.zoom * (1 - state.ride)) * 1.6));
+  const breathe = 0.88 + 0.12 * Math.sin(t * 0.7) * Math.sin(t * 0.23 + 1);
+  set(amb.fallHiss, 0.16 * near * breathe); set(amb.fallRum, 0.5 * near);
+  const swell = 0.55 + 0.45 * Math.max(0, Math.sin(t * 0.42) * 0.7 + Math.sin(t * 0.17 + 2) * 0.3);
+  set(amb.sea, (fpOn ? 0.35 : 0.55) * swell);
+  amb.seaLP.frequency.setTargetAtTime(380 + 420 * swell, t, 0.3);
+  set(amb.rainHi, 0.11 * cur.rain); set(amb.rainLo, 0.08 * cur.rain);
+  amb.muffle.frequency.setTargetAtTime(fpOn ? THREE.MathUtils.lerp(18000, 420, fpUnder) : 18000, t, 0.06);
+  // gulls: now and then by day, rarer in rain, none at night
+  const gullAmt = (1 - cur.night * 0.95) * (1 - cur.rain * 0.7);
+  if (t > amb.nextGull) {
+    if (Math.random() < gullAmt) gullCall(t + 0.05, 0.045 + Math.random() * 0.035, Math.random() * 1.6 - 0.8);
+    amb.nextGull = t + 6 + Math.random() * 12;
+  }
+  if (A.phase === 'settle' && amb.lastPhase === 'fall') splash(0.35);
+  amb.lastPhase = A.phase;
+}
+function setSound(on, fromClick) {
+  soundOn = on;
+  try { localStorage.setItem('harbour-sound', on ? 'on' : 'off'); } catch (e) {}
+  soundBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  soundBtn.querySelector('.snd-lbl').textContent = on ? 'Sound on' : 'Sound off';
+  setCues(on);
+  if (on && !amb.ctx) startAmbience();
+  if (on && amb.ctx && amb.ctx.state !== 'running') amb.ctx.resume().catch(() => {});
+  if (fromClick) cue('toggle', { direction: on ? 'forward' : 'back' });
+}
+setCueVolume(0.55);
+const wasOn = soundOn;
+setCues(false);
+soundBtn.addEventListener('click', () => { if (!soundOn) setCues(true); setSound(!soundOn, true); });
+// a visitor who turned sound on before: browsers need a gesture first, so start on their first one
+if (wasOn) {
+  soundBtn.setAttribute('aria-pressed', 'true');
+  soundBtn.querySelector('.snd-lbl').textContent = 'Sound on';
+  soundOn = false;
+  const wake = e => {
+    removeEventListener('pointerdown', wake, true); removeEventListener('keydown', wake, true);
+    if (e.target.closest && e.target.closest('#soundBtn')) { soundOn = true; return; }   // the button's own click turns it off
+    setSound(true);
+  };
+  addEventListener('pointerdown', wake, true); addEventListener('keydown', wake, true);
+}
+document.querySelectorAll('#timeSeg button, #modeSeg button').forEach(b => b.setAttribute('data-cuelume-select', ''));
+$('trueAngle').setAttribute('data-cuelume-tap', '');
+$('links').setAttribute('data-cuelume-tap', '');
+bindCues();
+addEventListener('visibilitychange', () => { if (amb.ctx && !document.hidden && soundOn) amb.ctx.resume().catch(() => {}); });
+
+// ─────────────────────────────────────────────────────────────
 //  Main loop
 // ─────────────────────────────────────────────────────────────
 let last = performance.now() / 1000;
@@ -1786,10 +1953,11 @@ function frame(nowMs) {
   }
   if (fpOn) drawBg(simT);
   drawFx(simT);
+  updateAmbience(dt, fpOn);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__iso = { HB, seaU, reflRT, renderer, uPT, uPTY, lv0, state, setTime, setMode, goChapter, goView, D, aim, tween, updateTween, timing: { SETTLE, ROUTE, TIP, FALL } };
+window.__iso = { HB, seaU, reflRT, renderer, uPT, uPTY, lv0, amb, gullCall, splash, state, setTime, setMode, goChapter, goView, D, aim, tween, updateTween, timing: { SETTLE, ROUTE, TIP, FALL } };
 </script>
 </body>
 </html>
