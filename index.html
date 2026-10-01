@@ -49,8 +49,10 @@
   .card { position: fixed; left: 34px; bottom: 104px; max-width: 420px; z-index: 4; transition: opacity .45s ease, transform .45s ease; }
   .card.out { opacity: 0; transform: translateY(8px); }
   /* close-ups put busy scenery behind the card; a soft scrim keeps it readable */
-  .card::before { content: ""; position: absolute; inset: -60px -90px -50px -70px; z-index: -1; pointer-events: none;
-    background: radial-gradient(ellipse at 40% 55%, rgba(14,24,23,.62), rgba(14,24,23,0) 70%); opacity: 0; transition: opacity .6s; }
+  /* closest-side, so the gradient is fully clear before it reaches the box's edges (no hard line) */
+  .card::before { content: ""; position: absolute; inset: -110px -150px -100px -130px; z-index: -1; pointer-events: none;
+    background: radial-gradient(closest-side at 50% 55%, rgba(14,24,23,.62), rgba(14,24,23,.42) 45%, rgba(14,24,23,.14) 75%, rgba(14,24,23,0));
+    opacity: 0; transition: opacity .6s; }
   body.close .card::before { opacity: 1; }
   .kicker { display: flex; align-items: center; gap: 12px; font-size: 11px; font-weight: 700; letter-spacing: .26em; color: var(--ink-dim); }
   .kicker .line { width: 34px; height: 1px; background: currentColor; }
@@ -1273,7 +1275,7 @@ const P1m = new THREE.Vector3(), GFm = new THREE.Vector3();
 // Boat path in nominal space, pushed through the current arm lengths
 function boatAt(t, out) {
   let tl = ((t % T_LOOP) + T_LOOP) % T_LOOP;
-  out.t = tl;
+  out.t = tl; out.both = false;
   if (tl < SETTLE) {
     const u = tl / SETTLE;
     out.phase = 'settle'; out.u = u; mapV(P1, out.pos);
@@ -1289,6 +1291,8 @@ function boatAt(t, out) {
     out.yaw = yawOf(tV); out.pitch = 0;
     out.layer = (nV.x < W / 2 + 0.2 && nV.z < ZSPLIT) ? OVERLAY : 0;
     mapV(nV, out.pos); out.pos.y += 0.03 * Math.sin(tl * 4);
+    // while it straddles the seam, half the boat is on each side: draw it in both passes so neither half is cut
+    out.both = nV.x < W / 2 + 0.2 && Math.abs(out.pos.z - mapAxis('z', ZSPLIT)) < 1.0;
     out.phase = 'route'; out.u = u;
     return out;
   }
@@ -1307,7 +1311,7 @@ function boatAt(t, out) {
   out.pitch = 1.2 - 0.9 * u; out.layer = 0; out.phase = 'fall'; out.u = u;
   return out;
 }
-const mkState = () => ({ pos: new THREE.Vector3(), yaw: 0, pitch: 0, layer: 0, phase: '', u: 0, t: 0 });
+const mkState = () => ({ pos: new THREE.Vector3(), yaw: 0, pitch: 0, layer: 0, both: false, phase: '', u: 0, t: 0 });
 const A = mkState(), R = mkState();
 const SPLASH_V = Array.from({ length: 12 }, (_, i) => {
   const a = (i / 12) * Math.PI * 2 + Math.sin(i * 7.1) * 0.4, sp = 0.9 + ((i * 37) % 10) / 10;
@@ -1367,6 +1371,7 @@ function animate(t) {
     fitLevel(lv);
     lv.boat.position.copy(A.pos); lv.boat.rotation.set(0, A.yaw, -A.pitch);
     setLayer(lv.boat, A.layer);
+    if (A.both) lv.boat.traverse(o => o.layers.enable(A.layer ? 0 : OVERLAY));
     lv.rider.g.rotation.y = Math.PI / 4 - A.yaw;
     lv.rider.shades.visible = shadesOn;
     lv.rider.squint.visible = squint && !shadesOn;
