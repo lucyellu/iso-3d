@@ -12,7 +12,7 @@ A boat rides the loop, tips over a sluice gate at the top of the waterfall, and 
 2. **Games & Apps:** Lunescape, Starbreaker, Math Gym, 3D Periodic Table, Neuralens
 3. **Writing:** recent posts from lulucy.org
 4. **Math:** *On the Prime Pairs*, with Suqin Ao
-5. **Contact:** email, GitHub, YouTube, X, Instagram
+5. **Contact:** email form, GitHub, YouTube, X, Instagram, LinkedIn
 
 ## Controls
 
