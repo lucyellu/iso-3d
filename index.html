@@ -785,6 +785,7 @@ function buildLevel(M) {
   add(box(M.stone, X0, X1, -W / 2, FLOOR, L - W / 2, L + W / 2));
   add(box(M.rim, X0, X0 + RIM, FLOOR, TOP, L - W / 2, L + W / 2));
   add(box(M.rim, X0 + RIM, X1, FLOOR, TOP, L + W / 2 - RIM, L + W / 2));
+  add(box(M.rim, X1 - RIM, X1, FLOOR, TOP, L - W / 2, L - W / 2 + RIM));   // inner corner, where the z-bar's and x-bar's inner rims meet
   add(waterRect(M.water, X0 + RIM, X1, L - W / 2, L + W / 2 - RIM, YW, (x, z) => [(z - L + W / 2) / (W - RIM), 2 * L - z]));
 
   // x-bar
