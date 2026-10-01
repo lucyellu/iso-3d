@@ -273,19 +273,19 @@ const PALETTES = {
   // Sunrise: low gold sun from the left, lavender shade, a peach horizon and a glitter path on the sea
   day:   { bgTop: '#9fb3d4', bgBot: '#f6c7a0', bokeh: ['#ffe2c4', '#f7b98e', '#c9d3ec', '#fff1dc'], stone: '#e9dccb', rim: '#f2e6d6', creature: '#ea7158',
            water: '#7f9fb4', waterDeep: '#4d6a83', foam: '#fff4ea', sun: '#ffc28a', sunI: 2.1, sky: '#f4d6c4', ground: '#5d6a8a', hemiI: 1.0, haze: '#e7cfc4', night: 0.22,
-           sea: '#7d98b0', seaDeep: '#46617e', seaFog: '#c4bfd6', seaFog2: '#ffcf9c', rain: 0, dawn: 1, sunDir: [-0.66, 0.5, 0.56] },
+           sea: '#7d98b0', seaDeep: '#46617e', seaFog: '#c4bfd6', seaFog2: '#ffcf9c', rain: 0, puffs: 0, dawn: 1, sunDir: [-0.66, 0.5, 0.56] },
   dusk:  { bgTop: '#5b7671', bgBot: '#3e5653', bokeh: ['#7f9a92', '#a8b8a4', '#f2d9a0', '#5d7a74'], stone: '#a9b0a3', rim: '#bdc2b4', creature: '#e0705a',
            water: '#4f8a82', waterDeep: '#2b5652', foam: '#dcefe8', sun: '#ffe1c0', sunI: 1.55, sky: '#c4d8d1', ground: '#3a4b47', hemiI: 1.2, haze: '#4f6b67', night: 0.85,
-           sea: '#4b6a65', seaDeep: '#304b47', seaFog: '#5b7671', seaFog2: '#5b7671', rain: 0, dawn: 0, sunDir: [0.35, 1, 0.72] },
+           sea: '#4b6a65', seaDeep: '#304b47', seaFog: '#5b7671', seaFog2: '#5b7671', rain: 0, puffs: 1, dawn: 0, sunDir: [0.35, 1, 0.72] },
   rain:  { bgTop: '#8c9d9a', bgBot: '#6f817e', bokeh: ['#a9b7b4', '#c9d3d0', '#f1e3c0', '#8a9c98'], stone: '#adb3ab', rim: '#c1c5bb', creature: '#d96c57',
            water: '#5c847e', waterDeep: '#3b5c58', foam: '#e3eeea', sun: '#eef2f2', sunI: 0.65, sky: '#d2dcda', ground: '#56635f', hemiI: 1.45, haze: '#8c9d9a', night: 0.5,
-           sea: '#6a7f7b', seaDeep: '#4a5e5b', seaFog: '#8c9d9a', seaFog2: '#8c9d9a', rain: 1, dawn: 0, sunDir: [0.35, 1, 0.72] },
+           sea: '#6a7f7b', seaDeep: '#4a5e5b', seaFog: '#8c9d9a', seaFog2: '#8c9d9a', rain: 1, puffs: 0, dawn: 0, sunDir: [0.35, 1, 0.72] },
   night: { bgTop: '#102030', bgBot: '#16293a', bokeh: ['#2e4b8a', '#f6c86b', '#3b6aa6', '#8a7cff'], stone: '#6f7d88', rim: '#84919b', creature: '#cf6450',
            water: '#285668', waterDeep: '#12313e', foam: '#b9e3f0', sun: '#9fb3ff', sunI: 0.5, sky: '#4c6a8a', ground: '#101a24', hemiI: 0.8, haze: '#18234a', night: 1,
-           sea: '#1b3341', seaDeep: '#0e202d', seaFog: '#14283a', seaFog2: '#14283a', rain: 0, dawn: 0, sunDir: [0.35, 1, 0.72] },
+           sea: '#1b3341', seaDeep: '#0e202d', seaFog: '#14283a', seaFog2: '#14283a', rain: 0, puffs: 0, dawn: 0, sunDir: [0.35, 1, 0.72] },
 };
 const COLOR_KEYS = ['bgTop', 'bgBot', 'stone', 'rim', 'creature', 'water', 'waterDeep', 'foam', 'sun', 'sky', 'ground', 'haze', 'sea', 'seaDeep', 'seaFog', 'seaFog2'];
-const NUM_KEYS = ['sunI', 'hemiI', 'night', 'rain', 'dawn'];
+const NUM_KEYS = ['sunI', 'hemiI', 'night', 'rain', 'puffs', 'dawn'];
 function toPalette(p) {
   const o = {};
   for (const k of COLOR_KEYS) o[k] = new THREE.Color(p[k]);
@@ -359,6 +359,13 @@ const HASH = `float h1(float n){ return fract(sin(n*127.1)*43758.5453); }`;
 const NOISE2 = `float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vn2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
   return mix(mix(h2(i), h2(i+vec2(1,0)), f.x), mix(h2(i+vec2(0,1)), h2(i+vec2(1,1)), f.x), f.y); }`;
+// Rain clouds: domain-warped fbm thresholded into soft banks. cloudWarp is the slow large-scale
+// churn, shared by every density sample at a pixel; cloudD is the density there (0 = clear air).
+// Octaves are passed in: full detail only where the edge is seen, fewer for shading and shadows.
+const CLOUDS = `float fbmC(vec2 p, int oct){ float a = 0.5, s = 0.0; mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+  for (int i = 0; i < 6; i++) { if (i >= oct) break; s += a * vn2(p); p = m * p + 7.31; a *= 0.5; } return s + a; }
+vec2 cloudWarp(vec2 p, float t){ return vec2(fbmC(p * 0.45 + t * 0.012, 3), fbmC(p * 0.45 + 5.2 - t * 0.009, 3)); }
+float cloudD(vec2 p, vec2 w, float t, float cov, float soft, int oct){ return smoothstep(cov, cov + soft, fbmC(p + w * 1.7 + vec2(t * 0.025, 0.0), oct)); }`;
 // Channel water and the waterfall use the sea's own look: the same mirror texture (reflRT) seen
 // through the same kind of ripples, the same deep/sea colour by facing, and the same sun glint.
 // No painted foam or lanes, so all three waters read as one.
@@ -525,6 +532,8 @@ const seaU = {
   uRain: { value: 0 }, uNight: { value: 0 },
   uFog2: { value: new THREE.Color() }, uDawn: { value: 0 }, uGlitX: { value: 0 },
   uSkyTop: { value: new THREE.Color() }, uSkyHor: { value: new THREE.Color() },
+  uPuff: { value: Array.from({ length: 8 }, () => new THREE.Vector4()) },
+  uCloudAmt: { value: 0 }, uCloudScale: { value: 0.09 }, uCloudCov: { value: 0.5 }, uCloudWind: { value: new THREE.Vector2(0.055, 0.02) }, uCloudLift: { value: 0 },
 };
 const seaMat = new THREE.ShaderMaterial({
   uniforms: seaU,
@@ -534,8 +543,10 @@ const seaMat = new THREE.ShaderMaterial({
 uniform sampler2D tRefl; uniform vec2 uScreen; uniform float uTime, uRain, uNight, uDawn, uGlitX;
 uniform vec3 uSea, uDeep, uSky, uFog, uFog2, uView, uSunDir, uSunCol; uniform vec2 uCenter, uFogR;
 uniform vec4 uTrail[NTRAIL]; uniform vec4 uTap[NTAP];
+uniform float uCloudAmt, uCloudScale, uCloudCov, uCloudLift; uniform vec2 uCloudWind; uniform vec4 uPuff[8];
 varying vec3 vW;
 ${NOISE2}
+${CLOUDS}
 vec2 rainRings(vec2 p, float sc, float t) {
   vec2 q = p * sc, cell = floor(q), f = fract(q);
   float r = h2(cell);
@@ -596,6 +607,20 @@ void main(){
   vec3 hv = normalize(normalize(uSunDir) + V);
   col += uSunCol * pow(max(dot(n, hv), 0.0), 300.0) * 0.6 * (1.0 - uNight * 0.7);
   col = mix(col, uSky, clamp(crest * 0.1, 0.0, 0.2));
+  // the high rain clouds' shadows, cast along the sun from the deck overhead and sliding with it
+  if (uCloudAmt > 0.01) {
+    vec2 cp = (p + uSunDir.xz / uSunDir.y * uCloudLift) * uCloudScale + uCloudWind * t;
+    col *= 1.0 - 0.32 * uCloudAmt * cloudD(cp, cloudWarp(cp, t), t, uCloudCov - 0.04, 0.3, 4);
+  }
+  // fair-weather puffs: each casts a soft, ragged shadow along the sun (x, z, radius, strength)
+  float ps = 0.0;
+  for (int i = 0; i < 8; i++) {
+    vec4 pf = uPuff[i];
+    if (pf.w <= 0.0) continue;
+    vec2 dv = (p - pf.xy) / pf.z; dv.y *= 1.35;
+    ps += pf.w * (1.0 - smoothstep(0.35, 1.0, length(dv) + 0.25 * (vn2(p * 0.6 + pf.xy) - 0.5)));
+  }
+  col *= 1.0 - 0.18 * min(ps, 1.0);
   // the horizon: haze that warms toward the low sun (top left of the view), cool lavender elsewhere
   vec2 rel = p - uCenter;
   vec2 far = -normalize(V.xz), rt = vec2(-far.y, far.x);
@@ -1258,6 +1283,145 @@ const seaShadow = new THREE.Mesh(new THREE.PlaneGeometry(140, 140).rotateX(-Math
 seaShadow.position.y = SEA_Y + 0.01; seaShadow.receiveShadow = true; seaShadow.layers.set(SEA); seaShadow.renderOrder = 1;
 scene.add(sea, seaShadow);
 
+// Rain clouds, two decks of the same weather: a low mist bank lying on the water that the pier stands
+// in (depth-tested in the main pass, kept out of the reflection like the sea), and high scud drawn over
+// everything, thick toward the frame's edges and thin over the middle so the loop stays readable.
+// Each is self-shadowed toward the sun: density sampled a step sunward darkens the underside and
+// leaves the thin sunward edges bright.
+const CLOUD_HIGH = 34;
+function cloudMat(o) {
+  return new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, depthTest: o.depthTest,
+    uniforms: {
+      uTime, uScreen: seaU.uScreen, uSunDir: { value: SUN_DIR }, uWind: seaU.uCloudWind,
+      uScale: o.scale, uCov: o.cov, uAmt: { value: 0 }, uEdge: { value: o.edge }, uSoft: { value: o.soft },
+      uLit: { value: new THREE.Color() }, uDark: { value: new THREE.Color() },
+      uCenter: seaU.uCenter, uFogR: seaU.uFogR, uFog: seaU.uFog, uFogOn: { value: o.fog },
+    },
+    vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+    fragmentShader: `uniform float uTime, uScale, uCov, uAmt, uEdge, uFogOn, uSoft; uniform vec2 uScreen, uWind, uCenter, uFogR; uniform vec3 uSunDir, uLit, uDark, uFog;
+varying vec3 vW;
+${NOISE2}
+${CLOUDS}
+void main(){
+  float t = uTime;
+  vec2 s = gl_FragCoord.xy / uScreen - 0.5; s.x *= uScreen.x / uScreen.y;
+  // the high deck gathers in the top band and the corners, and parts over the loop
+  float edge = clamp(smoothstep(0.1, 0.5, s.y) + smoothstep(0.45, 0.95, length(s * vec2(0.8, 1.3))), 0.0, 1.0);
+  float cov = uCov + uEdge * (0.14 - 0.2 * edge);
+  vec2 p = vW.xz * uScale + uWind * t;
+  vec2 w = cloudWarp(p, t);
+  float d = cloudD(p, w, t, cov, uSoft, 6);
+  float fogA = uFogOn * smoothstep(uFogR.x, uFogR.y, length(vW.xz - uCenter));
+  float a = d * uAmt * mix(1.0, 0.25 + 0.75 * edge, uEdge) * (1.0 - 0.7 * fogA);
+  if (a < 0.004) discard;
+  vec2 ls = normalize(uSunDir.xz) * 0.12;
+  float occ = cloudD(p + ls, w, t, cov, uSoft, 4) + 0.7 * cloudD(p + ls * 3.0, w, t, cov, uSoft, 3);
+  float light = exp(-occ * 1.7);
+  vec3 col = mix(uDark, uLit, light);
+  col = mix(col, uDark * 0.8, d * d * 0.35);                         // dense cores read heavier
+  col += uLit * 0.22 * pow(1.0 - d, 3.0) * light;                    // bright, thin rims
+  col = mix(col, uFog, 0.5 * fogA);
+  gl_FragColor = vec4(col, a);
+  #include <colorspace_fragment>
+}`,
+  });
+}
+const mist = new THREE.Mesh(new THREE.PlaneGeometry(600, 600).rotateX(-Math.PI / 2),
+  cloudMat({ depthTest: true, scale: { value: 0.13 }, cov: { value: 0.53 }, edge: 0, fog: 1, soft: 0.3 }));
+mist.position.y = SEA_Y + 0.7; mist.layers.set(SEA); mist.frustumCulled = false; mist.renderOrder = 2;
+scene.add(mist);
+// the high deck has a scene of its own, drawn after the impossible overlay so nothing pokes through it
+const cloudScene = new THREE.Scene();
+const scud = new THREE.Mesh(new THREE.PlaneGeometry(600, 600).rotateX(-Math.PI / 2),
+  cloudMat({ depthTest: false, scale: seaU.uCloudScale, cov: seaU.uCloudCov, edge: 1, fog: 0, soft: 0.17 }));
+scud.position.y = CLOUD_HIGH; scud.frustumCulled = false;
+cloudScene.add(scud);
+
+// Dusk's fair-weather cumulus, after Balint Ferenczy's SVG "Cloud Generator": one soft blob, blurred and
+// pushed about by fractal noise, then the same blob laid back over itself shifted and squeezed: a pale
+// grey copy nudged up-left (it leaves the rims brightest), a blue one dropped below (the cool belly)
+// and a dark one dropped further (the underside). Each is a camera-facing card drifting left to right
+// high over the pier, laid out across the top and bottom of the frame and kept off the middle.
+const PUFFS = [
+  { sx: -24, sy: 9.4, h: 15, w: 11 }, { sx: -9, sy: 10.2, h: 18, w: 8.5 }, { sx: 6, sy: 9.6, h: 14, w: 12 },
+  { sx: 20, sy: 10, h: 17, w: 9 }, { sx: -16, sy: -9.2, h: 12, w: 10 }, { sx: 13, sy: -9, h: 13, w: 9.5 },
+  { sx: 29, sy: 4.4, h: 16, w: 7.5 }, { sx: -32, sy: 5.2, h: 15, w: 8 },
+];
+const PUFF_SPAN = 72, PUFF_WIND = 0.22;
+const puffC = { uBody: { value: new THREE.Color() }, uBelly: { value: new THREE.Color() }, uUnder: { value: new THREE.Color() } };
+const puffGeo = new THREE.PlaneGeometry(1, 0.62);
+PUFFS.forEach((p, i) => {
+  const lobes = new THREE.Vector4(Math.random() * 0.3 - 0.15, 0.85 + Math.random() * 0.35, 0.7 + Math.random() * 0.5, 0.7 + Math.random() * 0.5);
+  p.m = new THREE.Mesh(puffGeo, new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, depthTest: false,
+    uniforms: { uTime, uScreen: seaU.uScreen, ...puffC, uSeed: { value: i * 7.37 + 1.3 }, uLobe: { value: lobes }, uAmt: { value: 0 } },
+    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `uniform float uTime, uSeed, uAmt; uniform vec2 uScreen; uniform vec4 uLobe; uniform vec3 uBody, uBelly, uUnder;
+varying vec2 vUv;
+${NOISE2}
+${CLOUDS}
+float sdBox(vec2 p, vec2 b, float r){ vec2 d = abs(p) - b + r; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r; }
+float smin(float a, float b, float k){ float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
+// the blob: a flat-bottomed slab with a dome and two shoulders
+float shape(vec2 p){
+  float d = sdBox(p - vec2(0.0, -0.2), vec2(0.95, 0.28), 0.26);
+  d = smin(d, length(p - vec2(uLobe.x, 0.1)) - 0.42 * uLobe.y, 0.22);
+  d = smin(d, length(p - vec2(-0.52, -0.02)) - 0.3 * uLobe.z, 0.22);
+  d = smin(d, length(p - vec2(0.5, 0.0)) - 0.3 * uLobe.w, 0.22);
+  return d;
+}
+// squeezed top and bottom by r (the SVG's vertical feMorphology)
+float squeezed(vec2 p, float r){ return max(shape(p + vec2(0.0, r)), shape(p - vec2(0.0, r))); }
+float soft(float d, float b){ return 1.0 - smoothstep(-b, b, d); }
+void main(){
+  vec2 q = (vUv - 0.5) * vec2(2.6, 1.6);
+  float t = uTime * 0.035;
+  vec2 nq = q * 3.3 + uSeed;
+  vec2 n5 = (vec2(fbmC(nq + t, 5), fbmC(nq + 17.3 - t, 5)) - 0.5) * 0.6;   // feDisplacementMap, 5 octaves
+  vec2 n2 = (vec2(fbmC(nq + t, 2), fbmC(nq + 17.3 - t, 2)) - 0.5) * 0.6;   // and the smoother 2-octave one
+  float body = soft(shape(q + n5), 0.11);
+  if (body * uAmt < 0.004) discard;
+  float rim = 0.2 * soft(shape(q + n5 + vec2(0.033, -0.01)) + 0.067, 0.11);
+  float belly = 0.2 * soft(squeezed(q + n2 * 0.8 + vec2(0.033, 0.133), 0.133), 0.11);
+  float under = 0.4 * soft(squeezed(q + n2 + vec2(-0.067, 0.2), 0.217), 0.16);
+  vec3 col = uBody;
+  col = mix(col, uBody * 0.84, rim);
+  col = mix(col, uBelly, belly);
+  col = mix(col, uUnder, under);
+  // thinner where it drifts over the middle of the frame, so the loop shows through
+  vec2 s = gl_FragCoord.xy / uScreen - vec2(0.55, 0.5); s.x *= uScreen.x / uScreen.y;
+  float clear = mix(0.4, 1.0, smoothstep(0.32, 0.6, length(s * vec2(0.75, 1.0))));
+  gl_FragColor = vec4(col, body * uAmt * clear);
+  #include <colorspace_fragment>
+}`,
+  }));
+  p.m.frustumCulled = false; p.m.renderOrder = 1; p.m.scale.setScalar(p.w);
+  cloudScene.add(p.m);
+});
+// laid out on the screen as seen from the true angle, then slid along that view to their height, so
+// turning the view swings them a little against the pier below
+const puffSh = new THREE.Vector3(), ISO_R = new THREE.Vector3(1, 0, -1).normalize(), ISO_U = new THREE.Vector3(-1, 2, -1).normalize(), ISO_D = new THREE.Vector3(1, 1, 1).normalize();
+function updatePuffs(t, zEff) {
+  const amt = cur.puffs * smooth(clamp01((zEff - 0.3) / 0.5));
+  puffC.uBody.value.set(0xffffff).lerp(cur.sun, 0.55);
+  puffC.uBelly.value.set(0x426992).lerp(cur.sky, 0.25);
+  puffC.uUnder.value.copy(cur.ground).multiplyScalar(0.55);
+  const sh = puffSh.set(-SUN_DIR.x / SUN_DIR.y, 0, -SUN_DIR.z / SUN_DIR.y);
+  PUFFS.forEach((p, i) => {
+    const sx = ((p.sx + t * PUFF_WIND + PUFF_SPAN / 2) % PUFF_SPAN + PUFF_SPAN) % PUFF_SPAN - PUFF_SPAN / 2;
+    const m = p.m;
+    m.visible = amt > 0.01;
+    m.position.copy(camTarget).addScaledVector(ISO_R, sx).addScaledVector(ISO_U, p.sy);
+    m.position.addScaledVector(ISO_D, (camTarget.y + p.h - m.position.y) / ISO_D.y);
+    m.quaternion.copy(camera.quaternion);
+    const edge = smooth(clamp01((PUFF_SPAN / 2 - Math.abs(sx)) / 6));   // fade in and out at the wrap
+    m.material.uniforms.uAmt.value = amt * edge;
+    const lift = m.position.y - SEA_Y;
+    seaU.uPuff.value[i].set(m.position.x + sh.x * lift, m.position.z + sh.z * lift, p.w * 0.42, amt * edge);
+  });
+}
+
 // motorboat laps: an oval of open water behind the pillar's right shoulder
 const seaPath = new THREE.CatmullRomCurve3(Array.from({ length: 10 }, (_, i) => {
   const a = i / 10 * Math.PI * 2; return new THREE.Vector3(8.6 + 5.2 * Math.cos(a), SEA_Y, 1.6 + 2.9 * Math.sin(a));
@@ -1600,6 +1764,7 @@ function updateCopies() {
     lv.boat.visible = !(fpOn && lv.k === fp.copy && A.phase === 'fall');
   }
   HB.g.visible = sea.visible = seaShadow.visible = !fpOn;
+  mist.visible = !fpOn && cur.rain > 0.01;
   uSeaOn.value = fpOn ? 0 : 1;
   scene.fog.density = fpOn ? 0.011 : 0;
   scene.fog.color.copy(cur.bgTop).lerp(cur.bgBot, 0.6);
@@ -1713,6 +1878,19 @@ function updateSea() {
   sea.position.x = camTarget.x; sea.position.z = camTarget.z;
   seaShadow.position.x = sun.target.position.x; seaShadow.position.z = sun.target.position.z;
   seaShadow.material.color.copy(cur.seaDeep).multiplyScalar(0.3);
+  // clouds: lit by the sky, shaded toward the deep sea; the high deck thins out in close-ups,
+  // where it would loom too big to read as weather
+  const zEff = r / viewParams().halfH;
+  mist.position.x = scud.position.x = camTarget.x; mist.position.z = scud.position.z = camTarget.z;
+  for (const [m, amt, lit, dark] of [[mist, 0.75, 0.35, 0.45], [scud, 0.9 * smooth(clamp01((zEff - 0.3) / 0.5)), 0.6, 0.15]]) {
+    const u = m.material.uniforms;
+    u.uAmt.value = cur.rain * amt;
+    u.uLit.value.copy(cur.sky).lerp(cur.foam, lit);
+    u.uDark.value.copy(cur.seaDeep).lerp(cur.bgBot, dark);
+  }
+  seaU.uCloudAmt.value = cur.rain; seaU.uCloudLift.value = CLOUD_HIGH - SEA_Y;
+  scud.visible = cur.rain > 0.01;
+  updatePuffs(uTime.value, zEff);
 }
 // Planar reflection: the world flipped through the waterline, drawn from the same camera.
 // It shows the loop as it really is, so the water never quite agrees with the illusion above it.
@@ -2047,6 +2225,154 @@ function drawFx(t) {
 }
 
 // ─────────────────────────────────────────────────────────────
+//  First person: water drops on the lens
+// ─────────────────────────────────────────────────────────────
+// After Hixly/rain-on-glass (MIT, Matthew Hixon). Each bead is a tiny lens showing an upside-down
+// image of the view behind it. Beads stay pinned until they grow heavy, then slide down in jerky
+// runs, swallow the smaller ones in their path and leave a trail of tiny beads. They're painted into
+// a 2D map (RG = surface normal, B = height, A = coverage) and a full-screen pass refracts the frame
+// (the 3D render over the bokeh backdrop) through it. Rain keeps them coming; the waterfall's spray
+// adds more, and surfacing from the dunk leaves the lens streaming.
+const lensSprite = (() => {
+  const S = 96, c = document.createElement('canvas'); c.width = c.height = S;
+  const x = c.getContext('2d'), img = x.createImageData(S, S), d = img.data;
+  for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) {
+    const dx = (i + 0.5) / S * 2 - 1, dy0 = (j + 0.5) / S * 2 - 1;
+    const dy = dy0 < 0 ? dy0 * 1.06 : dy0 * 0.96;   // gravity: slightly heavier bottom
+    const r = Math.hypot(dx, dy), k = (j * S + i) * 4;
+    if (r >= 1) continue;
+    d[k] = (dx * 0.5 + 0.5) * 255; d[k + 1] = (dy * 0.5 + 0.5) * 255; d[k + 2] = Math.sqrt(1 - r * r) * 255;
+    d[k + 3] = Math.min(1, (1 - r) / 0.14) * 255;
+  }
+  x.putImageData(img, 0, 0); return c;
+})();
+const lens = { cv: document.createElement('canvas'), drops: [], k: 1, on: false, under: false, frame: null, db: new THREE.Vector2() };
+lens.ctx = lens.cv.getContext('2d');
+const lensTex = new THREE.CanvasTexture(lens.cv), bgTex = new THREE.CanvasTexture(bg);
+for (const t of [lensTex, bgTex]) { t.minFilter = t.magFilter = THREE.LinearFilter; t.generateMipmaps = false; }
+const lensMat = new THREE.ShaderMaterial({
+  uniforms: { tFrame: { value: null }, tBg: { value: bgTex }, tDrops: { value: lensTex }, uAspect: { value: 1 }, uLight: { value: 1 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+  fragmentShader: `
+uniform sampler2D tFrame, tBg, tDrops; uniform float uAspect, uLight;
+varying vec2 vUv;
+// the frame is premultiplied with a see-through sky, so lay it over the backdrop
+vec3 behind(vec2 uv){ vec4 f = texture2D(tFrame, uv); return f.rgb + texture2D(tBg, uv).rgb * (1.0 - f.a); }
+void main(){
+  vec4 w = texture2D(tDrops, vUv);
+  float cover = smoothstep(0.3, 0.7, w.a);
+  if (cover < 0.001) discard;
+  vec2 n = (w.rg - 0.5) * 2.0;   // in canvas axes, +y down
+  float ht = w.b;
+  // a bead is a lens: it shows an inverted miniature of the view behind it
+  vec2 ruv = clamp(vUv - vec2(n.x, -n.y) * vec2(0.075 / uAspect, 0.075) * (0.6 + ht * 0.6), 0.001, 0.999);
+  vec3 dc = behind(ruv) * 1.1;
+  dc *= 1.0 - pow(1.0 - ht, 2.6) * 0.82;   // dark refractive edge
+  dc += smoothstep(0.25, 0.95, n.y) * ht * (0.06 + dot(behind(vUv), vec3(0.33)) * 0.35);   // bottom caustic
+  vec3 N = normalize(vec3(n * 1.4, max(ht, 0.04)));
+  float sp = pow(max(dot(N, normalize(vec3(-0.35, -0.62, 0.7))), 0.0), 70.0) * 1.1
+           + pow(max(dot(N, normalize(vec3(0.5, -0.2, 0.84))), 0.0), 180.0) * 0.35;
+  dc += sp * vec3(1.0, 0.95, 0.88) * uLight;
+  gl_FragColor = vec4(min(dc, 1.0), cover);
+}`,
+  transparent: true, depthTest: false, depthWrite: false, toneMapped: false,
+});
+const lensQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), lensMat); lensQuad.frustumCulled = false;
+const lensScene = new THREE.Scene(), lensCam = new THREE.Camera(); lensScene.add(lensQuad);
+const lensArea = () => innerWidth * innerHeight / (1608 * 926);   // relative to the view the sizes were tuned on
+addEventListener('resize', () => { lens.on = false; });
+
+function lensDrop(x, y, r) {
+  // landing on a bead merges into it
+  for (const d of lens.drops) {
+    const dx = d.x - x, dy = d.y - y;
+    if (dx * dx + dy * dy < (d.r + r * 0.6) ** 2) { d.r = Math.min(Math.hypot(d.r, r), 11 * lens.k); return; }
+  }
+  lens.drops.push({ x, y, r, vy: 0, vx: 0, slide: false, trail: 0, pin: 0 });
+}
+function lensSpray(n, big) {
+  const w = lens.cv.width, h = lens.cv.height;
+  for (let i = 0; i < n; i++) lensDrop(Math.random() * w, Math.random() * h * 1.02 - h * 0.02, (1.7 + Math.pow(Math.random(), big ? 1.5 : 3.2) * 7.5) * lens.k);
+}
+function simLens(dt, rate) {
+  let n = rate * dt * lensArea();
+  while (n > 0) { if (Math.random() < n) lensSpray(1); n -= 1; }
+  const K = lens.k, D = lens.drops, G = 520 * K;
+  for (let i = D.length - 1; i >= 0; i--) {
+    const d = D[i];
+    if (!d.slide) {
+      if (d.r > 5.4 * K && Math.random() < dt * (d.r / K - 5.0) * 0.9) { d.slide = true; d.vy = 8 * K; }
+      continue;
+    }
+    // pinning: the contact line catches and releases, giving stop/start motion
+    if (d.pin > 0) d.pin -= dt;
+    else {
+      d.vy = Math.min((d.vy + G * (d.r / K - 3.8) / 5 * dt) * (1 - 1.8 * dt), 620 * K);
+      if (Math.random() < dt * (2.4 - d.r / K * 0.18)) { d.pin = Math.random() * 0.35; d.vy *= 0.2; }
+    }
+    if (Math.random() < dt * 3) d.vx = (Math.random() - 0.5) * d.vy * 0.22;
+    const oy = d.y;
+    d.y += d.vy * dt; d.x += d.vx * dt;
+    // leave a trail of tiny beads, losing mass
+    d.trail += d.y - oy;
+    if (d.trail > d.r * (1.1 + Math.random() * 1.6)) {
+      d.trail = 0;
+      const tr = d.r * (0.14 + Math.random() * 0.2);
+      D.push({ x: d.x + (Math.random() - 0.5) * d.r * 0.5, y: d.y - d.r * (1 + Math.random() * 0.4), r: tr, vy: 0, vx: 0, slide: false, trail: 0, pin: 0 });
+      d.r = Math.sqrt(Math.max(0, d.r * d.r - tr * tr * 1.4));
+    }
+    // swallow beads in its path
+    for (let j = D.length - 1; j >= 0; j--) {
+      const o = D[j]; if (o === d) continue;
+      const dx = o.x - d.x, dy = o.y - d.y, rr = (d.r + o.r) * 0.82;
+      if (dy > -d.r * 2 && dx * dx + dy * dy < rr * rr) {
+        if (o.r > d.r && o.slide) continue;
+        d.r = Math.min(Math.hypot(d.r, o.r), 12 * K); d.vy += o.r * 10;
+        D.splice(j, 1); if (j < i) i--;
+      }
+    }
+    if (d.r < 3.1 * K) { d.slide = false; d.vy = 0; }
+    if (d.y - d.r * 3 > lens.cv.height) D.splice(i, 1);
+  }
+  // keep the bead count bounded: evaporate the oldest small static ones
+  let cut = D.length - 600 * lensArea();
+  for (let i = 0; i < D.length && cut > 0; i++) if (!D[i].slide) { D.splice(i, 1); i--; cut--; }
+}
+// called right after the first-person frame is drawn, while it's still in the drawing buffer
+function renderLens(dt) {
+  if (!lens.on) {
+    const s = Math.min(1, 1400 / innerWidth);
+    lens.cv.width = Math.round(innerWidth * s); lens.cv.height = Math.round(innerHeight * s);
+    lens.k = s * 2.1; lens.drops = []; lens.on = true;
+    lensSpray(Math.round(200 * cur.rain * lensArea()));   // it's been raining a while
+  }
+  // under water the lens is all water; coming back up it streams off in big beads
+  if (fpUnder > 0.5) { lens.drops.length = 0; lens.under = true; return; }
+  if (lens.under) { lens.under = false; lensSpray(Math.round(220 * lensArea()), true); }
+  simLens(dt, 0.6 + 16 * cur.rain + (A.phase === 'fall' ? 30 : 0));
+  if (!lens.drops.length) return;
+
+  const c = lens.ctx; c.clearRect(0, 0, lens.cv.width, lens.cv.height);
+  for (const d of lens.drops) {
+    let sx = 1, sy = 1;
+    if (d.slide) { const k = Math.min(d.vy / (380 * lens.k), 1); sx = 1 - k * 0.14; sy = 1 + k * 0.55; }
+    c.drawImage(lensSprite, d.x - d.r * sx, d.y - d.r * (2 * sy - 1), d.r * sx * 2, d.r * sy * 2);
+  }
+  lensTex.needsUpdate = bgTex.needsUpdate = true;
+  renderer.getDrawingBufferSize(lens.db);
+  if (!lens.frame || lens.frame.image.width !== lens.db.x || lens.frame.image.height !== lens.db.y) {
+    if (lens.frame) lens.frame.dispose();
+    lens.frame = new THREE.FramebufferTexture(lens.db.x, lens.db.y);
+    lens.frame.minFilter = lens.frame.magFilter = THREE.LinearFilter;
+    lensMat.uniforms.tFrame.value = lens.frame;
+  }
+  renderer.copyFramebufferToTexture(lens.frame);
+  lensMat.uniforms.uAspect.value = innerWidth / innerHeight;
+  lensMat.uniforms.uLight.value = 1 - cur.night * 0.5;
+  renderer.render(lensScene, lensCam);
+}
+
+// ─────────────────────────────────────────────────────────────
 //  Sound: recorded harbour beds and water-drop interface sounds (audio/)
 // ─────────────────────────────────────────────────────────────
 // Off until the visitor turns it on; the choice is remembered on this device. Nothing is downloaded
@@ -2055,7 +2381,7 @@ const soundBtn = $('soundBtn');
 let soundOn = false;
 try { soundOn = localStorage.getItem('harbour-sound') === 'on'; } catch (e) {}
 const amb = { ctx: null, gain: 0, bufs: {}, beds: {}, layerW: {} };
-const SFX = ['tick', 'bubbles', 'drop1', 'drop2', 'drop3', 'splash', 'swoosh1', 'swoosh2', 'swoosh3', 'swoosh4'];
+const SFX = ['tick', 'bubbles', 'drop1', 'drop2', 'drop3', 'splash', 'bigsplash', 'swoosh1', 'swoosh2', 'swoosh3', 'swoosh4'];
 // time of day → its own bed under the sea and waterfall (rain gets synthesized rain instead)
 const LAYER = { day: 'morning', dusk: 'afternoon', night: 'night' };
 const BED_XF = 3;
@@ -2108,8 +2434,11 @@ function startAmbience() {
   SFX.forEach(loadBuf);
   bed('sea'); bed('waterfall');
 }
+// effects play at 70% from above and at full level in first person, where you're down beside them
+const sfxLevel = () => 0.7 + 0.3 * (amb.fpBoost || 0);
 function sfx(name, { vol = 1, rate = 1, toMaster = false } = {}) {
   if (!soundOn || !amb.ctx) return;
+  vol *= sfxLevel();
   loadBuf(name).then(buf => {
     if (!buf) return;
     const src = amb.ctx.createBufferSource(), g = amb.ctx.createGain();
@@ -2164,6 +2493,7 @@ function gullCall(when, vol, pan) {
 // the paper boat hitting the pool: a burst of white water and a low plop
 function splashdown(vol) {
   const ctx = amb.ctx, t = ctx.currentTime;
+  vol *= sfxLevel();
   const src = ctx.createBufferSource(); src.buffer = amb.white;
   const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(3800, t); f.frequency.exponentialRampToValueAtTime(380, t + 0.6);
   const e = ctx.createGain(); e.gain.setValueAtTime(0, t); e.gain.linearRampToValueAtTime(vol, t + 0.012); e.gain.exponentialRampToValueAtTime(0.001, t + 0.75);
@@ -2209,7 +2539,8 @@ function updateAmbience(dt, fpOn) {
     if (Math.random() < gullAmt) gullCall(t + 0.05, 0.03 + Math.random() * 0.025, Math.random() * 1.6 - 0.8);
     amb.nextGull = t + 8 + Math.random() * 14;
   }
-  if (A.phase === 'settle' && amb.lastPhase === 'fall') { splashdown(0.4); sfx('splash', { vol: 0.7, rate: jitter(0.05), toMaster: true }); }
+  if (A.phase === 'settle' && amb.lastPhase === 'fall') { splashdown(0.4); sfx('splash', { vol: 0.7, rate: jitter(0.05), toMaster: true });
+    sfx('bigsplash', { vol: 0.18, rate: jitter(0.04), toMaster: true }); }
   amb.lastPhase = A.phase;
 }
 function setSound(on, fromClick) {
@@ -2278,7 +2609,8 @@ function frame(nowMs) {
   } else {
     camera.layers.enableAll(); camera.layers.disable(PRIME); renderer.render(scene, camera);
   }
-  if (fpOn) drawBg(simT);
+  if (!fpOn && (cur.rain > 0.01 || cur.puffs > 0.01)) { camera.layers.set(0); renderer.render(cloudScene, camera); }
+  if (fpOn) { drawBg(simT); renderLens(dt); } else lens.on = false;
   drawFx(simT);
   updateAmbience(dt, fpOn);
   requestAnimationFrame(frame);
