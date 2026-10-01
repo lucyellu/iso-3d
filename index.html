@@ -40,10 +40,10 @@
   .spacer { flex: 1; }
   .seg { display: flex; padding: 4px; gap: 2px; background: var(--pill); border: 1px solid var(--pill-line);
     border-radius: 10px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: #efe9dc; }
-  .seg button, .pill { padding: 7px 12px; border-radius: 7px; font-size: 12px; font-weight: 500; color: rgba(239,233,220,.78); }
+  .seg button, .pill { white-space: nowrap; padding: 7px 12px; border-radius: 7px; font-size: 12px; font-weight: 500; color: rgba(239,233,220,.78); }
   .seg button:hover, .pill:hover { color: #fff; }
   .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
-  .pill { background: var(--pill); border: 1px solid var(--pill-line); border-radius: 10px; padding: 11px 14px;
+  .pill { white-space: nowrap; background: var(--pill); border: 1px solid var(--pill-line); border-radius: 10px; padding: 11px 14px;
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 
   .card { position: fixed; left: 34px; bottom: 104px; max-width: 420px; z-index: 4; transition: opacity .45s ease, transform .45s ease; }
@@ -150,7 +150,6 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
-import { bind as bindCues, play as cue, setEnabled as setCues, setVolume as setCueVolume } from './vendor/cuelume/index.js';
 
 // ─────────────────────────────────────────────────────────────
 //  Site content: edit this block to make it yours.
@@ -1634,7 +1633,7 @@ function renderCard(i, instant) {
 }
 function goChapter(i, fromClick) {
   const to = mod(i, N);
-  if (to !== state.chapter || fromClick) cue('navigate', { direction: to < state.chapter ? 'back' : 'forward', emphasis: to === state.chapter ? 'subtle' : 'normal' });
+  if (to !== state.chapter) ui.nav(to < state.chapter);
   state.chapter = to;
   if (state.mode !== 'fp') goView(SITE.chapters[state.chapter].view || {});
 }
@@ -1763,30 +1762,45 @@ function drawFx(t) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  Sound: interface cues (Cuelume) and a synthesized harbour ambience
+//  Sound: recorded harbour beds and water-drop interface sounds (audio/)
 // ─────────────────────────────────────────────────────────────
-// Off until the visitor turns it on; the choice is remembered on this device.
-// Everything is generated live with Web Audio: no audio files.
+// Off until the visitor turns it on; the choice is remembered on this device. Nothing is downloaded
+// until then. Beds loop with a crossfade, so the MP3 padding never leaves a gap.
 const soundBtn = $('soundBtn');
 let soundOn = false;
 try { soundOn = localStorage.getItem('harbour-sound') === 'on'; } catch (e) {}
-const amb = { ctx: null, gain: 0 };
-function noiseBuffer(ctx, sec, brown) {
-  const b = ctx.createBuffer(2, Math.floor(ctx.sampleRate * sec), ctx.sampleRate);
-  for (let ch = 0; ch < 2; ch++) {
-    const d = b.getChannelData(ch); let last = 0;
-    for (let i = 0; i < d.length; i++) {
-      const w = Math.random() * 2 - 1;
-      if (brown) { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w;
-    }
-  }
+const amb = { ctx: null, gain: 0, bufs: {}, beds: {}, layerW: {} };
+const SFX = ['tick', 'bubbles', 'drop1', 'drop2', 'drop3', 'splash', 'swoosh1', 'swoosh2', 'swoosh3', 'swoosh4'];
+// time of day → its own bed under the sea and waterfall (rain gets synthesized rain instead)
+const LAYER = { day: 'morning', dusk: 'afternoon', night: 'night' };
+const BED_XF = 3;
+function loadBuf(name) {
+  if (!amb.bufs[name]) amb.bufs[name] = fetch(`audio/${name}.mp3`).then(r => r.arrayBuffer())
+    .then(a => new Promise((ok, no) => amb.ctx.decodeAudioData(a, ok, no))).catch(() => null);
+  return amb.bufs[name];
+}
+// a bed: overlapping copies of one file, each fading in as the last one fades out
+function bed(name) {
+  if (amb.beds[name]) return amb.beds[name];
+  const g = amb.ctx.createGain(); g.gain.value = 0; g.connect(amb.master);
+  const b = amb.beds[name] = { g, buf: null, next: 0 };
+  loadBuf(name).then(buf => { b.buf = buf; b.next = amb.ctx.currentTime + 0.05; });
   return b;
 }
-function loopNoise(ctx, buf, ...nodes) {
-  const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
-  src.start(0, Math.random() * buf.duration);
-  let n = src; for (const m of nodes) { n.connect(m); n = m; }
-  return n;
+function tendBed(b, t) {
+  if (!b.buf || t < b.next - 1) return;
+  const ctx = amb.ctx, at = Math.max(b.next, t), len = b.buf.duration - 0.1;
+  const src = ctx.createBufferSource(), e = ctx.createGain();
+  src.buffer = b.buf; src.connect(e).connect(b.g);
+  e.gain.setValueAtTime(0, at); e.gain.linearRampToValueAtTime(1, at + BED_XF);
+  e.gain.setValueAtTime(1, at + len - BED_XF); e.gain.linearRampToValueAtTime(0, at + len);
+  src.start(at, 0.05); src.stop(at + len + 0.05);
+  b.next = at + len - BED_XF;
+}
+function noiseBuffer(ctx, sec) {
+  const b = ctx.createBuffer(2, Math.floor(ctx.sampleRate * sec), ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) { const d = b.getChannelData(ch); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+  return b;
 }
 function startAmbience() {
   const AC = window.AudioContext || window.webkitAudioContext;
@@ -1794,25 +1808,39 @@ function startAmbience() {
   const ctx = amb.ctx = new AC();
   const master = ctx.createGain(); master.gain.value = 0;
   const muffle = ctx.createBiquadFilter(); muffle.type = 'lowpass'; muffle.frequency.value = 18000;
-  const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 3;
+  const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3;
   master.connect(muffle).connect(comp).connect(ctx.destination);
-  const white = noiseBuffer(ctx, 3, false), brown = noiseBuffer(ctx, 4, true);
-  const g = () => { const n = ctx.createGain(); n.gain.value = 0; n.connect(master); return n; };
-  const filt = (type, f, q = 0.7) => { const n = ctx.createBiquadFilter(); n.type = type; n.frequency.value = f; n.Q.value = q; return n; };
-  // waterfall: a hiss band over a rumble, both breathing slightly
-  const fallHiss = g(), fallRum = g();
-  loopNoise(ctx, white, filt('bandpass', 1100, 0.45), filt('lowpass', 4200)).connect(fallHiss);
-  loopNoise(ctx, brown, filt('lowpass', 380)).connect(fallRum);
-  // the sea: a low wash that swells and laps
-  const sea = g(), seaLP = filt('lowpass', 520);
-  loopNoise(ctx, brown, seaLP).connect(sea);
-  // rain: bright patter over a soft roar
-  const rainHi = g(), rainLo = g();
-  loopNoise(ctx, white, filt('highpass', 3200), filt('lowpass', 9000)).connect(rainHi);
-  loopNoise(ctx, white, filt('bandpass', 700, 0.5)).connect(rainLo);
-  Object.assign(amb, { master, muffle, fallHiss, fallRum, sea, seaLP, rainHi, rainLo, white, nextGull: ctx.currentTime + 2 + Math.random() * 4, lastPhase: '' });
+  const ui = ctx.createGain(); ui.gain.value = 0.5; ui.connect(comp);   // interface sounds skip the underwater muffle
+  Object.assign(amb, { master, muffle, ui, nextGull: ctx.currentTime + 4 + Math.random() * 6, lastPhase: '' });
+  // rain has no recording, so it stays synthesized: bright patter over a soft roar
+  const white = noiseBuffer(ctx, 3);
+  const rain = (type, f, q) => {
+    const src = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
+    src.buffer = white; src.loop = true; fl.type = type; fl.frequency.value = f; fl.Q.value = q; g.gain.value = 0;
+    src.connect(fl).connect(g).connect(master); src.start(0, Math.random() * 3); return g;
+  };
+  amb.rainHi = rain('highpass', 3200, 0.7); amb.rainLo = rain('bandpass', 700, 0.5);
+  SFX.forEach(loadBuf);
+  bed('sea'); bed('waterfall');
 }
-// a gull: a few falling "kee-ow" cries, a nasal glide through a band filter
+function sfx(name, { vol = 1, rate = 1, toMaster = false } = {}) {
+  if (!soundOn || !amb.ctx) return;
+  loadBuf(name).then(buf => {
+    if (!buf) return;
+    const src = amb.ctx.createBufferSource(), g = amb.ctx.createGain();
+    src.buffer = buf; src.playbackRate.value = rate; g.gain.value = vol;
+    src.connect(g).connect(toMaster ? amb.master : amb.ui); src.start();
+  });
+}
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const jitter = (r = 0.06) => 1 + (Math.random() * 2 - 1) * r;
+const ui = {
+  select: () => sfx('tick', { vol: 0.8, rate: jitter(0.08) }),
+  tap: () => sfx(pick(['drop1', 'drop2', 'drop3']), { vol: 0.7, rate: jitter() }),
+  nav: back => sfx(pick(['swoosh1', 'swoosh2', 'swoosh3', 'swoosh4']), { vol: 0.55, rate: (back ? 0.9 : 1.08) * jitter(0.03) }),
+  on: () => sfx('bubbles', { vol: 0.8 }),
+};
+// a gull now and then: a few falling "kee-ow" cries, a nasal glide through a band filter
 function gullCall(when, vol, pan) {
   const ctx = amb.ctx, out = ctx.createGain(), p = ctx.createStereoPanner(), bp = ctx.createBiquadFilter();
   p.pan.value = pan; bp.type = 'bandpass'; bp.frequency.value = 1900; bp.Q.value = 1.6;
@@ -1837,26 +1865,14 @@ function gullCall(when, vol, pan) {
     t += len + 0.07 + Math.random() * 0.08;
   }
 }
-// the paper boat landing in the pool at the foot of the falls
-function splash(vol) {
-  const ctx = amb.ctx, t = ctx.currentTime;
-  const src = ctx.createBufferSource(); src.buffer = amb.white;
-  const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(3800, t); f.frequency.exponentialRampToValueAtTime(380, t + 0.6);
-  const e = ctx.createGain(); e.gain.setValueAtTime(0, t); e.gain.linearRampToValueAtTime(vol, t + 0.012); e.gain.exponentialRampToValueAtTime(0.001, t + 0.75);
-  src.connect(f).connect(e).connect(amb.master); src.start(t, Math.random()); src.stop(t + 0.8);
-  const o = ctx.createOscillator(), og = ctx.createGain(); o.type = 'sine';   // the plop
-  o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(110, t + 0.18);
-  og.gain.setValueAtTime(vol * 0.9, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
-  o.connect(og).connect(amb.master); o.start(t); o.stop(t + 0.25);
-}
 const fallPt = new THREE.Vector3(), tmpEar = new THREE.Vector3();
 function updateAmbience(dt, fpOn) {
   if (!amb.ctx) return;
   const ctx = amb.ctx, t = ctx.currentTime, k = 1 - Math.exp(-dt * 2.5);
   amb.gain += ((soundOn && !document.hidden ? 1 : 0) - amb.gain) * k;
-  amb.master.gain.setTargetAtTime(amb.gain * 0.9, t, 0.05);
+  amb.master.gain.setTargetAtTime(amb.gain, t, 0.05);
   if (amb.gain < 0.002) return;
-  const set = (node, v) => node.gain.setTargetAtTime(v, t, 0.25);
+  const set = (node, v) => node.gain.setTargetAtTime(v, t, 0.3);
   // how near the waterfall the listener is: close-ups and first person bring it up
   let near;
   if (fpOn) {
@@ -1865,20 +1881,25 @@ function updateAmbience(dt, fpOn) {
     for (const c of [-1, 0, 1]) d = Math.min(d, tmpEar.copy(fallPt).addScaledVector(STEP, c).distanceTo(fpEye));
     near = clamp01(1.4 / (0.6 + d * 0.35));
   } else near = THREE.MathUtils.lerp(0.45, 0.85, clamp01((1 - state.zoom * (1 - state.ride)) * 1.6));
-  const breathe = 0.88 + 0.12 * Math.sin(t * 0.7) * Math.sin(t * 0.23 + 1);
-  set(amb.fallHiss, 0.16 * near * breathe); set(amb.fallRum, 0.5 * near);
-  const swell = 0.55 + 0.45 * Math.max(0, Math.sin(t * 0.42) * 0.7 + Math.sin(t * 0.17 + 2) * 0.3);
-  set(amb.sea, (fpOn ? 0.35 : 0.55) * swell);
-  amb.seaLP.frequency.setTargetAtTime(380 + 420 * swell, t, 0.3);
+  const sea = bed('sea'), fall = bed('waterfall');
+  tendBed(sea, t); tendBed(fall, t);
+  set(sea.g, fpOn ? 0.55 : 0.8); set(fall.g, 1.1 * near);
+  // the time-of-day bed crossfades with the palette
+  for (const [name, file] of Object.entries(LAYER)) {
+    const want = target.name === name ? 1 : 0;
+    const w = amb.layerW[name] = (amb.layerW[name] || 0) + (want - (amb.layerW[name] || 0)) * (1 - Math.exp(-dt * 0.8));
+    if (w < 0.002 && !amb.beds[file]) continue;
+    const b = bed(file); tendBed(b, t); set(b.g, w * 0.7);
+  }
   set(amb.rainHi, 0.11 * cur.rain); set(amb.rainLo, 0.08 * cur.rain);
   amb.muffle.frequency.setTargetAtTime(fpOn ? THREE.MathUtils.lerp(18000, 420, fpUnder) : 18000, t, 0.06);
-  // gulls: now and then by day, rarer in rain, none at night
-  const gullAmt = (1 - cur.night * 0.95) * (1 - cur.rain * 0.7);
+  // gulls: by day and dusk now and then, rarer in rain, none at night
+  const gullAmt = (1 - cur.night * 0.8) * (1 - cur.rain * 0.7) * (target.name === 'night' ? 0 : 1);
   if (t > amb.nextGull) {
-    if (Math.random() < gullAmt) gullCall(t + 0.05, 0.045 + Math.random() * 0.035, Math.random() * 1.6 - 0.8);
-    amb.nextGull = t + 6 + Math.random() * 12;
+    if (Math.random() < gullAmt) gullCall(t + 0.05, 0.03 + Math.random() * 0.025, Math.random() * 1.6 - 0.8);
+    amb.nextGull = t + 8 + Math.random() * 14;
   }
-  if (A.phase === 'settle' && amb.lastPhase === 'fall') splash(0.35);
+  if (A.phase === 'settle' && amb.lastPhase === 'fall') sfx('splash', { vol: 0.9, rate: jitter(0.05), toMaster: true });
   amb.lastPhase = A.phase;
 }
 function setSound(on, fromClick) {
@@ -1886,20 +1907,16 @@ function setSound(on, fromClick) {
   try { localStorage.setItem('harbour-sound', on ? 'on' : 'off'); } catch (e) {}
   soundBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
   soundBtn.querySelector('.snd-lbl').textContent = on ? 'Sound on' : 'Sound off';
-  setCues(on);
   if (on && !amb.ctx) startAmbience();
   if (on && amb.ctx && amb.ctx.state !== 'running') amb.ctx.resume().catch(() => {});
-  if (fromClick) cue('toggle', { direction: on ? 'forward' : 'back' });
+  if (on && fromClick) ui.on();
 }
-setCueVolume(0.55);
-const wasOn = soundOn;
-setCues(false);
-soundBtn.addEventListener('click', () => { if (!soundOn) setCues(true); setSound(!soundOn, true); });
+soundBtn.addEventListener('click', () => setSound(!soundOn, true));
 // a visitor who turned sound on before: browsers need a gesture first, so start on their first one
-if (wasOn) {
+if (soundOn) {
+  soundOn = false;
   soundBtn.setAttribute('aria-pressed', 'true');
   soundBtn.querySelector('.snd-lbl').textContent = 'Sound on';
-  soundOn = false;
   const wake = e => {
     removeEventListener('pointerdown', wake, true); removeEventListener('keydown', wake, true);
     if (e.target.closest && e.target.closest('#soundBtn')) { soundOn = true; return; }   // the button's own click turns it off
@@ -1907,10 +1924,9 @@ if (wasOn) {
   };
   addEventListener('pointerdown', wake, true); addEventListener('keydown', wake, true);
 }
-document.querySelectorAll('#timeSeg button, #modeSeg button').forEach(b => b.setAttribute('data-cuelume-select', ''));
-$('trueAngle').setAttribute('data-cuelume-tap', '');
-$('links').setAttribute('data-cuelume-tap', '');
-bindCues();
+document.querySelectorAll('#timeSeg button, #modeSeg button').forEach(b => b.addEventListener('click', () => ui.select()));
+$('trueAngle').addEventListener('click', () => ui.tap());
+$('links').addEventListener('click', e => { if (e.target.closest('a')) ui.tap(); });
 addEventListener('visibilitychange', () => { if (amb.ctx && !document.hidden && soundOn) amb.ctx.resume().catch(() => {}); });
 
 // ─────────────────────────────────────────────────────────────
@@ -1957,7 +1973,7 @@ function frame(nowMs) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__iso = { HB, seaU, reflRT, renderer, uPT, uPTY, lv0, amb, gullCall, splash, state, setTime, setMode, goChapter, goView, D, aim, tween, updateTween, timing: { SETTLE, ROUTE, TIP, FALL } };
+window.__iso = { HB, seaU, reflRT, renderer, uPT, uPTY, lv0, amb, gullCall, sfx, updateAmbience, state, setTime, setMode, goChapter, goView, D, aim, tween, updateTween, timing: { SETTLE, ROUTE, TIP, FALL } };
 </script>
 </body>
 </html>
