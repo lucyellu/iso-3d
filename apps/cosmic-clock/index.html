@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Age Clock</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --accent-years: #ffffff;
+            --accent-months: #FF3B30;
+            --accent-weeks: #FF9500;
+            --accent-days: #FFCC00;
+            --accent-hours: #4CD964;
+            --accent-minutes: #5AC8FA;
+            --accent-seconds: #007AFF;
+            
+            --ring-gap: 35px;
+            --center-size: 160px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Roboto Mono', monospace;
+            color: var(--text-color);
+            margin: 0;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Paper texture */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.01) 2px, rgba(255, 255, 255, 0.01) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 255, 255, 0.01) 2px, rgba(255, 255, 255, 0.01) 4px);
+            pointer-events: none;
+            opacity: 0.3;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            max-width: 1600px;
+            margin: 0 auto;
+            z-index: 2;
+        }
+
+        /* --- HEADER --- */
+        header {
+            text-align: center;
+            padding: 20px 0 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: #fff;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.9em;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Earth Time */
+        .earth-time-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px 25px;
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .earth-time-label {
+            color: #666;
+            font-size: 0.7em;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .earth-time-display {
+            font-size: 1.4em;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #888;
+            padding: 10px 20px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.75em;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .control-btn.active {
+            background: rgba(0, 122, 255, 0.15);
+            border-color: var(--accent-seconds);
+            color: var(--accent-seconds);
+        }
+
+        /* View toggle */
+        .view-toggle {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #666;
+            padding: 8px 16px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.7em;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn.active {
+            background: rgba(76, 217, 100, 0.15);
+            border-color: var(--accent-hours);
+            color: var(--accent-hours);
+        }
+
+        /* Clocks grid - 2 per row for compare */
+        .clocks-grid {
+            display: grid;
+            gap: 50px;
+            margin-bottom: 40px;
+        }
+
+        .clocks-grid.single-view {
+            grid-template-columns: 1fr;
+            justify-items: center;
+        }
+
+        .clocks-grid.multi-view {
+            grid-template-columns: repeat(2, 1fr);
+            max-width: 1400px;
+            margin: 0 auto 40px;
+        }
+
+        /* Clock wrapper */
+        .clock-wrapper {
+            width: 100%;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        .clock-wrapper.hidden {
+            display: none;
+        }
+
+        .clock-title {
+            text-align: center;
+            color: #fff;
+            font-size: 1.3em;
+            font-weight: 500;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+        }
+
+        /* --- CLOCK STAGE --- */
+        .universe-stage {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            max-width: 650px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, transparent 60%);
+        }
+
+        /* Ring containers */
+        .ring-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Ring sizes */
+        .ring-0 { 
+            width: var(--center-size); 
+            height: var(--center-size); 
+            background: #222;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            z-index: 10;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ring-1 { width: calc(var(--center-size) + (var(--ring-gap) * 2)); height: calc(var(--center-size) + (var(--ring-gap) * 2)); z-index: 9; }
+        .ring-2 { width: calc(var(--center-size) + (var(--ring-gap) * 4)); height: calc(var(--center-size) + (var(--ring-gap) * 4)); z-index: 8; }
+        .ring-3 { width: calc(var(--center-size) + (var(--ring-gap) * 6)); height: calc(var(--center-size) + (var(--ring-gap) * 6)); z-index: 7; }
+        .ring-4 { width: calc(var(--center-size) + (var(--ring-gap) * 8)); height: calc(var(--center-size) + (var(--ring-gap) * 8)); z-index: 6; }
+        .ring-5 { width: calc(var(--center-size) + (var(--ring-gap) * 10)); height: calc(var(--center-size) + (var(--ring-gap) * 10)); z-index: 5; }
+        .ring-6 { width: calc(var(--center-size) + (var(--ring-gap) * 12)); height: calc(var(--center-size) + (var(--ring-gap) * 12)); z-index: 4; }
+
+        /* Rotator - the spinning part */
+        .rotator {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 50%;
+            transition: transform 0.5s cubic-bezier(0.4, 2.08, 0.55, 0.44);
+            pointer-events: none;
+        }
+
+        /* Dial numbers */
+        .dial-number {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            transform-origin: 50% var(--radius);
+            font-size: 0.7rem;
+            color: #444;
+            width: 30px;
+            margin-left: -15px;
+            text-align: center;
+            padding-top: 5px;
+        }
+
+        .active-val {
+            color: var(--highlight-color) !important;
+            font-weight: bold;
+            font-size: 0.85rem;
+            text-shadow: 0 0 8px var(--highlight-color);
+        }
+
+        /* Ring labels */
+        .ring-label {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-color);
+            padding: 0 5px;
+            font-size: 0.6rem;
+            color: var(--highlight-color);
+            font-weight: bold;
+            letter-spacing: 1px;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        /* Center content */
+        .center-content {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .center-label {
+            font-size: 0.7rem;
+            color: #777;
+            letter-spacing: 2px;
+        }
+
+        .center-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--accent-years);
+            line-height: 1.2;
+        }
+
+        .center-sub {
+            font-size: 0.6rem;
+            color: #555;
+        }
+
+        /* Master needle indicator */
+        .master-needle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 380px;
+            background: linear-gradient(to top, transparent 50%, rgba(255,255,255,0.1) 50%);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .master-needle::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -4px;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 8px solid #fff;
+        }
+
+        /* Info box */
+        .info-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px 25px;
+            margin-top: 40px;
+            color: #888;
+            font-size: 0.8em;
+            line-height: 1.7;
+        }
+
+        .info-box h3 {
+            color: #fff;
+            font-size: 0.95em;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .info-box li {
+            margin-bottom: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .clocks-grid.multi-view {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8em; }
+            
+            .universe-stage {
+                transform: scale(0.85);
+            }
+            
+            :root {
+                --ring-gap: 30px;
+                --center-size: 140px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 1.4em; }
+            
+            .universe-stage {
+                transform: scale(0.7);
+            }
+            
+            :root {
+                --ring-gap: 25px;
+                --center-size: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⏳ COSMIC AGE CLOCK</h1>
+            <div class="subtitle">Ages Since Formation</div>
+        </header>
+
+        <!-- Earth Time -->
+        <div class="earth-time-box">
+            <div class="earth-time-label">Current Earth Time (PST/PDT)</div>
+            <div class="earth-time-display" id="earth-time">Loading...</div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="control-btn active" data-object="universe">Universe (13.787 Ga)</button>
+            <button class="control-btn" data-object="sun">Sun (4.603 Ga)</button>
+            <button class="control-btn" data-object="earth">Earth (4.543 Ga)</button>
+            <button class="control-btn" data-object="moon">Moon (4.510 Ga)</button>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="view-toggle">
+            <button class="toggle-btn active" data-view="single">Single View</button>
+            <button class="toggle-btn" data-view="compare">Compare (2 per row)</button>
+        </div>
+
+        <!-- Clocks Grid -->
+        <div class="clocks-grid single-view" id="clocks-grid">
+            <!-- Universe Clock -->
+            <div class="clock-wrapper" data-clock="universe">
+                <div class="clock-title">UNIVERSE</div>
+                <div class="universe-stage">
+                    <div class="master-needle"></div>
+
+                    <!-- Ring 6: Seconds -->
+                    <div class="ring-container ring-6" style="--highlight-color: var(--accent-seconds)">
+                        <div class="ring-label">SECONDS</div>
+                        <div class="rotator" data-rotator="universe-seconds" style="--radius: 290px;"></div>
+                    </div>
+
+                    <!-- Ring 5: Minutes -->
+                    <div class="ring-container ring-5" style="--highlight-color: var(--accent-minutes)">
+                        <div class="ring-label">MINUTES</div>
+                        <div class="rotator" data-rotator="universe-minutes" style="--radius: 255px;"></div>
+                    </div>
+
+                    <!-- Ring 4: Hours -->
+                    <div class="ring-container ring-4" style="--highlight-color: var(--accent-hours)">
+                        <div class="ring-label">HOURS</div>
+                        <div class="rotator" data-rotator="universe-hours" style="--radius: 220px;"></div>
+                    </div>
+
+                    <!-- Ring 3: Days -->
+                    <div class="ring-container ring-3" style="--highlight-color: var(--accent-days)">
+                        <div class="ring-label">DAYS</div>
+                        <div class="rotator" data-rotator="universe-days" style="--radius: 185px;"></div>
+                    </div>
+
+                    <!-- Ring 2: Weeks -->
+                    <div class="ring-container ring-2" style="--highlight-color: var(--accent-weeks)">
+                        <div class="ring-label">WEEKS</div>
+                        <div class="rotator" data-rotator="universe-weeks" style="--radius: 150px;"></div>
+                    </div>
+
+                    <!-- Ring 1: Months -->
+                    <div class="ring-container ring-1" style="--highlight-color: var(--accent-months)">
+                        <div class="ring-label">MONTHS</div>
+                        <div class="rotator" data-rotator="universe-months" style="--radius: 115px;"></div>
+                    </div>
+
+                    <!-- Center: Years -->
+                    <div class="ring-container ring-0">
+                        <div class="center-content">
+                            <span class="center-label">YEARS</span>
+                            <span class="center-value" data-value="universe-years">0</span>
+                            <span class="center-sub">Since Big Bang</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sun Clock -->
+            <div class="clock-wrapper hidden" data-clock="sun">
+                <div class="clock-title">SUN</div>
+                <div class="universe-stage">
+                    <div class="master-needle"></div>
+                    <div class="ring-container ring-6" style="--highlight-color: var(--accent-seconds)">
+                        <div class="ring-label">SECONDS</div>
+                        <div class="rotator" data-rotator="sun-seconds" style="--radius: 290px;"></div>
+                    </div>
+                    <div class="ring-container ring-5" style="--highlight-color: var(--accent-minutes)">
+                        <div class="ring-label">MINUTES</div>
+                        <div class="rotator" data-rotator="sun-minutes" style="--radius: 255px;"></div>
+                    </div>
+                    <div class="ring-container ring-4" style="--highlight-color: var(--accent-hours)">
+                        <div class="ring-label">HOURS</div>
+                        <div class="rotator" data-rotator="sun-hours" style="--radius: 220px;"></div>
+                    </div>
+                    <div class="ring-container ring-3" style="--highlight-color: var(--accent-days)">
+                        <div class="ring-label">DAYS</div>
+                        <div class="rotator" data-rotator="sun-days" style="--radius: 185px;"></div>
+                    </div>
+                    <div class="ring-container ring-2" style="--highlight-color: var(--accent-weeks)">
+                        <div class="ring-label">WEEKS</div>
+                        <div class="rotator" data-rotator="sun-weeks" style="--radius: 150px;"></div>
+                    </div>
+                    <div class="ring-container ring-1" style="--highlight-color: var(--accent-months)">
+                        <div class="ring-label">MONTHS</div>
+                        <div class="rotator" data-rotator="sun-months" style="--radius: 115px;"></div>
+                    </div>
+                    <div class="ring-container ring-0">
+                        <div class="center-content">
+                            <span class="center-label">YEARS</span>
+                            <span class="center-value" data-value="sun-years">0</span>
+                            <span class="center-sub">Since Formation</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Earth Clock -->
+            <div class="clock-wrapper hidden" data-clock="earth">
+                <div class="clock-title">EARTH</div>
+                <div class="universe-stage">
+                    <div class="master-needle"></div>
+                    <div class="ring-container ring-6" style="--highlight-color: var(--accent-seconds)">
+                        <div class="ring-label">SECONDS</div>
+                        <div class="rotator" data-rotator="earth-seconds" style="--radius: 290px;"></div>
+                    </div>
+                    <div class="ring-container ring-5" style="--highlight-color: var(--accent-minutes)">
+                        <div class="ring-label">MINUTES</div>
+                        <div class="rotator" data-rotator="earth-minutes" style="--radius: 255px;"></div>
+                    </div>
+                    <div class="ring-container ring-4" style="--highlight-color: var(--accent-hours)">
+                        <div class="ring-label">HOURS</div>
+                        <div class="rotator" data-rotator="earth-hours" style="--radius: 220px;"></div>
+                    </div>
+                    <div class="ring-container ring-3" style="--highlight-color: var(--accent-days)">
+                        <div class="ring-label">DAYS</div>
+                        <div class="rotator" data-rotator="earth-days" style="--radius: 185px;"></div>
+                    </div>
+                    <div class="ring-container ring-2" style="--highlight-color: var(--accent-weeks)">
+                        <div class="ring-label">WEEKS</div>
+                        <div class="rotator" data-rotator="earth-weeks" style="--radius: 150px;"></div>
+                    </div>
+                    <div class="ring-container ring-1" style="--highlight-color: var(--accent-months)">
+                        <div class="ring-label">MONTHS</div>
+                        <div class="rotator" data-rotator="earth-months" style="--radius: 115px;"></div>
+                    </div>
+                    <div class="ring-container ring-0">
+                        <div class="center-content">
+                            <span class="center-label">YEARS</span>
+                            <span class="center-value" data-value="earth-years">0</span>
+                            <span class="center-sub">Since Formation</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Moon Clock -->
+            <div class="clock-wrapper hidden" data-clock="moon">
+                <div class="clock-title">MOON</div>
+                <div class="universe-stage">
+                    <div class="master-needle"></div>
+                    <div class="ring-container ring-6" style="--highlight-color: var(--accent-seconds)">
+                        <div class="ring-label">SECONDS</div>
+                        <div class="rotator" data-rotator="moon-seconds" style="--radius: 290px;"></div>
+                    </div>
+                    <div class="ring-container ring-5" style="--highlight-color: var(--accent-minutes)">
+                        <div class="ring-label">MINUTES</div>
+                        <div class="rotator" data-rotator="moon-minutes" style="--radius: 255px;"></div>
+                    </div>
+                    <div class="ring-container ring-4" style="--highlight-color: var(--accent-hours)">
+                        <div class="ring-label">HOURS</div>
+                        <div class="rotator" data-rotator="moon-hours" style="--radius: 220px;"></div>
+                    </div>
+                    <div class="ring-container ring-3" style="--highlight-color: var(--accent-days)">
+                        <div class="ring-label">DAYS</div>
+                        <div class="rotator" data-rotator="moon-days" style="--radius: 185px;"></div>
+                    </div>
+                    <div class="ring-container ring-2" style="--highlight-color: var(--accent-weeks)">
+                        <div class="ring-label">WEEKS</div>
+                        <div class="rotator" data-rotator="moon-weeks" style="--radius: 150px;"></div>
+                    </div>
+                    <div class="ring-container ring-1" style="--highlight-color: var(--accent-months)">
+                        <div class="ring-label">MONTHS</div>
+                        <div class="rotator" data-rotator="moon-months" style="--radius: 115px;"></div>
+                    </div>
+                    <div class="ring-container ring-0">
+                        <div class="center-content">
+                            <span class="center-label">YEARS</span>
+                            <span class="center-value" data-value="moon-years">0</span>
+                            <span class="center-sub">Since Formation</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Box -->
+        <div class="info-box">
+            <h3>⏰ How This Clock Works</h3>
+            <p>Each clock displays time as rotating concentric dials, like nested clock faces. The rings rotate to show the current time unit value aligned with the top indicator needle.</p>
+            <ul>
+                <li><strong>Rotating Dials:</strong> Each ring rotates to position the current value (second, minute, hour, etc.) at the top</li>
+                <li><strong>Universe:</strong> 13.787 billion years since the Big Bang (Planck/CMB estimate)</li>
+                <li><strong>Sun:</strong> 4.603 billion years since formation</li>
+                <li><strong>Earth:</strong> 4.543 billion years since formation</li>
+                <li><strong>Moon:</strong> 4.510 billion years since Giant Impact event</li>
+            </ul>
+            <p style="margin-top: 15px;">Use "Compare" mode to view up to 2 clocks side-by-side for easy comparison.</p>
+        </div>
+    </div>
+
+    <script>
+        // Cosmic object data
+        const COSMIC_OBJECTS = {
+            universe: { age: 13.787, name: 'Universe' },
+            sun: { age: 4.603, name: 'Sun' },
+            earth: { age: 4.543, name: 'Earth' },
+            moon: { age: 4.510, name: 'Moon' }
+        };
+
+        const BASE_AGE_BILLION_YEARS = 13.787;
+        const BILLION = 1_000_000_000;
+        const START_TIME = Date.now();
+
+        let currentView = 'single';
+        let selectedObjects = new Set(['universe']);
+
+        // Build dial numbers for each rotator
+        function buildDial(rotatorSelector, count, startAtOne = false) {
+            const containers = document.querySelectorAll(`[data-rotator="${rotatorSelector}"]`);
+            
+            containers.forEach(container => {
+                const radius = parseFloat(container.style.getPropertyValue('--radius'));
+                const angleStep = 360 / count;
+
+                for (let i = 0; i < count; i++) {
+                    const el = document.createElement('div');
+                    el.className = 'dial-number';
+                    let num = startAtOne ? i + 1 : i;
+                    el.innerText = num;
+                    el.style.transform = `rotate(${i * angleStep}deg) translateY(0px)`;
+                    el.style.height = `${radius}px`;
+                    el.dataset.val = num;
+                    container.appendChild(el);
+                }
+            });
+        }
+
+        // Build all dials for all objects
+        ['universe', 'sun', 'earth', 'moon'].forEach(obj => {
+            buildDial(`${obj}-seconds`, 60);
+            buildDial(`${obj}-minutes`, 60);
+            buildDial(`${obj}-hours`, 24);
+            buildDial(`${obj}-days`, 31, true);
+            buildDial(`${obj}-weeks`, 5);
+            buildDial(`${obj}-months`, 12);
+        });
+
+        // Rotate ring to show current value at top
+        function rotateRing(rotatorSelector, value, count, isOneBased = false) {
+            const containers = document.querySelectorAll(`[data-rotator="${rotatorSelector}"]`);
+            const step = 360 / count;
+            let index = isOneBased ? value - 1 : value;
+            const rotation = -(index * step);
+
+            containers.forEach(container => {
+                container.style.transform = `rotate(${rotation}deg)`;
+
+                // Highlight active number
+                const numbers = container.querySelectorAll('.dial-number');
+                numbers.forEach(numDiv => {
+                    if (parseInt(numDiv.dataset.val) === value) {
+                        numDiv.classList.add('active-val');
+                    } else {
+                        numDiv.classList.remove('active-val');
+                    }
+                });
+            });
+        }
+
+        // Update all clocks
+        function updateDisplay() {
+            const now = Date.now();
+            const nowObj = new Date();
+            
+            // Earth time header
+            const options = { 
+                weekday: 'short', 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            };
+            document.getElementById('earth-time').textContent = nowObj.toLocaleString('en-US', options);
+
+            // Update years display for each object
+            Object.keys(COSMIC_OBJECTS).forEach(key => {
+                const obj = COSMIC_OBJECTS[key];
+                const totalYears = obj.age * BILLION;
+                const yearDisplay = Math.floor(totalYears).toLocaleString();
+                
+                const yearElement = document.querySelector(`[data-value="${key}-years"]`);
+                if (yearElement) {
+                    yearElement.textContent = yearDisplay;
+                }
+            });
+
+            // Get current time values
+            const uSeconds = nowObj.getSeconds();
+            const uMinutes = nowObj.getMinutes();
+            const uHours = nowObj.getHours();
+            const uDays = nowObj.getDate();
+            const uMonths = nowObj.getMonth();
+            const uWeeks = Math.floor((uDays - 1) / 7);
+
+            // Rotate all rings for all objects
+            ['universe', 'sun', 'earth', 'moon'].forEach(obj => {
+                rotateRing(`${obj}-seconds`, uSeconds, 60);
+                rotateRing(`${obj}-minutes`, uMinutes, 60);
+                rotateRing(`${obj}-hours`, uHours, 24);
+                rotateRing(`${obj}-days`, uDays, 31, true);
+                rotateRing(`${obj}-weeks`, uWeeks, 5);
+                rotateRing(`${obj}-months`, uMonths, 12);
+            });
+        }
+
+        // Control handlers
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const objectKey = btn.dataset.object;
+                
+                if (currentView === 'single') {
+                    document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    document.querySelectorAll('.clock-wrapper').forEach(clock => {
+                        clock.classList.add('hidden');
+                    });
+                    document.querySelector(`[data-clock="${objectKey}"]`).classList.remove('hidden');
+                    
+                    selectedObjects = new Set([objectKey]);
+                } else {
+                    if (selectedObjects.has(objectKey)) {
+                        if (selectedObjects.size > 1) {
+                            selectedObjects.delete(objectKey);
+                            btn.classList.remove('active');
+                            document.querySelector(`[data-clock="${objectKey}"]`).classList.add('hidden');
+                        }
+                    } else {
+                        selectedObjects.add(objectKey);
+                        btn.classList.add('active');
+                        document.querySelector(`[data-clock="${objectKey}"]`).classList.remove('hidden');
+                    }
+                }
+            });
+        });
+
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const view = btn.dataset.view;
+                currentView = view;
+                
+                document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const grid = document.getElementById('clocks-grid');
+                
+                if (view === 'single') {
+                    grid.className = 'clocks-grid single-view';
+                    const firstSelected = Array.from(selectedObjects)[0];
+                    document.querySelectorAll('.clock-wrapper').forEach(clock => {
+                        clock.classList.add('hidden');
+                    });
+                    document.querySelector(`[data-clock="${firstSelected}"]`).classList.remove('hidden');
+                    
+                    document.querySelectorAll('.control-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.object === firstSelected);
+                    });
+                } else {
+                    grid.className = 'clocks-grid multi-view';
+                    selectedObjects.forEach(key => {
+                        document.querySelector(`[data-clock="${key}"]`).classList.remove('hidden');
+                    });
+                    
+                    document.querySelectorAll('.control-btn').forEach(btn => {
+                        btn.classList.toggle('active', selectedObjects.has(btn.dataset.object));
+                    });
+                }
+            });
+        });
+
+        // Initialize
+        updateDisplay();
+        setInterval(updateDisplay, 1000);
+    </script>
+</body>
+</html>
