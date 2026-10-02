@@ -494,35 +494,6 @@ function concreteify(mat, amt = 1) {
   return mat;
 }
 
-// Wood: grain runs along each piece's longest axis (boxes bake it into aGrain: 0 = y, 1 = x, 2 = z),
-// with streaks, a few darker rings and a derivative bump so the light catches the grain.
-function woodify(mat, amt = 1) {
-  mat.onBeforeCompile = sh => {
-    sh.vertexShader = 'attribute float aGrain; varying vec3 vLP; varying float vGr;\n' + sh.vertexShader.replace('#include <project_vertex>',
-      '#include <project_vertex>\n  vLP = transformed; vGr = aGrain;');
-    sh.fragmentShader = 'varying vec3 vLP; varying float vGr;\n' + CONCRETE_GLSL.replace('varying vec3 vWP; uniform float uSeaOn;\n', '') + `
-float woodH(vec3 p, float g) {
-  vec3 q = g < 0.5 ? p.xzy : (g < 1.5 ? p.yzx : p.xyz);   // q.z runs along the grain
-  float w = vn3(vec3(q.xy * 9.0, q.z * 0.8)) * 0.35;
-  float rings = sin((q.x * 38.0 + q.y * 26.0) + w * 8.0 + vn3(vec3(q.xy * 3.0, q.z * 0.4)) * 6.0);
-  float fine = vn3(vec3(q.xy * 30.0, q.z * 1.6));
-  return rings * 0.5 + fine * 0.8 + w;
-}
-` + sh.fragmentShader
-      .replace('#include <color_fragment>', `#include <color_fragment>
-      float wh = woodH(vLP, vGr);
-      diffuseColor.rgb *= mix(1.0, 0.88 + 0.16 * smoothstep(-0.6, 1.4, wh), ${amt.toFixed(2)});`)
-      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
-      { vec2 dH = vec2(dFdx(wh), dFdy(wh)) * 0.16 * ${amt.toFixed(2)};
-        vec3 sX = dFdx(-vViewPosition), sY = dFdy(-vViewPosition);
-        vec3 R1 = cross(sY, normal), R2 = cross(normal, sX);
-        float det = dot(sX, R1);
-        normal = normalize(abs(det) * normal - sign(det) * (dH.x * R1 + dH.y * R2)); }`);
-  };
-  mat.customProgramCacheKey = () => 'wood' + amt;
-  return mat;
-}
-
 // Painted steel: fine pitting, rust blooms and drips that eat the paint and kill the sheen.
 function metalify(mat, amt = 1) {
   mat.onBeforeCompile = sh => {
@@ -679,7 +650,7 @@ const FIXED_C = Object.fromEntries(Object.entries(FIXED).map(([k, v]) => [k, new
 function makeMats() {
   const lam = () => new THREE.MeshLambertMaterial();
   return {
-    stone: concreteify(lam()), rim: concreteify(lam(), 0.7), creature: lam(), ink: lam(), paper: lam(), leaf: lam(), pencil: lam(), eraser: lam(), wood: woodify(lam()), bobber: lam(),
+    stone: concreteify(lam()), rim: concreteify(lam(), 0.7), creature: lam(), ink: lam(), paper: lam(), leaf: lam(), pencil: lam(), eraser: lam(), wood: lam(), bobber: lam(),
     lamp: new THREE.MeshBasicMaterial(),
     foam: new THREE.MeshBasicMaterial(),
     water: waterMat(), fall: fallMat(),
@@ -716,7 +687,6 @@ function box(mat, x0, x1, y0, y1, z0, z1, skipFace = -1) {
     idx.splice(gr.start, gr.count);
     geo.setIndex(idx);
   }
-  geo.setAttribute('aGrain', new THREE.Float32BufferAttribute(new Float32Array(geo.attributes.position.count).fill(w >= h && w >= d ? 1 : d >= h ? 2 : 0), 1));
   const m = new THREE.Mesh(geo, mat);
   m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
   return m;
@@ -1038,8 +1008,7 @@ const HC = { conc: '#8f988e', deck: '#b8b09a', paint: '#c9a64e', paint2: '#7f9a8
 const HM = (() => {
   const lam = c => new THREE.MeshLambertMaterial({ color: c });
   const H = {};
-  H.deckWood = woodify(lam(HC.deckWood), 0.9);
-  for (const k of ['hull', 'hullWhite', 'gull', 'awning', 'glass', 'dark']) H[k] = lam(HC[k]);
+  for (const k of ['hull', 'hullWhite', 'deckWood', 'gull', 'awning', 'glass', 'dark']) H[k] = lam(HC[k]);
   const steel = (c, spec, shin) => new THREE.MeshPhongMaterial({ color: c, specular: spec, shininess: shin });
   H.metal = metalify(steel(HC.metal, '#6f7c78', 46));         // mast, rails, poles, stair
   H.cream = metalify(steel(HC.cream, '#9a9a90', 30), 0.55);   // AC units, tank, boat cabin
@@ -1381,9 +1350,9 @@ cloudScene.add(scud);
 // and a dark one dropped further (the underside). Each is a camera-facing card drifting left to right
 // high over the pier, laid out across the top and bottom of the frame and kept off the middle.
 const PUFFS = [
-  { sx: -24, sy: 9.4, h: 15, w: 11 }, { sx: -9, sy: 10.2, h: 18, w: 8.5 }, { sx: 6, sy: 9.6, h: 14, w: 12 },
-  { sx: 20, sy: 10, h: 17, w: 9 }, { sx: -16, sy: -9.2, h: 12, w: 10 }, { sx: 13, sy: -9, h: 13, w: 9.5 },
-  { sx: 29, sy: 4.4, h: 16, w: 7.5 }, { sx: -32, sy: 5.2, h: 15, w: 8 },
+  { sx: -26, sy: 9.4, h: 15, w: 8 }, { sx: -12, sy: 10.4, h: 18, w: 6.5 }, { sx: 6, sy: 9.8, h: 14, w: 24 },
+  { sx: 27, sy: 10, h: 17, w: 7 }, { sx: -16, sy: -9.2, h: 12, w: 10 }, { sx: 13, sy: -9, h: 13, w: 13 },
+  { sx: 31, sy: 4.4, h: 16, w: 5.5 }, { sx: -33, sy: 5.2, h: 15, w: 9 },
 ];
 const PUFF_SPAN = 72, PUFF_WIND = 0.22;
 const puffC = { uBody: { value: new THREE.Color() }, uBelly: { value: new THREE.Color() }, uUnder: { value: new THREE.Color() } };
@@ -2248,7 +2217,7 @@ function drawFx(t) {
     fctx.stroke();
   }
   const night = cur.night;
-  for (const p of motes) {
+  for (const p of (state.mode === 'fp' && night > 0.5 ? [] : motes)) {
     const x = ((p.x + 0.02 * Math.sin(t * 0.3 * p.sp + p.ph) + t * 0.004 * p.sp) % 1) * w;
     const y = ((p.y - t * 0.006 * p.sp + 10) % 1) * h;
     const tw = 0.5 + 0.5 * Math.sin(t * (1.5 + p.sp * 2) + p.ph);
