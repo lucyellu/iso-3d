@@ -1,0 +1,1832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Zodiac Watch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Roboto+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Default = DARK theme */
+    --main-color: #ffffff;
+    --bg-color:   #141515;
+    --pst-color:  #e57513;
+    --cn-color:   #c8a4d8;
+    --ink-2:      #c8c2b3;
+    --ink-3:      #888378;
+
+    /* Semantic surface tokens — referenced by HUD, tooltip, settings.
+       Override in body.light-mode for the inverted theme. */
+    --ink-on-glass:    rgba(255,255,255,0.92);
+    --ink-soft-1:      rgba(255,255,255,0.78);
+    --ink-soft-2:      rgba(255,255,255,0.40);
+    --ink-soft-3:      rgba(255,255,255,0.32);
+    --ink-soft-4:      rgba(255,255,255,0.22);
+    --hairline-1:      rgba(255,255,255,0.06);
+    --hairline-2:      rgba(255,255,255,0.10);
+    --hairline-3:      rgba(255,255,255,0.14);
+    --hairline-strong: rgba(255,255,255,0.25);
+    --tick-faint:      rgba(255,255,255,0.18);
+    --tick-major:      rgba(255,255,255,0.32);
+    --ring-track:      rgba(255,255,255,0.06);
+    --glass-bg:        rgba(20,21,21,0.65);
+    --glass-bg-strong: rgba(20,21,21,0.96);
+    --glass-bg-mid:    rgba(20,21,21,0.78);
+    --glass-bg-hover:  rgba(40,42,42,0.85);
+    --glass-input:     rgba(20,21,21,0.7);
+    --shadow-deep:     0 10px 30px rgba(0,0,0,0.6);
+    --shadow-drawer:   -10px 0 40px rgba(0,0,0,0.5);
+    --scrim-bg:        rgba(10,10,10,0.55);
+    --row-bg:          rgba(255,255,255,0.06);
+    --row-soft:        rgba(255,255,255,0.03);
+    --noise-blend:     screen;
+    --noise-alpha:     0.03;
+
+    --el-wood:  #4abf6a;
+    --el-fire:  #e8443a;
+    --el-earth: #f0c050;
+    --el-metal: #e8e4d8;
+    --el-water: #5a7ab0;
+
+    --radius: 30vh;
+  }
+
+  body.light-mode {
+    --main-color: #1a1a1a;
+    --bg-color:   #f0ece4;
+    /* Zone accents (--pst-color, --cn-color) are user-chosen; we keep
+       them and trust contrast. */
+    --ink-2:      #3a3a3a;
+    --ink-3:      #7a7368;
+
+    --ink-on-glass:    rgba(20,21,21,0.92);
+    --ink-soft-1:      rgba(20,21,21,0.78);
+    --ink-soft-2:      rgba(20,21,21,0.40);
+    --ink-soft-3:      rgba(20,21,21,0.32);
+    --ink-soft-4:      rgba(20,21,21,0.30);
+    --hairline-1:      rgba(20,21,21,0.08);
+    --hairline-2:      rgba(20,21,21,0.12);
+    --hairline-3:      rgba(20,21,21,0.18);
+    --hairline-strong: rgba(20,21,21,0.30);
+    --tick-faint:      rgba(20,21,21,0.22);
+    --tick-major:      rgba(20,21,21,0.38);
+    --ring-track:      rgba(20,21,21,0.10);
+    --glass-bg:        rgba(255,255,255,0.65);
+    --glass-bg-strong: rgba(248,245,238,0.96);
+    --glass-bg-mid:    rgba(248,245,238,0.78);
+    --glass-bg-hover:  rgba(228,222,212,0.85);
+    --glass-input:     rgba(255,255,255,0.70);
+    --shadow-deep:     0 10px 30px rgba(80,60,40,0.18);
+    --shadow-drawer:   -10px 0 40px rgba(80,60,40,0.18);
+    --scrim-bg:        rgba(120,100,80,0.25);
+    --row-bg:          rgba(20,21,21,0.05);
+    --row-soft:        rgba(20,21,21,0.02);
+    --noise-blend:     multiply;
+    --noise-alpha:     0.04;
+    /* Use a darker --el-metal in light mode since the original
+       near-white doesn't read on a cream background. */
+    --el-metal: #8a8a82;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg-color);
+    color: var(--main-color);
+    font-family: "Cormorant Garamond", "San Francisco Display", "Helvetica Neue", serif;
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  body.dragging { cursor: grabbing; }
+
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.03 0'/></filter><rect width='100%25' height='100%25' filter='url(%23f)'/></svg>");
+    opacity: 0.5;
+    mix-blend-mode: var(--noise-blend);
+    pointer-events:none;
+    z-index:0;
+  }
+  body.light-mode::before{
+    /* In light mode, multiply with a darker noise tile so it textures
+       the cream background subtly instead of brightening it. */
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23f)'/></svg>");
+    opacity: 0.7;
+  }
+
+  #viewport {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+    z-index: 1;
+  }
+
+  .clock {
+    height: 0;
+    width: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+  .clock::after {
+    content: '';
+    transform: translate(-50%, -50%);
+    background: var(--bg-color);
+    box-shadow: 0 0 0 2vh var(--main-color);
+    border-radius: 99em;
+    position: absolute;
+    height: 2vh;
+    width: 2vh;
+    min-height: 4px;
+    min-width: 4px;
+    z-index: 100;
+  }
+
+  /* Zodiac slots replace the hour numbers */
+  .w-zodiac { position: relative; }
+  .zodiac-slot {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: auto;
+    cursor: help;
+  }
+  .zodiac-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 4.5vh;
+    line-height: 1;
+    color: var(--ink-soft-1);
+    transition: color .3s ease, text-shadow .3s ease;
+    display: block;
+    position: relative;
+  }
+  .zodiac-element {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 1.1vh;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    margin-top: 0.4vh;
+    opacity: 0.55;
+    transition: opacity .3s ease;
+    display: block;
+  }
+  .zodiac-element.wood  { color: var(--el-wood); }
+  .zodiac-element.fire  { color: var(--el-fire); }
+  .zodiac-element.earth { color: var(--el-earth); }
+  .zodiac-element.metal { color: var(--el-metal); }
+  .zodiac-element.water { color: var(--el-water); }
+
+  .zodiac-slot:hover .zodiac-name { color: var(--main-color); }
+  .zodiac-slot:hover .zodiac-element { opacity: 1; }
+
+  /* Active animal progress rings — generic. Each active zone gets a
+     ring element added to the slot. The conic-gradient progress fills
+     based on --p (turns 0..1). Color comes from --c (the zone color).
+     Diameter set per ring index via inline width/height so up to 4
+     concentric rings can stack on one animal. Bumped 30% per design.
+     Sized in vh: largest ~24vh, decreasing by ~3.5vh per ring. */
+  .progress-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    background: conic-gradient(from -90deg,
+        var(--c, white) 0,
+        var(--c, white) calc(var(--p, 0) * 360deg),
+        var(--ring-track) calc(var(--p, 0) * 360deg),
+        var(--ring-track) 360deg);
+    -webkit-mask: radial-gradient(circle, transparent 45%, black 47%, black 50%, transparent 52%);
+            mask: radial-gradient(circle, transparent 45%, black 47%, black 50%, transparent 52%);
+    animation: ring-breath 3.6s ease-in-out infinite;
+    z-index: -1;
+  }
+  /* Stagger breath phases so multiple rings don't pulse in lockstep */
+  .progress-ring.ring-0 { animation-delay:  0s;  }
+  .progress-ring.ring-1 { animation-delay: -0.9s; }
+  .progress-ring.ring-2 { animation-delay: -1.8s; }
+  .progress-ring.ring-3 { animation-delay: -2.7s; }
+
+  @keyframes ring-breath {
+    0%, 100% { filter: brightness(1); }
+    50%      { filter: brightness(1.35); }
+  }
+
+  /* Active animal name glow — applied via .has-active and zone color */
+  .zodiac-slot.has-active .zodiac-name {
+    color: var(--main-color);
+    text-shadow: var(--active-shadows, 0 0 14px rgba(255,255,255,0.5));
+  }
+
+  /* ──────────────────────────────────────────────────────────────
+     Flow chips — sit on a fixed outer ring beyond the animal labels,
+     so every slot's chip cluster lands at the same radius from center.
+
+     Encoding (per chip):
+       sign  ( + / − )  = nourishing or dampening effect
+       color ( orange / violet ) = which active animal is involved
+       fill style:
+         FILLED      = this slot acts on the active animal
+                       ( "this slot → active" — the slot is a giver,
+                         radiating energy toward the active hour )
+         OUTLINED    = the active animal acts on this slot
+                       ( "active → this slot" — the slot is a receiver,
+                         being filled by the active hour's energy )
+
+     Each non-active slot has its own chip container which is positioned
+     individually via inline top/left set in JS so the cluster sits at
+     RADIUS_VH + 6vh from dial center along that slot's radial.
+     ────────────────────────────────────────────────────────────── */
+  .zodiac-flow {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    gap: 0.45vh;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 2;
+  }
+  body.flow-on .zodiac-flow { opacity: 1; }
+
+  .flow-chip {
+    position: relative;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 1.5vh;
+    font-weight: 600;
+    line-height: 1;
+    width: 2.2vh;
+    height: 2.2vh;
+    min-width: 14px;
+    min-height: 14px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid currentColor;
+    background: transparent;
+    overflow: visible;
+  }
+  .flow-chip.filled {
+    background: currentColor;
+  }
+  .flow-chip.filled .glyph {
+    /* Always dark on the colored fill for max contrast regardless of theme */
+    color: #141515;
+  }
+  .flow-chip .glyph {
+    color: currentColor;
+    position: relative;
+    z-index: 2;
+  }
+  .flow-chip { color: var(--c, white); }
+
+  /* Pulse animations — filled chips radiate energy outward;
+     outlined chips fill from inside out. Same 2.4s cycle, offset by
+     half so visually filled fires → outlined fills. */
+
+  /* Filled chip — outward radiating halo (a ring border expanding) */
+  .flow-chip.filled::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    border: 1.5px solid currentColor;
+    animation: chip-radiate 2.4s ease-out infinite;
+  }
+  @keyframes chip-radiate {
+    0%   { transform: scale(1);   opacity: 0.8; }
+    100% { transform: scale(2.6); opacity: 0;   }
+  }
+
+  /* Outlined chip — a colored disc grows from the center filling the
+     chip's inside, then fades. Reading: "energy is filling me up." */
+  .flow-chip:not(.filled)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: currentColor;
+    transform: scale(0);
+    animation: chip-fill 2.4s ease-in-out infinite;
+    animation-delay: -1.2s;
+  }
+  @keyframes chip-fill {
+    0%   { transform: scale(0);    opacity: 0;    }
+    50%  { transform: scale(0.85); opacity: 0.55; }
+    100% { transform: scale(0.85); opacity: 0;    }
+  }
+  /* Glyph stays readable on top of the fill — color flips when the
+     fill is mostly visible, so it always contrasts. */
+  .flow-chip:not(.filled) .glyph {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Faint minute readouts */
+  .w-num-g { position: relative; }
+  .w-num-g .num-g {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 1.5vh;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft-4);
+  }
+
+  .grd { position: relative; }
+  .w-ms { top: 0; left: 0; width: 0; height: 0; position: absolute; }
+  .w-ms .tick::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    height: calc(var(--radius) / 14);
+    width: 0.5vh;
+    max-width: 3px;
+    min-width: 1px;
+    background: var(--tick-faint);
+    border-radius: 99em;
+  }
+  .w-ms.major    .tick::before { height: calc(var(--radius) / 8);   background: var(--tick-major); }
+  .w-ms.cardinal .tick::before { height: calc(var(--radius) / 6.4); background: var(--main-color); }
+
+  /* Hands — up to 4 zone hands plus 1 shared second hand.
+     Each zone hand uses its own accent color (set via inline
+     --hand-color) and its own length so they're distinguishable
+     when stacked on the same animal.
+     The second hand is shared across all zones since seconds are
+     identical worldwide. */
+  #zone-hands { width: 0; height: 0; position: relative; }
+  .w-hand, .w-sec { height: 0; width: 0; position: relative; }
+  .w-sec  { z-index: 99; }
+  /* z-index ladder: zone 0 on top of zone 1 of zone 2 of zone 3,
+     so the longest visible-most zone is the most recently active */
+  .w-hand.zone-0 { z-index: 90; }
+  .w-hand.zone-1 { z-index: 89; }
+  .w-hand.zone-2 { z-index: 88; }
+  .w-hand.zone-3 { z-index: 87; }
+
+  /* Second hand — thin needle in PST color, with the original tictac */
+  .sec-needle { animation: tictac 60s steps(60, end) infinite; }
+  .sec-needle::before {
+    content: '';
+    height: calc(var(--radius) * 0.95);
+    border-radius: 99em;
+    bottom: 0;
+    width: 1vh;
+    max-width: 2px;
+    background: var(--pst-color);
+    box-shadow: 0 3vh 0 0 var(--pst-color);
+    position: absolute;
+    transform: translateX(-50%);
+  }
+  .sec-needle::after {
+    content: '';
+    z-index: 99;
+    transform: translate(-50%, -50%);
+    background: var(--bg-color);
+    box-shadow: 0 0 0 1vh var(--pst-color);
+    border-radius: 50%;
+    position: absolute;
+    height: 2vh;
+    width: 2vh;
+    min-height: 4px;
+    min-width: 4px;
+  }
+
+  /* Generic zone capsule hand. Length comes from inline --hand-len.
+     Color is always the theme's main color (white on dark, dark on
+     light) so hands read like the original watch — only the rings
+     and chips carry the per-zone accent color. */
+  .zone-needle::before {
+    content: "";
+    width: 0.85vh;
+    height: 4.5vh;
+    min-width: 1px;
+    background: var(--main-color);
+    position: absolute;
+    transform: translate(-50%, -100%);
+  }
+  .zone-needle::after {
+    content: "";
+    transform: translateX(-50%);
+    background: var(--bg-color);
+    height: var(--hand-len, calc(var(--radius) * 0.5));
+    width: 1.8vh;
+    border: 0.9vh solid var(--main-color);
+    border-radius: 2vh;
+    position: absolute;
+    bottom: 4.5vh;
+  }
+
+  @keyframes tictac {
+    from { transform: rotateZ(0deg); }
+    to   { transform: rotateZ(360deg); }
+  }
+
+  /* Corner readouts */
+  /* Zone readouts — up to 4 corners (tl, tr, bl, br) */
+  .corner {
+    position: fixed;
+    z-index: 10;
+    pointer-events: none;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .corner.tl { top: 18px;    left: 22px;  }
+  .corner.tr { top: 18px;    right: 22px; text-align: right; }
+  .corner.bl { bottom: 78px; left: 22px;  }
+  .corner.br { bottom: 78px; right: 22px; text-align: right; }
+  .corner .label { color: var(--ink-3); font-size: 8px; margin-bottom: 4px; display: block; }
+  .corner .time {
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    color: var(--zone-color, var(--main-color));
+  }
+  .corner .animal {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    letter-spacing: 0;
+    text-transform: none;
+    margin-top: 2px;
+    color: var(--ink-2);
+    display: block;
+  }
+
+  /* HUD */
+  .hud {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .hud button {
+    pointer-events: auto;
+    background: var(--glass-bg);
+    color: var(--ink-on-glass);
+    border: 1px solid var(--hairline-3);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 10px 16px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, transform .1s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hud button:hover  { background: var(--glass-bg-hover); border-color: var(--hairline-strong); }
+  .hud button:active { transform: scale(.97); }
+  .hud button .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--ink-soft-3);
+    transition: background .2s, box-shadow .2s;
+  }
+  .hud button.on .dot {
+    background: #d4ad56;
+    box-shadow: 0 0 8px #d4ad56;
+  }
+  .hud #settings-btn {
+    font-size: 16px;
+    letter-spacing: 0;
+    padding: 8px 12px;
+    line-height: 1;
+  }
+
+  .hint {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-soft-3);
+    pointer-events: none;
+    z-index: 10;
+    text-align: center;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: fixed;
+    z-index: 60;
+    background: var(--glass-bg-strong);
+    border: 1px solid var(--hairline-2);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 10px;
+    padding: 14px 16px;
+    min-width: 240px;
+    max-width: 280px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 14px));
+    transition: opacity 0.18s ease;
+    box-shadow: var(--shadow-deep);
+  }
+  .tooltip.visible { opacity: 1; }
+  .tt-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--main-color);
+    margin-bottom: 2px;
+  }
+  .tt-meta {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 12px;
+  }
+  .tt-meta .swatch {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: 0px;
+    box-shadow: 0 0 6px currentColor;
+  }
+  .tt-row {
+    display: grid;
+    grid-template-columns: 14px 1fr;
+    gap: 6px 10px;
+    align-items: baseline;
+    margin-bottom: 6px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    line-height: 1.35;
+    color: var(--main-color);
+  }
+  .tt-row:last-child { margin-bottom: 0; }
+  .tt-glyph {
+    font-family: 'Roboto Mono', monospace;
+    font-style: normal;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .tt-glyph.plus  { color: #4abf6a; }
+  .tt-glyph.minus { color: #e8443a; }
+  .tt-row .tt-label {
+    font-family: 'Roboto Mono', monospace;
+    font-style: normal;
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    display: inline-block;
+    margin-right: 6px;
+  }
+  .tt-divider {
+    height: 1px;
+    background: var(--hairline-1);
+    margin: 10px 0 8px;
+  }
+  .tt-pill {
+    display: inline-block;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 99em;
+    margin-right: 4px;
+    margin-bottom: 8px;
+  }
+  .tt-pill.pst {
+    color: var(--pst-color);
+    border: 1px solid rgba(229,117,19,0.5);
+    background: rgba(229,117,19,0.10);
+  }
+  .tt-pill.cn {
+    color: var(--cn-color);
+    border: 1px solid rgba(200,164,216,0.5);
+    background: rgba(200,164,216,0.10);
+  }
+
+  /* Flow legend — appears when flow is on. Demonstrates the chip
+     encoding: filled = active acts on slot, outlined = slot acts on active. */
+  .flow-legend {
+    position: fixed;
+    bottom: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    background: var(--glass-bg-mid);
+    border: 1px solid var(--hairline-1);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 9px 16px;
+    border-radius: 999px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    white-space: nowrap;
+  }
+  body.flow-on .flow-legend { opacity: 1; }
+  .flow-legend .grp { display: inline-flex; align-items: center; gap: 7px; }
+  .flow-legend .lg-chip {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--ink-2);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .flow-legend .lg-chip.filled {
+    background: var(--ink-2);
+    color: var(--bg-color);
+  }
+  .flow-legend .lg-sep {
+    width: 1px;
+    height: 14px;
+    background: var(--hairline-2);
+    display: inline-block;
+  }
+
+  /* ============================ Settings panel ============================ */
+  .settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--scrim-bg, rgba(10,10,10,0.55));
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 80;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .settings-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .settings-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: min(440px, 92vw);
+    background: var(--glass-bg-strong);
+    border-left: 1px solid var(--hairline-1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 90;
+    transform: translateX(100%);
+    transition: transform 0.32s cubic-bezier(.32,.72,.4,1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: var(--shadow-drawer);
+  }
+  .settings-panel.open { transform: translateX(0); }
+
+  .settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid var(--hairline-1);
+  }
+  .settings-header h2 {
+    margin: 0;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 24px;
+    color: var(--main-color);
+    letter-spacing: 0.02em;
+  }
+  .settings-close {
+    background: none;
+    border: none;
+    color: var(--ink-2);
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 6px;
+    transition: color 0.15s;
+  }
+  .settings-close:hover { color: var(--main-color); }
+
+  .settings-section {
+    padding: 18px 24px 8px;
+    flex: none;
+  }
+  .settings-section + .settings-section {
+    padding-top: 8px;
+  }
+  .settings-section.scroll {
+    overflow-y: auto;
+    flex: 1;
+    padding-bottom: 24px;
+  }
+  .settings-section-title {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 14px;
+  }
+
+  /* Theme toggle */
+  .theme-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .theme-toggle-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 17px;
+    color: var(--main-color);
+  }
+  .theme-toggle {
+    display: inline-flex;
+    background: var(--row-bg);
+    border: 1px solid var(--hairline-1);
+    border-radius: 999px;
+    padding: 3px;
+  }
+  .theme-opt {
+    background: transparent;
+    border: none;
+    color: var(--ink-3);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 7px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background .15s, color .15s;
+  }
+  .theme-opt:hover { color: var(--main-color); }
+  .theme-opt.active {
+    background: var(--main-color);
+    color: var(--bg-color);
+  }
+  .theme-swatch {
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 1px solid var(--hairline-2);
+    display: inline-block;
+  }
+  .swatch-dark  { background: #141515; }
+  .swatch-light { background: #f0ece4; }
+
+  /* Each timezone row */
+  .zone-row {
+    background: var(--row-bg, rgba(255,255,255,0.025));
+    border: 1px solid var(--hairline-1);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "color label remove"
+      "color tz tz";
+    gap: 8px 12px;
+    align-items: center;
+  }
+  .zone-row .zone-color-input {
+    grid-area: color;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--hairline-2);
+    cursor: pointer;
+    background: transparent;
+    overflow: hidden;
+    padding: 0;
+  }
+  .zone-row .zone-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+  .zone-row .zone-color-input::-webkit-color-swatch { border: none; border-radius: 6px; }
+  .zone-row .zone-color-input::-moz-color-swatch { border: none; border-radius: 6px; }
+
+  .zone-row .zone-label-input {
+    grid-area: label;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--hairline-2);
+    color: var(--main-color);
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 17px;
+    padding: 4px 0;
+    outline: none;
+    width: 100%;
+  }
+  .zone-row .zone-label-input:focus { border-bottom-color: var(--ink-soft-2); }
+
+  .zone-row .zone-tz-select {
+    grid-area: tz;
+    background: var(--glass-input);
+    border: 1px solid var(--hairline-1);
+    border-radius: 6px;
+    color: var(--ink-2);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 6px 8px;
+    outline: none;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .zone-row .zone-remove {
+    grid-area: remove;
+    background: none;
+    border: 1px solid var(--hairline-2);
+    border-radius: 6px;
+    color: var(--ink-3);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    line-height: 1;
+  }
+  .zone-row .zone-remove:hover {
+    color: #e8443a;
+    border-color: rgba(232,68,58,0.4);
+  }
+
+  .settings-add-btn {
+    margin-top: 6px;
+    background: var(--row-soft, rgba(255,255,255,0.03));
+    border: 1px dashed var(--hairline-3);
+    border-radius: 10px;
+    color: var(--ink-2);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 12px;
+    width: 100%;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .settings-add-btn:hover {
+    background: var(--hairline-1);
+    border-color: var(--hairline-strong);
+    color: var(--main-color);
+  }
+  .settings-add-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+</style>
+</head>
+<body>
+  <!-- Corner readouts populated dynamically based on active zones -->
+  <div id="zone-readouts"></div>
+
+  <div id="viewport">
+    <div class="clock all">
+      <div class="w-zodiac"></div>
+      <div class="grd"></div>
+      <!-- Zone hands inserted here by JS -->
+      <div id="zone-hands"></div>
+      <div class="w-sec"><div class="sec-needle"></div></div>
+    </div>
+  </div>
+
+  <div class="hint">drag · pinch / scroll to zoom · press F to refocus</div>
+
+  <div class="flow-legend">
+    <span class="grp"><span class="lg-chip filled">+</span> this → active</span>
+    <span class="lg-sep"></span>
+    <span class="grp"><span class="lg-chip">+</span> active → this</span>
+    <span class="lg-sep"></span>
+    <span class="grp">+ nourish · − dampen</span>
+  </div>
+
+  <div class="hud">
+    <button id="refocus">⊙ Refocus</button>
+    <button id="flow-toggle"><span class="dot"></span> Flow</button>
+    <button id="settings-btn" title="Settings">⚙</button>
+  </div>
+
+  <!-- Settings drawer -->
+  <div class="settings-overlay" id="settings-overlay"></div>
+  <aside class="settings-panel" id="settings-panel">
+    <div class="settings-header">
+      <h2>Settings</h2>
+      <button class="settings-close" id="settings-close">×</button>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Appearance</div>
+      <div class="theme-toggle-row">
+        <span class="theme-toggle-label">Theme</span>
+        <div class="theme-toggle" id="theme-toggle">
+          <button class="theme-opt" data-theme="dark">
+            <span class="theme-swatch swatch-dark"></span> Dark
+          </button>
+          <button class="theme-opt" data-theme="light">
+            <span class="theme-swatch swatch-light"></span> Light
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="settings-section scroll">
+      <div class="settings-section-title">Time zones</div>
+      <div id="zones-list"></div>
+      <button class="settings-add-btn" id="add-zone-btn">+ Add timezone</button>
+    </div>
+  </aside>
+
+  <div class="tooltip" id="tooltip"></div>
+
+<script>
+(function () {
+  /* ===================== zodiac data + Wu Xing ===================== */
+  const zodiac = [
+    { animal:"Rat",     element:"water", hStart:23, hEnd:1 },
+    { animal:"Ox",      element:"earth", hStart:1,  hEnd:3 },
+    { animal:"Tiger",   element:"wood",  hStart:3,  hEnd:5 },
+    { animal:"Rabbit",  element:"wood",  hStart:5,  hEnd:7 },
+    { animal:"Dragon",  element:"earth", hStart:7,  hEnd:9 },
+    { animal:"Snake",   element:"fire",  hStart:9,  hEnd:11 },
+    { animal:"Horse",   element:"fire",  hStart:11, hEnd:13 },
+    { animal:"Goat",    element:"earth", hStart:13, hEnd:15 },
+    { animal:"Monkey",  element:"metal", hStart:15, hEnd:17 },
+    { animal:"Rooster", element:"metal", hStart:17, hEnd:19 },
+    { animal:"Dog",     element:"earth", hStart:19, hEnd:21 },
+    { animal:"Pig",     element:"water", hStart:21, hEnd:23 }
+  ];
+
+  const elementColor = {
+    wood:"#4abf6a", fire:"#e8443a", earth:"#f0c050", metal:"#e8e4d8", water:"#5a7ab0"
+  };
+
+  const generates = { wood:"fire", fire:"earth", earth:"metal", metal:"water", water:"wood" };
+  const overcomes = { wood:"earth", earth:"water", water:"fire", fire:"metal", metal:"wood" };
+  const generatedBy = (() => { const m={}; for(const k in generates) m[generates[k]]=k; return m; })();
+  const overcomeBy  = (() => { const m={}; for(const k in overcomes) m[overcomes[k]]=k; return m; })();
+
+  const indicesOfElement = (elem) => zodiac.map((z,i)=>[z,i]).filter(([z])=>z.element===elem).map(([,i])=>i);
+
+  function relationships(idx){
+    const z = zodiac[idx];
+    return {
+      self: z.element,
+      outNourishElem: generates[z.element],
+      outDampenElem:  overcomes[z.element],
+      inNourishElem:  generatedBy[z.element],
+      inDampenElem:   overcomeBy[z.element],
+      outNourish: indicesOfElement(generates[z.element]).filter(i => i !== idx),
+      outDampen:  indicesOfElement(overcomes[z.element]).filter(i => i !== idx),
+      inNourish:  indicesOfElement(generatedBy[z.element]).filter(i => i !== idx),
+      inDampen:   indicesOfElement(overcomeBy[z.element]).filter(i => i !== idx)
+    };
+  }
+
+  function fmt12(h){
+    if (h === 0)  return "12am";
+    if (h === 12) return "12pm";
+    if (h < 12)   return `${h}am`;
+    return `${h - 12}pm`;
+  }
+  function fmtRange(z){ return `${fmt12(z.hStart)}–${fmt12(z.hEnd)}`; }
+
+  /* ===================== build face ===================== */
+  const NUMS = 12;
+  const GRD  = 240;
+  const PART = 360 / NUMS;
+  const DEG_GRD = 360 / GRD;
+  const RADIUS_VH = 30;
+
+  const wZodiac = document.querySelector('.w-zodiac');
+  const wNumG   = document.querySelector('.w-num-g');
+  const grd     = document.querySelector('.grd');
+
+  zodiac.forEach((z, i) => {
+    /* Rat at top, then clockwise */
+    const angleDeg = i * 30 - 90;
+    const a = angleDeg * Math.PI / 180;
+
+    const slot = document.createElement('div');
+    slot.className = 'zodiac-slot';
+    slot.dataset.idx = i;
+    slot.style.top  = (Math.sin(a) * RADIUS_VH) + 'vh';
+    slot.style.left = (Math.cos(a) * RADIUS_VH) + 'vh';
+
+    const name = document.createElement('span');
+    name.className = 'zodiac-name';
+    name.textContent = z.animal;
+    slot.appendChild(name);
+
+    const elem = document.createElement('span');
+    elem.className = 'zodiac-element ' + z.element;
+    elem.textContent = z.element;
+    slot.appendChild(elem);
+
+    wZodiac.appendChild(slot);
+
+    /* Chip container — positioned independently on the outer edge of
+       the clock face, at constant radius so spacing is uniform. */
+    const chips = document.createElement('div');
+    chips.className = 'zodiac-flow';
+    chips.dataset.idx = i;
+    const chipR = RADIUS_VH + 17;
+    chips.style.top  = (Math.sin(a) * chipR) + 'vh';
+    chips.style.left = (Math.cos(a) * chipR) + 'vh';
+    wZodiac.appendChild(chips);
+  });
+
+  /* (Minute readouts removed — on a zodiac dial the "minute" hand
+     points at Beijing's zodiac slot, not at clock minutes, so a
+     0/5/10... ring would be misleading.) */
+
+  /* tick marks */
+  for (let i = 1; i <= GRD; i++) {
+    const wrap = document.createElement('div');
+    wrap.className = 'w-ms';
+    if (i % 20 === 0)     wrap.classList.add('cardinal');
+    else if (i % 4 === 0) wrap.classList.add('major');
+
+    const tick = document.createElement('div');
+    tick.className = 'tick';
+    tick.style.transform =
+      `rotateZ(${DEG_GRD * i}deg) translateY(${RADIUS_VH * 1.4}vh)`;
+    wrap.appendChild(tick);
+    grd.appendChild(wrap);
+  }
+
+  /* ===================== zones ===================== */
+  /* A zone is one timezone the user wants to track. Up to 4. */
+  const MAX_ZONES = 4;
+  const DEFAULT_ZONES = [
+    { id: 'z0', label: 'Pacific', tz: 'America/Los_Angeles', color: '#e57513' },
+    { id: 'z1', label: 'Beijing', tz: 'Asia/Shanghai',       color: '#c8a4d8' }
+  ];
+
+  /* Curated list of common IANA timezones. Users can pick one per zone. */
+  const TZ_LIST = [
+    ['Pacific/Honolulu',          'Honolulu'],
+    ['America/Anchorage',         'Anchorage'],
+    ['America/Los_Angeles',       'Los Angeles · Pacific'],
+    ['America/Denver',            'Denver · Mountain'],
+    ['America/Chicago',           'Chicago · Central'],
+    ['America/New_York',          'New York · Eastern'],
+    ['America/Toronto',           'Toronto'],
+    ['America/Mexico_City',       'Mexico City'],
+    ['America/Sao_Paulo',         'São Paulo'],
+    ['America/Argentina/Buenos_Aires','Buenos Aires'],
+    ['Atlantic/Azores',           'Azores'],
+    ['Europe/London',             'London'],
+    ['Europe/Paris',              'Paris'],
+    ['Europe/Berlin',             'Berlin'],
+    ['Europe/Madrid',             'Madrid'],
+    ['Europe/Rome',               'Rome'],
+    ['Europe/Athens',             'Athens'],
+    ['Europe/Moscow',             'Moscow'],
+    ['Africa/Cairo',              'Cairo'],
+    ['Africa/Lagos',              'Lagos'],
+    ['Africa/Johannesburg',       'Johannesburg'],
+    ['Asia/Dubai',                'Dubai'],
+    ['Asia/Tehran',               'Tehran'],
+    ['Asia/Kolkata',              'Kolkata · India'],
+    ['Asia/Karachi',              'Karachi'],
+    ['Asia/Bangkok',              'Bangkok'],
+    ['Asia/Singapore',            'Singapore'],
+    ['Asia/Shanghai',             'Shanghai · Beijing'],
+    ['Asia/Hong_Kong',            'Hong Kong'],
+    ['Asia/Taipei',               'Taipei'],
+    ['Asia/Tokyo',                'Tokyo'],
+    ['Asia/Seoul',                'Seoul'],
+    ['Australia/Perth',           'Perth'],
+    ['Australia/Sydney',          'Sydney'],
+    ['Pacific/Auckland',          'Auckland']
+  ];
+
+  const STORAGE_KEY = 'zodiac-clock:zones';
+  function loadZones(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw){
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length){
+          return parsed.slice(0, MAX_ZONES).map((z, i) => ({
+            id: z.id || ('z' + i),
+            label: z.label || `Zone ${i+1}`,
+            tz: z.tz || 'UTC',
+            color: z.color || '#ffffff'
+          }));
+        }
+      }
+    } catch(e){ /* ignore */ }
+    return JSON.parse(JSON.stringify(DEFAULT_ZONES));
+  }
+  function saveZones(){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(zones)); }
+    catch(e){ /* ignore */ }
+  }
+
+  let zones = loadZones();
+
+  /* ===================== time ===================== */
+  const secAnimEl = document.querySelector('.sec-needle');
+  const handsContainer    = document.getElementById('zone-hands');
+  const readoutsContainer = document.getElementById('zone-readouts');
+
+  /* Get the offset in fractional hours for a given IANA timezone right now,
+     e.g. Asia/Kolkata → 5.5. */
+  function tzOffsetHours(tz){
+    try {
+      const fmt = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        timeZoneName: 'longOffset'
+      });
+      const parts = fmt.formatToParts(new Date());
+      const tzPart = parts.find(p => p.type === 'timeZoneName');
+      if (tzPart && tzPart.value){
+        /* longOffset returns "GMT-07:00" / "GMT+05:30" */
+        const m = tzPart.value.match(/GMT([+-])(\d+):(\d+)/);
+        if (m){
+          const sign = m[1] === '-' ? -1 : 1;
+          return sign * (parseInt(m[2], 10) + parseInt(m[3], 10) / 60);
+        }
+        /* Fallback for browsers returning shortOffset like "GMT-7" */
+        const sm = tzPart.value.match(/GMT([+-]?\d+)/);
+        if (sm) return parseInt(sm[1], 10);
+      }
+    } catch(e){ /* invalid tz */ }
+    return 0;
+  }
+
+  function tzDate(tz){
+    const offset = tzOffsetHours(tz);
+    const now = new Date();
+    const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+    return new Date(utcMs + offset * 3600 * 1000);
+  }
+
+  function indexForHour(h){
+    /* Rat = 23–1 → idx 0. floor(((h+1) % 24) / 2). */
+    return Math.floor(((h + 1) % 24) / 2);
+  }
+
+  function angleForTime(h, m){
+    const idx = indexForHour(h);
+    const z = zodiac[idx];
+    const blockHourFromStart = (h - z.hStart + 24) % 24;
+    const minutesIntoBlock   = blockHourFromStart * 60 + m;
+    const fracIntoBlock      = minutesIntoBlock / 120;
+    const wedgeCenter = idx * 30;
+    const wedgeStart  = wedgeCenter - 15;
+    return { deg: wedgeStart + fracIntoBlock * 30, idx, progress: fracIntoBlock };
+  }
+
+  /* Per-zone runtime state — recomputed each tick */
+  let zoneState = []; // [{idx, progress, label, tz, color}, ...]
+  let lastRingSig = '';
+
+  /* Hand lengths per zone slot (1st zone is longest, decreasing) */
+  const HAND_LENS = [
+    'calc(var(--radius) * 0.62)',
+    'calc(var(--radius) * 0.50)',
+    'calc(var(--radius) * 0.38)',
+    'calc(var(--radius) * 0.26)'
+  ];
+
+  /* Ring diameters per zone slot (outer to inner). Bumped 30% from prior. */
+  const RING_SIZES = ['23.4vh', '19.6vh', '16vh', '12.4vh'];
+
+  /* Rebuild hands + readouts whenever the zones array structure changes */
+  function rebuildZoneInfra(){
+    /* Hands */
+    handsContainer.innerHTML = '';
+    zones.forEach((z, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = `w-hand zone-${i}`;
+      wrap.dataset.zoneId = z.id;
+      const needle = document.createElement('div');
+      needle.className = 'zone-needle';
+      needle.style.setProperty('--hand-len', HAND_LENS[i]);
+      wrap.appendChild(needle);
+      handsContainer.appendChild(wrap);
+    });
+
+    /* Corner readouts — assigned to corners in order: tl, tr, bl, br */
+    readoutsContainer.innerHTML = '';
+    const positions = ['tl', 'tr', 'bl', 'br'];
+    zones.forEach((z, i) => {
+      const corner = document.createElement('div');
+      corner.className = `corner ${positions[i] || 'tl'}`;
+      corner.dataset.zoneId = z.id;
+      corner.style.setProperty('--zone-color', z.color);
+      corner.innerHTML = `
+        <span class="label">${escapeHtml(z.label)} · Hour</span>
+        <div class="time" data-role="time">—:—</div>
+        <span class="animal" data-role="animal">—</span>
+      `;
+      readoutsContainer.appendChild(corner);
+    });
+
+    /* Update second hand color to match zone 0 if present */
+    const secColor = zones[0] ? zones[0].color : '#e57513';
+    document.documentElement.style.setProperty('--pst-color', secColor);
+    /* Keep --cn-color in sync with zone 1 for any remaining references */
+    if (zones[1]) document.documentElement.style.setProperty('--cn-color', zones[1].color);
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
+
+  /* one-time setup of the second hand: phase the CSS animation so it
+     starts at the current real-world second position. */
+  function syncSecondHand(){
+    const now = new Date();
+    const sFrac = now.getSeconds() + now.getMilliseconds() / 1000;
+    secAnimEl.style.animation = 'none';
+    void secAnimEl.offsetWidth;
+    secAnimEl.style.animation = '';
+    secAnimEl.style.animationDelay = `-${sFrac}s`;
+  }
+
+  function updateTime(){
+    /* Compute state for each zone */
+    zoneState = zones.map(z => {
+      const d = tzDate(z.tz);
+      const m = d.getMinutes() + d.getSeconds() / 60;
+      const a = angleForTime(d.getHours(), m);
+      return { ...z, idx: a.idx, deg: a.deg, progress: a.progress, date: d };
+    });
+
+    /* Set hand rotations */
+    zoneState.forEach((zs, i) => {
+      const handEl = handsContainer.querySelector(`.w-hand.zone-${i}`);
+      if (handEl) handEl.style.transform = `rotateZ(${zs.deg}deg)`;
+    });
+
+    /* Group zones by which slot they're landing on, so we can stack
+       multiple rings per slot when zones share an animal. */
+    const slotZones = {};
+    zoneState.forEach((zs) => {
+      if (!slotZones[zs.idx]) slotZones[zs.idx] = [];
+      slotZones[zs.idx].push(zs);
+    });
+
+    /* Determine which slots SHOULD be active, then ensure their ring
+       elements match. We only recreate rings when the set of active
+       indices/colors changes — keeps the ring-breath animation
+       running smoothly. */
+    const activeSlots = new Set(Object.keys(slotZones));
+    const ringSig = Object.entries(slotZones)
+      .map(([idx, list]) => idx + '=' + list.map(z => z.color).join(','))
+      .sort().join('|');
+
+    if (ringSig !== lastRingSig){
+      lastRingSig = ringSig;
+      /* Tear down ALL active state and rebuild, since the structure
+         changed (a hand crossed into a new wedge or a zone changed). */
+      document.querySelectorAll('.zodiac-slot').forEach(s => {
+        s.classList.remove('has-active');
+        s.style.removeProperty('--active-shadows');
+        s.querySelectorAll('.progress-ring').forEach(r => r.remove());
+      });
+
+      Object.entries(slotZones).forEach(([idx, list]) => {
+        const slot = document.querySelector(`.zodiac-slot[data-idx="${idx}"]`);
+        if (!slot) return;
+        slot.classList.add('has-active');
+
+        list.forEach((zs, ringIdx) => {
+          const ring = document.createElement('div');
+          ring.className = `progress-ring ring-${ringIdx}`;
+          ring.dataset.zoneId = zs.id;
+          ring.style.width  = RING_SIZES[ringIdx] || RING_SIZES[3];
+          ring.style.height = RING_SIZES[ringIdx] || RING_SIZES[3];
+          ring.style.setProperty('--c', zs.color);
+          ring.style.setProperty('--p', zs.progress.toFixed(4));
+          slot.appendChild(ring);
+        });
+
+        const shadows = list.map(zs =>
+          `0 0 14px ${hexWithAlpha(zs.color, 0.55)}`
+        ).join(', ');
+        slot.style.setProperty('--active-shadows', shadows);
+      });
+    } else {
+      /* Same active set — just update the progress var on existing
+         rings so they sweep smoothly without restarting any anim. */
+      Object.entries(slotZones).forEach(([idx, list]) => {
+        const slot = document.querySelector(`.zodiac-slot[data-idx="${idx}"]`);
+        if (!slot) return;
+        list.forEach((zs) => {
+          const ring = slot.querySelector(`.progress-ring[data-zone-id="${zs.id}"]`);
+          if (ring) ring.style.setProperty('--p', zs.progress.toFixed(4));
+        });
+      });
+    }
+
+    /* Update corner readouts */
+    const pad = n => String(n).padStart(2,"0");
+    const fmtClock = d => {
+      let h = d.getHours();
+      const m = d.getMinutes();
+      const ampm = h < 12 ? 'am' : 'pm';
+      h = h % 12; if (h === 0) h = 12;
+      return `${h}:${pad(m)} ${ampm}`;
+    };
+    zoneState.forEach(zs => {
+      const corner = readoutsContainer.querySelector(`.corner[data-zone-id="${zs.id}"]`);
+      if (!corner) return;
+      corner.querySelector('[data-role="time"]').textContent   = fmtClock(zs.date);
+      corner.querySelector('[data-role="animal"]').textContent = `Hour of the ${zodiac[zs.idx].animal}`;
+    });
+
+    refreshFlow();
+  }
+
+  /* Helper: convert "#RRGGBB" + alpha to "rgba(...)" */
+  function hexWithAlpha(hex, alpha){
+    const m = hex.match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+    if (!m) return hex;
+    const r = parseInt(m[1],16), g = parseInt(m[2],16), b = parseInt(m[3],16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  /* ===================== flow chips =====================
+     For each non-active slot, add a chip per zone that has a Wu-Xing
+     relationship to it.
+
+     Encoding:
+       FILLED chip    = "this slot acts on the active zone hour"
+                        (slot is the giver, radiating energy outward)
+       OUTLINED chip  = "the active zone hour acts on this slot"
+                        (slot is the receiver, being filled)
+       glyph (+/−)    = nourish / dampen
+       color          = the zone's accent color
+
+     We rebuild chips ONLY when the set of active zodiac indices or
+     their colors changes (not every second), so the pulse animations
+     run uninterrupted. */
+  let lastFlowSig = '';
+
+  function flowSignature(){
+    return zoneState.map(zs => `${zs.idx}:${zs.color}`).join('|');
+  }
+
+  function refreshFlow(force){
+    const sig = flowSignature();
+    if (!force && sig === lastFlowSig) return;
+    lastFlowSig = sig;
+
+    document.querySelectorAll('.zodiac-flow').forEach(c => c.innerHTML = '');
+
+    const addChip = (targetIdx, color, glyph, filled) => {
+      const container = document.querySelector(`.zodiac-flow[data-idx="${targetIdx}"]`);
+      if (!container) return;
+      const chip = document.createElement('span');
+      chip.className = 'flow-chip' + (filled ? ' filled' : '');
+      chip.style.setProperty('--c', color);
+      const g = document.createElement('span');
+      g.className = 'glyph';
+      g.textContent = glyph;
+      chip.appendChild(g);
+      container.appendChild(chip);
+    };
+
+    zoneState.forEach(zs => {
+      const r = relationships(zs.idx);
+      r.outNourish.forEach(t => addChip(t, zs.color, '+', false));
+      r.outDampen .forEach(t => addChip(t, zs.color, '−', false));
+      r.inNourish.forEach(s => addChip(s, zs.color, '+', true));
+      r.inDampen .forEach(s => addChip(s, zs.color, '−', true));
+    });
+  }
+
+  /* ===================== HUD: flow toggle ===================== */
+  const flowBtn = document.getElementById('flow-toggle');
+  flowBtn.addEventListener('click', () => {
+    document.body.classList.toggle('flow-on');
+    flowBtn.classList.toggle('on', document.body.classList.contains('flow-on'));
+  });
+
+  /* ===================== tooltip ===================== */
+  const tooltipEl = document.getElementById('tooltip');
+
+  function buildTooltipHTML(idx){
+    const z = zodiac[idx];
+    const r = relationships(idx);
+    const swatch = (elem) =>
+      `<span class="swatch" style="background:${elementColor[elem]}; color:${elementColor[elem]}"></span>`;
+    const animalsList = (idxs) => idxs.map(i => zodiac[i].animal).join(', ') || '—';
+
+    /* Pills for every active zone whose hour matches this slot */
+    let pills = '';
+    zoneState.forEach(zs => {
+      if (zs.idx === idx){
+        const bg = hexWithAlpha(zs.color, 0.10);
+        const bd = hexWithAlpha(zs.color, 0.5);
+        pills += `<span class="tt-pill" style="color:${zs.color}; border:1px solid ${bd}; background:${bg};">Active · ${escapeHtml(zs.label)}</span>`;
+      }
+    });
+
+    return `
+      ${pills ? `<div>${pills}</div>` : ''}
+      <div class="tt-name">The ${z.animal}</div>
+      <div class="tt-meta">${swatch(z.element)}${z.element} · ${fmtRange(z)}</div>
+      <div class="tt-divider"></div>
+
+      <div class="tt-row">
+        <span class="tt-glyph plus">+</span>
+        <div>
+          <span class="tt-label">Nourishes</span>
+          ${animalsList(r.outNourish)}
+          <span style="color:var(--ink-3); font-size:11px;"> · ${swatch(r.outNourishElem)}${r.outNourishElem}</span>
+        </div>
+      </div>
+      <div class="tt-row">
+        <span class="tt-glyph minus">−</span>
+        <div>
+          <span class="tt-label">Dampens</span>
+          ${animalsList(r.outDampen)}
+          <span style="color:var(--ink-3); font-size:11px;"> · ${swatch(r.outDampenElem)}${r.outDampenElem}</span>
+        </div>
+      </div>
+
+      <div class="tt-divider"></div>
+
+      <div class="tt-row">
+        <span class="tt-glyph plus">+</span>
+        <div>
+          <span class="tt-label">Nourished by</span>
+          ${animalsList(r.inNourish)}
+          <span style="color:var(--ink-3); font-size:11px;"> · ${swatch(r.inNourishElem)}${r.inNourishElem}</span>
+        </div>
+      </div>
+      <div class="tt-row">
+        <span class="tt-glyph minus">−</span>
+        <div>
+          <span class="tt-label">Dampened by</span>
+          ${animalsList(r.inDampen)}
+          <span style="color:var(--ink-3); font-size:11px;"> · ${swatch(r.inDampenElem)}${r.inDampenElem}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function showTooltip(slotEl){
+    const idx = +slotEl.dataset.idx;
+    tooltipEl.innerHTML = buildTooltipHTML(idx);
+    const rect = slotEl.getBoundingClientRect();
+    let cx = rect.left + rect.width / 2;
+    let cy = rect.top;
+    const tw = 280;
+    cx = Math.max(tw/2 + 12, Math.min(window.innerWidth - tw/2 - 12, cx));
+    if (cy < 280) {
+      cy = rect.bottom;
+      tooltipEl.style.transform = 'translate(-50%, 14px)';
+    } else {
+      tooltipEl.style.transform = 'translate(-50%, calc(-100% - 14px))';
+    }
+    tooltipEl.style.left = cx + 'px';
+    tooltipEl.style.top  = cy + 'px';
+    tooltipEl.classList.add('visible');
+  }
+  function hideTooltip(){ tooltipEl.classList.remove('visible'); }
+
+  document.querySelectorAll('.zodiac-slot').forEach(slot => {
+    slot.addEventListener('mouseenter', () => showTooltip(slot));
+    slot.addEventListener('mouseleave', hideTooltip);
+    slot.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
+      if (tooltipEl.classList.contains('visible') &&
+          tooltipEl.dataset.activeIdx === slot.dataset.idx){
+        hideTooltip();
+        tooltipEl.dataset.activeIdx = '';
+      } else {
+        showTooltip(slot);
+        tooltipEl.dataset.activeIdx = slot.dataset.idx;
+      }
+    }, { passive: true });
+  });
+  document.addEventListener('touchstart', (e) => {
+    if (!e.target.closest('.zodiac-slot') && !e.target.closest('.tooltip')){
+      hideTooltip();
+      tooltipEl.dataset.activeIdx = '';
+    }
+  }, { passive: true });
+
+  /* ===================== pan / zoom (working base) ===================== */
+  const viewport = document.getElementById('viewport');
+  let tx = 0, ty = 0, scale = 1;
+  const MIN_SCALE = 0.1, MAX_SCALE = 20;
+
+  function apply() {
+    viewport.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  }
+  apply();
+
+  function refocus() { tx = 0; ty = 0; scale = 1; apply(); }
+
+  function zoomAt(factor, anchorX, anchorY) {
+    const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+    const localX = (anchorX - cx - tx) / scale;
+    const localY = (anchorY - cy - ty) / scale;
+    const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * factor));
+    tx = anchorX - cx - localX * newScale;
+    ty = anchorY - cy - localY * newScale;
+    scale = newScale;
+    apply();
+  }
+
+  let dragging = false, lastX = 0, lastY = 0;
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.hud') || e.target.closest('.zodiac-slot') ||
+        e.target.closest('.tooltip') || e.target.closest('.corner') || e.target.closest('.settings-panel') || e.target.closest('.settings-overlay')) return;
+    if (e.button !== 0 && e.button !== 1) return;
+    dragging = true;
+    lastX = e.clientX; lastY = e.clientY;
+    document.body.classList.add('dragging');
+    hideTooltip();
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    tx += e.clientX - lastX;
+    ty += e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    apply();
+  });
+  document.addEventListener('mouseup', () => {
+    dragging = false;
+    document.body.classList.remove('dragging');
+  });
+
+  document.addEventListener('wheel', (e) => {
+    if (e.target.closest('.hud') || e.target.closest('.tooltip') ||
+        e.target.closest('.settings-panel')) return;
+    e.preventDefault();
+    zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY);
+  }, { passive: false });
+
+  const touches = new Map();
+  let pinchDist = 0;
+
+  document.addEventListener('touchstart', (e) => {
+    if (e.target.closest('.hud') || e.target.closest('.zodiac-slot') ||
+        e.target.closest('.tooltip') || e.target.closest('.corner') || e.target.closest('.settings-panel') || e.target.closest('.settings-overlay')) return;
+    for (const t of e.changedTouches) {
+      touches.set(t.identifier, { x: t.clientX, y: t.clientY });
+    }
+    if (touches.size === 2) {
+      const [a, b] = [...touches.values()];
+      pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchmove', (e) => {
+    if (touches.size === 0) return;
+    const prev = new Map();
+    for (const [id, p] of touches) prev.set(id, { x: p.x, y: p.y });
+    for (const t of e.changedTouches) {
+      if (touches.has(t.identifier)) {
+        touches.set(t.identifier, { x: t.clientX, y: t.clientY });
+      }
+    }
+
+    if (touches.size === 1) {
+      const [id, t] = [...touches.entries()][0];
+      const p = prev.get(id) || t;
+      tx += t.x - p.x;
+      ty += t.y - p.y;
+      apply();
+    } else if (touches.size === 2) {
+      const entries = [...touches.entries()];
+      const [idA, a] = entries[0], [idB, b] = entries[1];
+      const pA = prev.get(idA) || a, pB = prev.get(idB) || b;
+
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      const midX = (a.x + b.x) / 2, midY = (a.y + b.y) / 2;
+      const prevMidX = (pA.x + pB.x) / 2, prevMidY = (pA.y + pB.y) / 2;
+
+      tx += midX - prevMidX;
+      ty += midY - prevMidY;
+
+      if (pinchDist > 0) zoomAt(dist / pinchDist, midX, midY);
+      else apply();
+      pinchDist = dist;
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  function endTouch(e) {
+    for (const t of e.changedTouches) touches.delete(t.identifier);
+    if (touches.size < 2) pinchDist = 0;
+  }
+  document.addEventListener('touchend', endTouch);
+  document.addEventListener('touchcancel', endTouch);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'f' || e.key === 'F') refocus();
+  });
+  document.getElementById('refocus').addEventListener('click', refocus);
+
+  function invalidateCaches(){
+    lastRingSig = '';
+    lastFlowSig = '';
+  }
+
+  /* ===================== Settings panel ===================== */
+  const settingsBtn     = document.getElementById('settings-btn');
+  const settingsPanel   = document.getElementById('settings-panel');
+  const settingsOverlay = document.getElementById('settings-overlay');
+  const settingsClose   = document.getElementById('settings-close');
+  const zonesListEl     = document.getElementById('zones-list');
+  const addZoneBtn      = document.getElementById('add-zone-btn');
+  const themeToggleEl   = document.getElementById('theme-toggle');
+
+  /* Theme — persisted independently from zones */
+  const THEME_KEY = 'zodiac-clock:theme';
+  function applyTheme(theme){
+    if (theme === 'light') document.body.classList.add('light-mode');
+    else                    document.body.classList.remove('light-mode');
+    /* Highlight the active option in the toggle */
+    themeToggleEl.querySelectorAll('.theme-opt').forEach(b => {
+      b.classList.toggle('active', b.dataset.theme === theme);
+    });
+  }
+  function loadTheme(){
+    try { return localStorage.getItem(THEME_KEY) || 'dark'; }
+    catch(e) { return 'dark'; }
+  }
+  function saveTheme(t){
+    try { localStorage.setItem(THEME_KEY, t); } catch(e) {}
+  }
+  themeToggleEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('.theme-opt');
+    if (!btn) return;
+    const t = btn.dataset.theme;
+    applyTheme(t);
+    saveTheme(t);
+  });
+  applyTheme(loadTheme());
+
+  function openSettings(){
+    renderZonesList();
+    settingsPanel.classList.add('open');
+    settingsOverlay.classList.add('open');
+  }
+  function closeSettings(){
+    settingsPanel.classList.remove('open');
+    settingsOverlay.classList.remove('open');
+  }
+  settingsBtn.addEventListener('click', openSettings);
+  settingsClose.addEventListener('click', closeSettings);
+  settingsOverlay.addEventListener('click', closeSettings);
+
+  function renderZonesList(){
+    zonesListEl.innerHTML = '';
+    zones.forEach((z, i) => {
+      const row = document.createElement('div');
+      row.className = 'zone-row';
+      row.innerHTML = `
+        <input type="color" class="zone-color-input" value="${z.color}">
+        <input type="text"  class="zone-label-input" value="${escapeHtml(z.label)}" placeholder="Label" maxlength="24">
+        <button class="zone-remove" title="Remove">×</button>
+        <select class="zone-tz-select">
+          ${TZ_LIST.map(([id, name]) =>
+            `<option value="${id}"${id === z.tz ? ' selected' : ''}>${name}</option>`
+          ).join('')}
+        </select>
+      `;
+      const colorInput = row.querySelector('.zone-color-input');
+      const labelInput = row.querySelector('.zone-label-input');
+      const tzSelect   = row.querySelector('.zone-tz-select');
+      const removeBtn  = row.querySelector('.zone-remove');
+
+      colorInput.addEventListener('input', () => {
+        zones[i].color = colorInput.value;
+        saveZones(); invalidateCaches(); rebuildZoneInfra(); updateTime();
+      });
+      labelInput.addEventListener('input', () => {
+        zones[i].label = labelInput.value || `Zone ${i+1}`;
+        saveZones(); rebuildZoneInfra(); updateTime();
+      });
+      tzSelect.addEventListener('change', () => {
+        zones[i].tz = tzSelect.value;
+        saveZones(); invalidateCaches(); updateTime();
+      });
+      removeBtn.addEventListener('click', () => {
+        if (zones.length <= 1) return; /* keep at least one */
+        zones.splice(i, 1);
+        saveZones(); invalidateCaches(); renderZonesList(); rebuildZoneInfra(); updateTime();
+      });
+
+      zonesListEl.appendChild(row);
+    });
+
+    addZoneBtn.disabled = zones.length >= MAX_ZONES;
+  }
+
+  addZoneBtn.addEventListener('click', () => {
+    if (zones.length >= MAX_ZONES) return;
+    /* Default colors for added zones */
+    const defaultColors = ['#e57513', '#c8a4d8', '#4abf6a', '#f0c050'];
+    const used = new Set(zones.map(z => z.color));
+    const fallback = defaultColors.find(c => !used.has(c)) || '#7fc5ff';
+    zones.push({
+      id: 'z' + Date.now(),
+      label: `Zone ${zones.length + 1}`,
+      tz: 'UTC',
+      color: fallback
+    });
+    saveZones(); invalidateCaches(); renderZonesList(); rebuildZoneInfra(); updateTime();
+  });
+
+  /* Close settings on Escape */
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && settingsPanel.classList.contains('open')) closeSettings();
+  });
+
+  /* kick everything off */
+  rebuildZoneInfra();
+  syncSecondHand();
+  updateTime();
+  setInterval(updateTime, 1000);
+})();
+</script>
+</body>
+</html>
