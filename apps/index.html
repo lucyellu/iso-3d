@@ -118,7 +118,7 @@
   footer a { color: var(--ink-2); }
 
   /* ── details sheet ── */
-  dialog { width: min(920px, 100vw - 24px); max-height: calc(100vh - 32px); margin: auto; padding: 0; border: 0; border-radius: 28px; background: var(--card-solid);
+  dialog { width: min(920px, 100vw - 24px); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); margin: auto; padding: 0; border: 0; border-radius: 28px; background: var(--card-solid);
     color: var(--ink); box-shadow: 0 40px 90px -30px rgba(0,0,0,.6); overflow: auto; overscroll-behavior: contain; }
   dialog::backdrop { background: rgba(26,20,16,.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
   dialog[open] { animation: rise .32s cubic-bezier(.2,.8,.2,1); }
@@ -161,7 +161,17 @@
     .hero { aspect-ratio: 4 / 5; }
     .d-body { padding: 20px 18px 26px; }
     .d-media.phone { aspect-ratio: 1; }
+    .shelf-h { flex-wrap: wrap; row-gap: 2px; }
+    .shelf-h p { flex-basis: 100%; order: 3; font-size: 13px; }
+    .hero .pill.big { min-height: 46px; padding: 0 20px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+    dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); border-radius: 22px; }
+    .x { width: 44px; height: 44px; margin: 8px 8px -52px 0; }
+    .d-top h2 { font-size: 26px; }
+    .getit { flex-wrap: wrap; }
+    .d-top .pill.big, .getit .pill { flex: 1 1 100%; }
+    footer { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
   }
+  @media (hover: none) { .card:hover { transform: none; box-shadow: none; } .arrows { display: none; } }
   @media (min-width: 761px) { .tabs.m { display: none; } }
   @media (prefers-reduced-motion: reduce) { .card, dialog[open] { transition: none; animation: none; } }
   [hidden] { display: none !important; }
