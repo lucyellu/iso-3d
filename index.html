@@ -1010,7 +1010,7 @@ const HM = (() => {
   const H = {};
   for (const k of ['hull', 'hullWhite', 'deckWood', 'gull', 'awning', 'glass', 'dark']) H[k] = lam(HC[k]);
   const steel = (c, spec, shin) => new THREE.MeshPhongMaterial({ color: c, specular: spec, shininess: shin });
-  H.metal = metalify(steel(HC.metal, '#6f7c78', 46));         // mast, rails, poles, stair
+  H.metal = steel(HC.metal, '#b4c2be', 90);         // mast, rails, poles, stair
   H.cream = metalify(steel(HC.cream, '#9a9a90', 30), 0.55);   // AC units, tank, boat cabin
   H.conc = concreteify(lam(HC.conc)); H.deck = concreteify(lam(HC.deck), 0.6);
   H.paint = concreteify(lam(HC.paint), 0.8); H.paint2 = concreteify(lam(HC.paint2), 0.8);
