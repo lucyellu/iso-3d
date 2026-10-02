@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archive Deck Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #1a1a1a; color: #e0e0e0; font-family: 'Helvetica Neue', sans-serif; overflow: hidden; margin: 0; }
+        
+        #viewport { cursor: grab; }
+        #viewport:active { cursor: grabbing; }
+        
+        #board {
+            position: absolute;
+            transform-origin: 0 0;
+            will-change: transform;
+        }
+
+        .camera-transition { transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+        .card-node {
+            position: absolute;
+            width: 700px;
+            height: 800px;
+            background: #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            transition: top 0.5s ease, left 0.5s ease, box-shadow 0.2s ease, transform 0.2s ease;
+            border-radius: 2px;
+        }
+        
+        .card-node:hover { box-shadow: 0 20px 50px rgba(0,0,0,0.9); }
+        
+        .card-node.selected {
+            box-shadow: 0 0 0 4px #d4a373, 0 20px 50px rgba(0,0,0,0.9);
+            z-index: 10;
+        }
+
+        .card-canvas { position: absolute; inset: 0; pointer-events: none; }
+
+        .text-overlay {
+            position: absolute;
+            inset: 0;
+            color: transparent; 
+            user-select: text;
+            z-index: 5;
+            padding: 100px; 
+            font-family: "Courier Prime", monospace;
+            font-size: 34px;
+            line-height: 42px;
+            white-space: pre-wrap;
+            cursor: text;
+        }
+        .text-overlay::selection { background: rgba(212, 163, 115, 0.3); color: transparent; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #777; }
+
+        .active-sidebar-item { border-left: 3px solid #d4a373; background-color: #333; }
+
+        .loader {
+            border: 2px solid rgba(255,255,255,0.1); border-top-color: #fff;
+            border-radius: 50%; width: 14px; height: 14px;
+            animation: spin 1s linear infinite; display: inline-block;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        #toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 100; }
+        .toast {
+            background: #2a2a2a; border-left: 4px solid #4caf50; color: white;
+            padding: 12px 20px; border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s ease forwards, fadeOut 0.3s ease 4s forwards;
+            font-size: 13px; font-family: monospace;
+        }
+        .toast.local { border-left-color: #d4a373; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden text-sm">
+
+    <!-- TOP NAVIGATION -->
+    <header class="bg-[#2a2a2a] border-b border-gray-700 p-3 flex flex-wrap justify-between items-center z-20 shadow-md">
+        <div class="flex items-center gap-4">
+            <div>
+                <h1 class="text-lg tracking-[0.2em] text-[#e0e0e0] uppercase font-light">Archive Studio</h1>
+                <p class="text-[10px] text-gray-400 tracking-wider">Infinite Canvas & Procedural Ink</p>
+            </div>
+            
+            <div class="hidden md:flex items-center ml-4 gap-2 text-xs text-gray-400 font-mono bg-[#1a1a1a] px-3 py-1.5 rounded border border-gray-700">
+                <span>[Scroll] Zoom</span> <span class="text-gray-600">|</span>
+                <span>[Drag] Pan</span> <span class="text-gray-600">|</span>
+                <span>[F] Focus Card</span>
+            </div>
+        </div>
+        
+        <div class="flex flex-wrap gap-2 items-center mt-2 md:mt-0">
+            <div class="hidden lg:flex items-center gap-2 ml-4 border-l border-gray-700 pl-4">
+                <button onclick="toggleFooters()" id="footerBtn" class="px-3 py-1.5 bg-[#333] hover:bg-[#444] rounded text-xs transition border border-gray-600">Toggle Footers: OFF</button>
+                <button onclick="document.getElementById('fileInput').click()" class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs transition border border-gray-600">Import CSV</button>
+                <input type="file" id="fileInput" accept=".json,.csv" class="hidden" onchange="importDeck(event)">
+                <button onclick="exportDeck('csv')" class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs transition border border-gray-600">Export CSV</button>
+                <button onclick="exportPNGs()" id="exportPngBtn" class="px-3 py-1.5 bg-[#d4a373] text-black text-xs font-bold hover:bg-[#e5b887] rounded transition shadow">ZIP Deck PNGs</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN WORKSPACE -->
+    <div class="flex flex-1 overflow-hidden relative">
+        
+        <!-- LEFT SIDEBAR -->
+        <div id="sidebar" class="z-20 w-72 h-full bg-[#222] border-r border-gray-700 flex flex-col shadow-2xl">
+            
+            <!-- Deck Management -->
+            <div class="p-3 bg-[#1a1a1a] border-b border-gray-800 flex flex-col gap-2">
+                <label class="text-[10px] uppercase tracking-widest text-gray-500">Active Deck</label>
+                <div class="flex gap-2">
+                    <select id="deckSelect" onchange="switchDeck()" class="flex-1 bg-[#2a2a2a] border border-gray-600 text-xs text-gray-200 rounded px-2 py-1.5 outline-none"></select>
+                    <button onclick="createNewDeck()" class="px-3 bg-gray-700 hover:bg-gray-600 border border-gray-500 rounded text-white transition">+</button>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="p-3 bg-[#2a2a2a] border-b border-gray-700 flex flex-col gap-2">
+                <div class="flex gap-2">
+                    <button onclick="quickGenerate('poem')" class="flex-1 py-1.5 bg-[#333] hover:bg-[#444] border border-gray-600 rounded text-[11px] text-gray-300 transition flex justify-center items-center gap-1">
+                        + Gen Poem
+                    </button>
+                    <button onclick="quickGenerate('sorrow')" class="flex-1 py-1.5 bg-[#333] hover:bg-[#444] border border-gray-600 rounded text-[11px] text-gray-300 transition flex justify-center items-center gap-1">
+                        + Gen Sorrow
+                    </button>
+                </div>
+                <button onclick="toggleAddForm()" class="w-full py-1.5 bg-gray-700 hover:bg-gray-600 border border-gray-500 rounded text-xs text-white transition mb-1">
+                    + Draft Manual Page
+                </button>
+                <button onclick="removeDuplicates()" class="w-full py-1.5 bg-[#3a2a2a] hover:bg-[#4a2a2a] border border-[#5a3a3a] rounded text-[11px] text-red-200 transition">
+                    Merge / Remove Dups
+                </button>
+            </div>
+
+            <!-- Sorting & Count -->
+            <div class="p-2 border-b border-gray-700 flex justify-between items-center bg-[#222]">
+                <select id="sortSelect" onchange="sortDeck()" class="bg-[#1a1a1a] border border-gray-600 text-[11px] text-gray-300 rounded px-2 py-1 outline-none w-full mr-2">
+                    <option value="date-desc">Sort: Newest First</option>
+                    <option value="date-asc">Sort: Oldest First</option>
+                    <option value="name-asc">Sort: A-Z</option>
+                    <option value="name-desc">Sort: Z-A</option>
+                </select>
+                <span id="deckCount" class="text-xs bg-gray-800 px-2 py-1 rounded text-gray-400 border border-gray-700">0</span>
+            </div>
+            
+            <div id="deckList" class="flex-1 overflow-y-auto">
+                <!-- Sidebar items injected here -->
+            </div>
+        </div>
+
+        <!-- RIGHT AREA: INFINITE CANVAS -->
+        <div id="viewport" class="flex-1 relative bg-[#121212] bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABZJREFUeNpi2rV7928GBgYQwgcsAAgwAAxEAw2z22m8AAAAAElFTkSuQmCC')] bg-repeat overflow-hidden">
+            <div id="board">
+                <!-- Card Nodes Injected Here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT FORM (Hidden) -->
+    <div id="addFormOverlay" class="absolute inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-[#2a2a2a] border border-gray-600 p-6 md:p-8 rounded-lg shadow-2xl w-full max-w-xl">
+            <h2 class="text-xl font-light tracking-widest text-white mb-6 uppercase border-b border-gray-700 pb-4">Draft Manual Page</h2>
+            
+            <label class="block text-xs uppercase tracking-wider text-gray-400 mb-2">Title / Word (Optional)</label>
+            <input type="text" id="inputTitle" class="w-full bg-[#1a1a1a] border border-gray-600 rounded p-3 text-white mb-4 font-mono focus:border-gray-400 outline-none">
+            
+            <label class="block text-xs uppercase tracking-wider text-gray-400 mb-2">Body Text</label>
+            <textarea id="inputText" rows="5" class="w-full bg-[#1a1a1a] border border-gray-600 rounded p-3 text-white mb-4 font-mono focus:border-gray-400 outline-none resize-none"></textarea>
+            
+            <label class="block text-xs uppercase tracking-wider text-gray-400 mb-2">Source / Author Label</label>
+            <input type="text" id="inputSource" placeholder="e.g. r.m. drake" class="w-full bg-[#1a1a1a] border border-gray-600 rounded p-3 text-white mb-6 font-mono focus:border-gray-400 outline-none">
+
+            <div class="flex justify-end gap-4">
+                <button onclick="toggleAddForm()" class="px-6 py-2 border border-gray-500 text-gray-300 rounded hover:bg-gray-700 transition">Cancel</button>
+                <button onclick="saveNote()" class="px-6 py-2 bg-[#d4a373] text-black font-bold rounded hover:bg-[#e5b887] transition shadow">Save Page</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+<script>
+    // --- APP STATE & DATA ---
+    let decks = { "Main Archive": [] };
+    let currentDeckName = "Main Archive";
+    let deck = []; // Reference to active deck
+    
+    let selectedId = null;
+    let cardNodes = {}; 
+    let showFooters = false;
+
+    function showToast(message, type = 'local') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerText = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    // --- PROCEDURAL RNG (Seeded) ---
+    let seededRand = Math.random;
+    function cyrb128(str) {
+        let h1=1779033703, h2=3144134277, h3=1013904242, h4=2773480762;
+        for(let i=0,k; i<str.length; i++) {
+            k=str.charCodeAt(i);
+            h1=h2^Math.imul(h1^k,597399067); h2=h3^Math.imul(h2^k,2869860233);
+            h3=h4^Math.imul(h3^k,951274213); h4=h1^Math.imul(h4^k,2716044179);
+        }
+        h1=Math.imul(h3^(h1>>>18),597399067); h2=Math.imul(h4^(h2>>>22),2869860233);
+        h3=Math.imul(h1^(h3>>>17),951274213); h4=Math.imul(h2^(h4>>>19),2716044179);
+        return [(h1^h2^h3^h4)>>>0,(h2^h1)>>>0,(h3^h1)>>>0,(h4^h1)>>>0];
+    }
+    function sfc32(a, b, c, d) {
+        return function() {
+          a >>>= 0; b >>>= 0; c >>>= 0; d >>>= 0; 
+          var t = (a + b) | 0;
+          a = b ^ b >>> 9; b = c + (c << 3) | 0;
+          c = (c << 21 | c >>> 11); d = d + 1 | 0;
+          t = t + d | 0; c = c + t | 0;
+          return (t >>> 0) / 4294967296;
+        }
+    }
+    function seedRNG(stringData) {
+        const seed = cyrb128(stringData || "default");
+        seededRand = sfc32(seed[0], seed[1], seed[2], seed[3]);
+    }
+    function randomInt(min, max) { return Math.floor(seededRand() * (max - min + 1)) + min; }
+    function getChoice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function generateId() { return 'card_' + Math.random().toString(36).substr(2, 9); }
+
+    // --- DEFAULT REAL CONTENT ---
+    const defaultDeck = [
+        { id: generateId(), title: "", text: "you make me feel good inside\nas if nothing matters; not\nthe future, not the past and\njust now. and right now it\nall feels like i am fatally\nyours, like two people who\nare meant to meet and crash\nfor the very first time.", source: "r.m. drake", date: Date.now() - 20000000 },
+        { id: generateId(), title: "", text: "loving me will not be easy.\nit will be war. you will\nhold the gun and i will hand\nyou the bullets. so breathe,\nand embrace the beauty of\nthe massacre that lies ahead.", source: "r.m. drake", date: Date.now() - 19000000 },
+        { id: generateId(), title: "", text: "the more she went on\nto forget love, the\ncloser she went on to\nbecome it.", source: "r.m. drake", date: Date.now() - 18000000 },
+        { id: generateId(), title: "", text: "i wasn't all there\nand she wasn't all there either,\nbut we both pretended to be.\nand in a strange way\nthat was good enough for me.", source: "r.m. drake", date: Date.now() - 17000000 },
+        
+        { id: generateId(), title: "sonder", text: "n. the realization that each random passerby has a life as vivid and complex as your own—populated with their own ambitions, friends, routines, worries and inherited craziness.", source: "dictionary of\nobscure sorrows", date: Date.now() - 15000000 },
+        { id: generateId(), title: "kenopsia", text: "n. the eerie, forlorn atmosphere of a place that's usually bustling with people but is now abandoned and quiet.", source: "dictionary of\nobscure sorrows", date: Date.now() - 14000000 },
+        { id: generateId(), title: "vellichor", text: "n. the strange wistfulness of used bookstores, which are somehow infused with the passage of time.", source: "dictionary of\nobscure sorrows", date: Date.now() - 13000000 },
+        { id: generateId(), title: "chrysalism", text: "n. the amniotic tranquility of being indoors during a thunderstorm, listening to waves of rain pattering against the roof.", source: "dictionary of\nobscure sorrows", date: Date.now() - 12000000 }
+    ];
+
+    // --- EXPANDED LOCAL GENERATORS (With short line breaks) ---
+    const localGens = {
+        poem: () => {
+            const openers = ["maybe", "and she", "i was", "we are", "chaos is", "some people", "the truth is", "don't forget", "you cannot"];
+            const middles = ["lost in the fire", "burning softly", "waiting for rain", "found the edge", "breaking apart", "pretending to be", "running from ghosts", "afraid to fall", "looking for home", "tied to the past"];
+            const connectors = ["and yet", "because", "but somehow", "so we keep", "while they are"];
+            const closers = ["to become it.", "without you.", "like a storm.", "broken open.", "from the truth.", "never enough.", "all along.", "until it hurts."];
+            
+            // Generate fragments and randomly join them with either space or newline for that staggered typewriter look
+            const fragments = [getChoice(openers), getChoice(middles), getChoice(connectors), getChoice(middles), getChoice(closers)];
+            let text = "";
+            for(let i=0; i<fragments.length; i++) {
+                text += fragments[i];
+                if (i < fragments.length - 1) { text += (Math.random() > 0.4) ? "\n" : " "; }
+            }
+            return { title: "", text: text, source: "r.m. drake" };
+        },
+        sorrow: () => {
+            const prefs = ["son", "vell", "ken", "chrys", "anec", "somn", "chron", "xeno", "aer", "lumen", "scia", "mon", "opia"];
+            const suffs = ["der", "ichor", "opsia", "alism", "doche", "ism", "ia", "itude", "ancy", "esis", "algia"];
+            const starts = ["the realization that", "the strange wistfulness of", "the eerie atmosphere of", "a sudden desire to", "the quiet tragedy of", "the unsettling awareness that", "a feeling of exhaustion from"];
+            const ends = ["you will never truly know.", "time is passing quickly.", "everything is connected.", "the smooth arc of your life.", "rooms you will never enter.", "a story you will never get to read.", "people you will never meet."];
+            const pos = getChoice(["n.", "adj.", "v.", "n."]); 
+            return { title: getChoice(prefs)+getChoice(suffs), text: `${pos} ${getChoice(starts)} ${getChoice(ends)}`, source: "dictionary of\nobscure sorrows" };
+        }
+    };
+
+    function quickGenerate(type) {
+        const newCard = localGens[type]();
+        newCard.id = generateId();
+        newCard.date = Date.now();
+        deck.push(newCard);
+        saveState();
+        sortDeck(false);
+        selectCard(newCard.id);
+        focusCard(newCard.id);
+    }
+
+    function removeDuplicates() {
+        const seen = new Set();
+        const originalLength = deck.length;
+        deck = deck.filter(card => {
+            const key = (card.title || "").trim().toLowerCase() + "|" + (card.text || "").trim().toLowerCase();
+            if(seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+        const removed = originalLength - deck.length;
+        if(removed > 0) {
+            showToast(`Merged & Removed ${removed} duplicate pages.`, 'local');
+            decks[currentDeckName] = deck; // Update reference
+            saveState();
+            refreshBoardFull();
+        } else {
+            showToast(`No duplicates found in this deck.`, 'local');
+        }
+    }
+
+    // --- DECK MANAGEMENT ---
+    function updateDeckDropdown() {
+        const select = document.getElementById('deckSelect');
+        select.innerHTML = '';
+        for (let name in decks) {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            if (name === currentDeckName) opt.selected = true;
+            select.appendChild(opt);
+        }
+    }
+
+    function switchDeck() {
+        currentDeckName = document.getElementById('deckSelect').value;
+        deck = decks[currentDeckName];
+        selectedId = deck.length > 0 ? deck[0].id : null;
+        saveState();
+        refreshBoardFull();
+    }
+
+    function createNewDeck() {
+        const name = prompt("Enter new deck name:");
+        if(name && name.trim() !== '' && !decks[name]) {
+            decks[name] = [];
+            currentDeckName = name;
+            deck = decks[currentDeckName];
+            saveState();
+            updateDeckDropdown();
+            refreshBoardFull();
+        }
+    }
+
+    function refreshBoardFull() {
+        board.innerHTML = "";
+        cardNodes = {};
+        sortDeck();
+        if(selectedId) focusCard(selectedId);
+    }
+
+    // --- INFINITE CANVAS ENGINE & LAYOUT ---
+    const board = document.getElementById('board');
+    let scale = 0.8;
+    let boardX = 200;
+    let boardY = 100;
+
+    const CARD_W = 700;
+    const CARD_H = 800;
+    const GAP = 150;
+
+    function applyBoardTransform(smooth = false) {
+        if(smooth) board.classList.add('camera-transition');
+        else board.classList.remove('camera-transition');
+        board.style.transform = `translate(${boardX}px, ${boardY}px) scale(${scale})`;
+        if(smooth) { setTimeout(() => board.classList.remove('camera-transition'), 400); }
+    }
+
+    function layoutCards() {
+        const cols = Math.max(3, Math.ceil(Math.sqrt(deck.length)));
+        deck.forEach((card, i) => {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            card.gridX = col * (CARD_W + GAP);
+            card.gridY = row * (CARD_H + GAP);
+            
+            if (!cardNodes[card.id]) {
+                cardNodes[card.id] = buildCardNode(card, i);
+                board.appendChild(cardNodes[card.id]);
+                renderCardCanvas(card, cardNodes[card.id].querySelector('canvas'), i);
+            }
+            
+            const node = cardNodes[card.id];
+            node.style.transform = `translate(${card.gridX}px, ${card.gridY}px)`;
+            
+            if (card.id === selectedId) node.classList.add('selected');
+            else node.classList.remove('selected');
+        });
+    }
+
+    function buildCardNode(card, index) {
+        const div = document.createElement('div');
+        div.className = 'card-node';
+        div.id = 'node_' + card.id;
+        
+        div.addEventListener('mousedown', (e) => {
+            e.stopPropagation(); 
+            selectCard(card.id);
+        });
+
+        const canvas = document.createElement('canvas');
+        canvas.className = 'card-canvas';
+        canvas.width = CARD_W;
+        canvas.height = CARD_H;
+        div.appendChild(canvas);
+
+        const txtOverlay = document.createElement('div');
+        txtOverlay.className = 'text-overlay';
+        
+        let html = '';
+        if(card.title) html += `${card.title.toLowerCase()}\n\n`;
+        html += (card.text || "").toLowerCase();
+        if(card.source) html += `\n\n\n${card.source.toLowerCase()}`;
+        txtOverlay.innerHTML = html;
+        
+        div.appendChild(txtOverlay);
+        return div;
+    }
+
+    function selectCard(id) {
+        selectedId = id;
+        layoutCards(); 
+        updateSidebarUI();
+    }
+
+    function focusCard(id) {
+        if(!id) return;
+        const card = deck.find(c => c.id === id);
+        if(!card) return;
+        const vp = document.getElementById('viewport');
+        scale = 1.0; 
+        boardX = (vp.clientWidth / 2) - ((card.gridX + CARD_W/2) * scale);
+        boardY = (vp.clientHeight / 2) - ((card.gridY + CARD_H/2) * scale);
+        applyBoardTransform(true);
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if(document.getElementById('addFormOverlay').classList.contains('hidden') === false) return;
+        if(e.key.toLowerCase() === 'f' && selectedId) { focusCard(selectedId); }
+    });
+
+    // --- TEXT RENDERING ENGINE ---
+    
+    function drawProceduralPaper(ctx, w, h) {
+        // Darker, more pronounced paper texture
+        const baseH = randomInt(35, 45); 
+        const baseS = randomInt(8, 18);  
+        const baseL = randomInt(85, 90); 
+        ctx.fillStyle = `hsl(${baseH}, ${baseS}%, ${baseL}%)`;
+        ctx.fillRect(0, 0, w, h);
+
+        const imageData = ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            const noise = (seededRand() - 0.5) * 18; // Increased noise
+            data[i] += noise; data[i+1] += noise; data[i+2] += noise; 
+        }
+        ctx.putImageData(imageData, 0, 0);
+
+        // Thicker fibers
+        const fiberCount = randomInt(200, 500);
+        for (let i = 0; i < fiberCount; i++) {
+            ctx.beginPath();
+            ctx.strokeStyle = seededRand() > 0.5 ? 'rgba(0,0,0,0.12)' : 'rgba(110,55,15,0.15)';
+            ctx.lineWidth = seededRand() * 2.5;
+            const x = seededRand() * w; const y = seededRand() * h;
+            const len = seededRand() * 14; const angle = seededRand() * Math.PI * 2;
+            ctx.moveTo(x, y);
+            ctx.quadraticCurveTo(
+                x + Math.cos(angle)*len/2 + (seededRand()-0.5)*5,
+                y + Math.sin(angle)*len/2 + (seededRand()-0.5)*5,
+                x + Math.cos(angle)*len, y + Math.sin(angle)*len
+            );
+            ctx.stroke();
+        }
+
+        // Darker vignette
+        const gradient = ctx.createRadialGradient(w/2, h/2, w/3, w/2, h/2, w*0.8);
+        gradient.addColorStop(0, 'rgba(0,0,0,0)');
+        gradient.addColorStop(1, 'rgba(50,40,30,0.25)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+    }
+
+    function parseTypewriterText(ctx, text, maxWidth) {
+        let paragraphs = text.split('\n');
+        let lines = [];
+        paragraphs.forEach(paragraph => {
+            if(paragraph.trim() === '') { lines.push(''); return; }
+            let words = paragraph.split(' ');
+            let currentLine = words[0] || '';
+            for (let i = 1; i < words.length; i++) {
+                let word = words[i];
+                let width = ctx.measureText(currentLine + " " + word).width;
+                if (width < maxWidth) { currentLine += " " + word; } 
+                else { lines.push(currentLine); currentLine = word; }
+            }
+            lines.push(currentLine);
+        });
+        return lines;
+    }
+
+    function drawTypewriterInk(ctx, card, w, h) {
+        const padding = 100;
+        const maxWidth = w - (padding * 2);
+        
+        const fontSize = 34;
+        const lineHeight = 42; 
+        ctx.font = `${fontSize}px "Courier Prime", monospace`;
+        ctx.textBaseline = "middle";
+        
+        let elementsToDraw = [];
+        let totalHeight = 0;
+
+        if (card.title && card.title.trim() !== '') {
+            let titleLines = parseTypewriterText(ctx, card.title.toLowerCase(), maxWidth);
+            titleLines.forEach(l => { elementsToDraw.push({ text: l, isTitle: true }); totalHeight += lineHeight; });
+            totalHeight += lineHeight; 
+        }
+
+        if (card.text && card.text.trim() !== '') {
+            let bodyLines = parseTypewriterText(ctx, card.text.toLowerCase(), maxWidth);
+            bodyLines.forEach(l => { elementsToDraw.push({ text: l, isTitle: false }); totalHeight += lineHeight; });
+        }
+
+        if(card.source && card.source.trim() !== '') {
+            let sourceLines = card.source.toLowerCase().split('\n');
+            totalHeight += lineHeight + (sourceLines.length * lineHeight); 
+        }
+
+        let currentY = (h - totalHeight) / 2;
+
+        elementsToDraw.forEach(line => {
+            if (line.text === '') { currentY += lineHeight; return; }
+            let currentX = padding; 
+            
+            for (let i=0; i<line.text.length; i++) {
+                let char = line.text[i];
+                const charW = ctx.measureText(char).width;
+                
+                const rot = (seededRand() - 0.5) * 0.05;
+                const offX = (seededRand() - 0.5) * 1.5;
+                const offY = (seededRand() - 0.5) * 1.5;
+                const alpha = seededRand() * 0.3 + 0.65;
+
+                ctx.save();
+                ctx.translate(currentX + charW/2 + offX, currentY + offY);
+                ctx.rotate(rot);
+                ctx.fillStyle = `rgba(20, 20, 20, ${alpha})`;
+                
+                if (seededRand() > 0.7) { ctx.shadowColor = "rgba(0,0,0,0.3)"; ctx.shadowBlur = 2; }
+                ctx.fillText(char, 0, 0);
+                if (seededRand() > 0.85) { ctx.fillStyle = `rgba(20, 20, 20, 0.2)`; ctx.fillText(char, 1, 0); }
+                if (line.isTitle) { ctx.fillText(char, 0.5, 0); } 
+
+                ctx.restore();
+                currentX += charW;
+            }
+            currentY += lineHeight;
+        });
+
+        if(card.source && card.source.trim() !== '') {
+            currentY += lineHeight; 
+            let sourceLines = card.source.toLowerCase().split('\n');
+            
+            sourceLines.forEach(sLine => {
+                const sourceW = ctx.measureText(sLine).width;
+                let currentX = (w - sourceW) / 2; 
+                
+                for(let i=0; i<sLine.length; i++) {
+                    let char = sLine[i];
+                    const charW = ctx.measureText(char).width;
+                    
+                    ctx.save();
+                    ctx.translate(currentX + charW/2, currentY);
+                    ctx.rotate((seededRand() - 0.5) * 0.04);
+                    ctx.fillStyle = `rgba(30, 30, 30, ${seededRand() * 0.3 + 0.6})`;
+                    ctx.fillText(char, 0, 0);
+                    ctx.restore();
+                    
+                    currentX += charW;
+                }
+                currentY += lineHeight;
+            });
+        }
+    }
+
+    function drawBookMetadata(ctx, card, index, w, h) {
+        if (!showFooters) return;
+        
+        ctx.font = `20px "Courier Prime", monospace`;
+        ctx.fillStyle = "rgba(40, 40, 40, 0.5)"; // faded look
+        ctx.textBaseline = "bottom";
+
+        let dateStr = "Unknown Date";
+        if (card.date) { dateStr = new Date(card.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }); }
+        
+        ctx.textAlign = "left";
+        ctx.fillText(dateStr, 60, h - 50);
+
+        ctx.textAlign = "right";
+        ctx.fillText(`pg. ${index + 1}`, w - 60, h - 50);
+    }
+
+    function toggleFooters() {
+        showFooters = !showFooters;
+        document.getElementById('footerBtn').innerText = `Toggle Footers: ${showFooters ? 'ON' : 'OFF'}`;
+        
+        // Retrigger render for all active canvases on board
+        deck.forEach((card, i) => {
+            if(cardNodes[card.id]) {
+                renderCardCanvas(card, cardNodes[card.id].querySelector('canvas'), i);
+            }
+        });
+    }
+
+    function renderCardCanvas(card, canvasEl, index) {
+        seedRNG((card.title || "") + card.text + card.id);
+        const ctx = canvasEl.getContext('2d');
+        ctx.clearRect(0, 0, CARD_W, CARD_H);
+        drawProceduralPaper(ctx, CARD_W, CARD_H);
+        drawTypewriterInk(ctx, card, CARD_W, CARD_H);
+        drawBookMetadata(ctx, card, index, CARD_W, CARD_H);
+    }
+
+    // --- PAN & ZOOM INTERACTION ---
+    const viewport = document.getElementById('viewport');
+    let isDragging = false;
+    let dragStartX, dragStartY;
+    let initialBoardX, initialBoardY;
+
+    viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = viewport.getBoundingClientRect();
+        const pointerX = e.clientX - rect.left;
+        const pointerY = e.clientY - rect.top;
+        const zoomSpeed = 0.002;
+        const delta = e.deltaY * -zoomSpeed;
+        const newScale = Math.min(Math.max(0.1, scale + delta), 3);
+        const scaleRatio = newScale / scale;
+        boardX = pointerX - (pointerX - boardX) * scaleRatio;
+        boardY = pointerY - (pointerY - boardY) * scaleRatio;
+        scale = newScale;
+        applyBoardTransform(false);
+    }, {passive: false});
+
+    viewport.addEventListener('mousedown', (e) => {
+        if (e.button === 1 || (e.button === 0 && e.target === viewport)) {
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            initialBoardX = boardX;
+            initialBoardY = boardY;
+        }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        boardX = initialBoardX + (e.clientX - dragStartX);
+        boardY = initialBoardY + (e.clientY - dragStartY);
+        applyBoardTransform(false);
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; });
+    window.addEventListener('mouseleave', () => { isDragging = false; });
+
+    // --- SIDEBAR UI & SORTING ---
+    function updateSidebarUI() {
+        const list = document.getElementById('deckList');
+        list.innerHTML = '';
+        document.getElementById('deckCount').innerText = deck.length;
+
+        deck.forEach((card) => {
+            const div = document.createElement('div');
+            div.className = `p-3 border-b border-gray-700 cursor-pointer transition ${card.id === selectedId ? 'active-sidebar-item' : 'hover:bg-[#333]'}`;
+            div.onclick = () => {
+                selectCard(card.id);
+                focusCard(card.id);
+            };
+            const tStr = card.title ? card.title : (card.text ? card.text.substring(0, 18) + "..." : "Untitled");
+            div.innerHTML = `<div class="font-mono text-gray-200 text-[11px] uppercase truncate mb-1">${tStr}</div>
+                             <div class="text-[10px] text-gray-500 font-sans truncate">${card.text}</div>`;
+            list.appendChild(div);
+        });
+        const activeEl = list.querySelector('.active-sidebar-item');
+        if(activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function sortDeck() {
+        const val = document.getElementById('sortSelect').value;
+        deck.sort((a, b) => {
+            if (val === 'date-desc') return b.date - a.date;
+            if (val === 'date-asc') return a.date - b.date;
+            if (val === 'name-asc') return (a.title||'').localeCompare(b.title||'');
+            if (val === 'name-desc') return (b.title||'').localeCompare(a.title||'');
+        });
+        
+        // Re-index all cards on board
+        deck.forEach((card, i) => {
+            if(cardNodes[card.id]) {
+                renderCardCanvas(card, cardNodes[card.id].querySelector('canvas'), i);
+            }
+        });
+        
+        updateSidebarUI();
+        layoutCards(); 
+    }
+
+    // --- FORMS & ZIP EXPORT ---
+    function toggleAddForm() {
+        const form = document.getElementById('addFormOverlay');
+        if (form.classList.contains('hidden')) {
+            form.classList.remove('hidden');
+            document.getElementById('inputTitle').value = '';
+            document.getElementById('inputText').value = '';
+            document.getElementById('inputSource').value = '';
+        } else {
+            form.classList.add('hidden');
+        }
+    }
+
+    function saveNote() {
+        const text = document.getElementById('inputText').value.trim();
+        if (!text) return alert('Page body cannot be empty.');
+
+        const newCard = { 
+            id: generateId(),
+            title: document.getElementById('inputTitle').value.trim().toLowerCase(), 
+            text: text.toLowerCase(), 
+            source: document.getElementById('inputSource').value.trim().toLowerCase(),
+            date: Date.now() 
+        };
+        deck.push(newCard);
+        saveState();
+        sortDeck();
+        selectCard(newCard.id);
+        focusCard(newCard.id);
+        toggleAddForm();
+    }
+
+    async function exportPNGs() {
+        const btn = document.getElementById('exportPngBtn');
+        const origText = btn.innerText;
+        btn.innerText = "Zipping...";
+        const zip = new JSZip();
+        for(let i=0; i<deck.length; i++){
+            const c = deck[i];
+            const node = cardNodes[c.id];
+            if(node) {
+                const canvasEl = node.querySelector('canvas');
+                const dataUrl = canvasEl.toDataURL("image/png");
+                zip.file(`${currentDeckName}_card_${i+1}.png`, dataUrl.split(',')[1], {base64: true});
+            }
+        }
+        const content = await zip.generateAsync({type:"blob"});
+        saveAs(content, `${currentDeckName.replace(/ /g, '_')}_images.zip`);
+        btn.innerText = origText;
+    }
+
+    function exportDeck(format) {
+        let csvStr = "Title,Text,Source,Date\n";
+        deck.forEach(c => {
+            let t = c.title ? c.title.replace(/"/g, '""') : '';
+            let txt = c.text ? c.text.replace(/"/g, '""') : '';
+            let s = c.source ? c.source.replace(/"/g, '""') : '';
+            csvStr += `"${t}","${txt}","${s}","${c.date}"\n`;
+        });
+        const blob = new Blob([csvStr], { type: 'text/csv' });
+        saveAs(blob, `${currentDeckName.replace(/ /g, '_')}.csv`);
+    }
+
+    function importDeck(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const contents = e.target.result;
+            const lines = contents.split('\n');
+            let added = 0;
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const matches = line.match(/(?:"([^"]*(?:""[^"]*)*)"|([^",]+))/g);
+                if (matches && matches.length >= 2) {
+                    deck.push({ 
+                        id: generateId(),
+                        title: matches[0].replace(/^"|"$/g, '').replace(/""/g, '"'), 
+                        text: matches[1].replace(/^"|"$/g, '').replace(/""/g, '"'), 
+                        source: matches[2] ? matches[2].replace(/^"|"$/g, '').replace(/""/g, '"') : '',
+                        date: matches[3] ? parseInt(matches[3].replace(/^"|"$/g, '')) : Date.now() 
+                    });
+                    added++;
+                }
+            }
+            if (added > 0) {
+                saveState();
+                sortDeck();
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    function resetToDefault() {
+        if(confirm("Wipe ALL decks and restore defaults?")) {
+            decks = { "Main Archive": [...defaultDeck] };
+            currentDeckName = "Main Archive";
+            deck = decks[currentDeckName];
+            
+            updateDeckDropdown();
+            refreshBoardFull();
+            saveState();
+        }
+    }
+
+    // --- INIT ---
+    function loadState() {
+        const saved = localStorage.getItem('archive_deck_v4');
+        if (saved) {
+            try { 
+                decks = JSON.parse(saved); 
+                // Ensure IDs exist
+                for(let dName in decks) {
+                    decks[dName].forEach(c => { if(!c.id) c.id = generateId(); });
+                }
+                currentDeckName = Object.keys(decks)[0] || "Main Archive";
+                deck = decks[currentDeckName];
+            } catch(e) { 
+                decks = { "Main Archive": [...defaultDeck] };
+                deck = decks["Main Archive"];
+            }
+        } else { 
+            // Migrate v3 if exists
+            const oldV3 = localStorage.getItem('archive_deck_v3');
+            if(oldV3) {
+                try {
+                    decks = { "Imported Archive": JSON.parse(oldV3) };
+                    currentDeckName = "Imported Archive";
+                    deck = decks[currentDeckName];
+                } catch(e) {
+                    decks = { "Main Archive": [...defaultDeck] };
+                    deck = decks["Main Archive"];
+                }
+            } else {
+                decks = { "Main Archive": [...defaultDeck] };
+                deck = decks["Main Archive"];
+            }
+        }
+        
+        updateDeckDropdown();
+        if(deck.length > 0) selectedId = deck[0].id;
+        sortDeck();
+        setTimeout(() => focusCard(selectedId), 100); 
+    }
+
+    function saveState() { localStorage.setItem('archive_deck_v4', JSON.stringify(decks)); }
+
+    window.onload = () => { document.fonts.ready.then(() => { loadState(); }); };
+</script>
+</body>
+</html>

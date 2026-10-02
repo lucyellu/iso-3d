@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Apple Watch — Infinite Canvas</title>
+<style>
+  :root {
+    --main-color: #ffffff;
+    --bg-color: #141515;
+    --sec-needle-color: #e57513;
+    --radius: 30vh;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg-color);
+    color: var(--main-color);
+    font-family: "San Francisco Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    cursor: grab;
+  }
+  body.dragging { cursor: grabbing; }
+
+  #viewport {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+
+  .clock {
+    height: 0;
+    width: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+  .clock::after {
+    content: '';
+    transform: translate(-50%, -50%);
+    background: var(--bg-color);
+    box-shadow: 0 0 0 2vh var(--main-color);
+    border-radius: 99em;
+    position: absolute;
+    height: 2vh;
+    width: 2vh;
+    min-height: 4px;
+    min-width: 4px;
+    z-index: 100;
+  }
+
+  .w-num .num,
+  .w-num-g .num-g {
+    position: absolute;
+    transform: translate(-50%, -50%);
+  }
+  .w-num .num   { font-size: 8.5vh; font-weight: 200; }
+  .w-num-g .num-g {
+    font-size: 5vh;
+    font-weight: 600;
+    color: rgba(255,255,255,.7);
+  }
+
+  .grd { position: relative; }
+  .w-ms { top: 0; left: 0; width: 0; height: 0; position: absolute; }
+  .w-ms .tick::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    height: calc(var(--radius) / 14);
+    width: 0.5vh;
+    max-width: 3px;
+    min-width: 1px;
+    background: rgba(255,255,255,.25);
+    border-radius: 99em;
+  }
+  .w-ms.major    .tick::before { height: calc(var(--radius) / 8);   background: rgba(255,255,255,.4); }
+  .w-ms.cardinal .tick::before { height: calc(var(--radius) / 6.4); background: var(--main-color); }
+
+  .w-sec, .w-min, .w-hour { height: 0; width: 0; position: relative; }
+  .w-sec  { z-index: 99; }
+  .w-hour { z-index: 98; }
+  .w-min  { z-index: 97; }
+
+  .sec-needle { animation: tictac 60s linear infinite; }
+  .sec-needle::before {
+    content: '';
+    height: calc(var(--radius) * 1.4);
+    border-radius: 99em;
+    bottom: 0;
+    width: 1vh;
+    max-width: 2px;
+    background: var(--sec-needle-color);
+    box-shadow: 0 5vh 0 0 var(--sec-needle-color);
+    position: absolute;
+    transform: translateX(-50%);
+  }
+  .sec-needle::after {
+    content: '';
+    z-index: 99;
+    transform: translate(-50%, -50%);
+    background: var(--bg-color);
+    box-shadow: 0 0 0 1vh var(--sec-needle-color);
+    border-radius: 50%;
+    position: absolute;
+    height: 2vh;
+    width: 2vh;
+    min-height: 4px;
+    min-width: 4px;
+  }
+
+  .min-needle { animation: tictac 3600s linear infinite; }
+  .min-needle::before {
+    content: "";
+    height: 7.6vh;
+    width: 1vh;
+    min-width: 1px;
+    background: var(--main-color);
+    position: absolute;
+    transform: translate(-50%, -100%);
+  }
+  .min-needle::after {
+    content: "";
+    transform: translateX(-50%);
+    background: var(--bg-color);
+    height: calc(var(--radius) - 3px);
+    width: 2vh;
+    border: 1vh solid var(--main-color);
+    border-radius: 2vh;
+    position: absolute;
+    bottom: 7vh;
+  }
+
+  .hour-needle { animation: tictac 43200s linear infinite; }
+  .hour-needle::before {
+    content: "";
+    height: 7.6vh;
+    width: 1vh;
+    min-width: 1px;
+    background: var(--main-color);
+    position: absolute;
+    transform: translate(-50%, -100%);
+  }
+  .hour-needle::after {
+    content: "";
+    transform: translateX(-50%);
+    background: var(--bg-color);
+    height: calc(var(--radius) - 14px);
+    width: 2vh;
+    border: 1vh solid var(--main-color);
+    border-radius: 2vh;
+    position: absolute;
+    bottom: 7vh;
+  }
+
+  @keyframes tictac {
+    from { transform: rotateZ(0deg)   translate(-50%, -50%); }
+    to   { transform: rotateZ(360deg) translate(-50%, -50%); }
+  }
+
+  .hud {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .hud button {
+    pointer-events: auto;
+    background: rgba(20,21,21,.65);
+    color: rgba(255,255,255,.92);
+    border: 1px solid rgba(255,255,255,.14);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 10px 16px;
+    font: 500 13px/1 "San Francisco Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    letter-spacing: 0.04em;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, transform .1s;
+  }
+  .hud button:hover  { background: rgba(40,42,42,.8); border-color: rgba(255,255,255,.25); }
+  .hud button:active { transform: scale(.97); }
+
+  .hint {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.4);
+    pointer-events: none;
+    z-index: 10;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div id="viewport">
+    <div class="clock all">
+      <div class="w-num"></div>
+      <div class="w-num-g"></div>
+      <div class="grd"></div>
+      <div class="w-sec"><div class="sec-needle"></div></div>
+      <div class="w-min"><div class="min-needle"></div></div>
+      <div class="w-hour"><div class="hour-needle"></div></div>
+    </div>
+  </div>
+
+  <div class="hint">drag · pinch / scroll to zoom · press F to refocus</div>
+  <div class="hud">
+    <button id="refocus">⊙ Refocus</button>
+  </div>
+
+<script>
+(function () {
+  // --- Build the clock content (same as original) -------------------------
+  const NUMS = 12;
+  const GRD  = 240;
+  const PART = 360 / NUMS;
+  const DEG_GRD = 360 / GRD;
+  const RADIUS_VH = 30;
+
+  const wNum  = document.querySelector('.w-num');
+  const wNumG = document.querySelector('.w-num-g');
+  const grd   = document.querySelector('.grd');
+
+  for (let i = 1; i <= NUMS; i++) {
+    const angleDeg = PART * i - PART * 3;
+    const a = angleDeg * Math.PI / 180;
+
+    const n = document.createElement('div');
+    n.className = 'num';
+    n.textContent = i;
+    n.style.top  = (Math.sin(a) * RADIUS_VH) + 'vh';
+    n.style.left = (Math.cos(a) * RADIUS_VH) + 'vh';
+    wNum.appendChild(n);
+
+    const ng = document.createElement('div');
+    ng.className = 'num-g';
+    ng.textContent = i * 60 / NUMS;
+    ng.style.top  = (Math.sin(a) * (RADIUS_VH + 17)) + 'vh';
+    ng.style.left = (Math.cos(a) * (RADIUS_VH + 17)) + 'vh';
+    wNumG.appendChild(ng);
+  }
+
+  for (let i = 1; i <= GRD; i++) {
+    const wrap = document.createElement('div');
+    wrap.className = 'w-ms';
+    if (i % 20 === 0)     wrap.classList.add('cardinal');
+    else if (i % 4 === 0) wrap.classList.add('major');
+
+    const tick = document.createElement('div');
+    tick.className = 'tick';
+    tick.style.transform =
+      `rotateZ(${DEG_GRD * i}deg) translateY(${RADIUS_VH * 1.4}vh)`;
+    wrap.appendChild(tick);
+    grd.appendChild(wrap);
+  }
+
+  const d = new Date();
+  const h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
+  const secDeg  = s * 6;
+  const minDeg  = m * 6 + s * 0.1;
+  const hourDeg = (h % 12) * 30 + m * 0.5;
+  document.querySelector('.w-sec').style.transform  = `rotateZ(${secDeg}deg)`;
+  document.querySelector('.w-min').style.transform  = `rotateZ(${minDeg}deg)`;
+  document.querySelector('.w-hour').style.transform = `rotateZ(${hourDeg}deg)`;
+  document.querySelector('.sec-needle').style.animationDelay  = -(secDeg  / 360 * 60)    + 's';
+  document.querySelector('.min-needle').style.animationDelay  = -(minDeg  / 360 * 3600)  + 's';
+  document.querySelector('.hour-needle').style.animationDelay = -(hourDeg / 360 * 43200) + 's';
+
+  // --- Pan / zoom / pinch -------------------------------------------------
+  const viewport = document.getElementById('viewport');
+  let tx = 0, ty = 0, scale = 1;
+  const MIN_SCALE = 0.1, MAX_SCALE = 20;
+
+  function apply() {
+    viewport.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  }
+  apply();
+
+  function refocus() {
+    tx = 0; ty = 0; scale = 1;
+    apply();
+  }
+
+  // Zoom while keeping the world point under (anchorX, anchorY) fixed.
+  function zoomAt(factor, anchorX, anchorY) {
+    const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+    const localX = (anchorX - cx - tx) / scale;
+    const localY = (anchorY - cy - ty) / scale;
+    const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * factor));
+    tx = anchorX - cx - localX * newScale;
+    ty = anchorY - cy - localY * newScale;
+    scale = newScale;
+    apply();
+  }
+
+  // Mouse
+  let dragging = false, lastX = 0, lastY = 0;
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.hud')) return;
+    if (e.button !== 0 && e.button !== 1) return;
+    dragging = true;
+    lastX = e.clientX; lastY = e.clientY;
+    document.body.classList.add('dragging');
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    tx += e.clientX - lastX;
+    ty += e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    apply();
+  });
+  document.addEventListener('mouseup', () => {
+    dragging = false;
+    document.body.classList.remove('dragging');
+  });
+
+  document.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY);
+  }, { passive: false });
+
+  // Touch
+  const touches = new Map();
+  let pinchDist = 0;
+
+  document.addEventListener('touchstart', (e) => {
+    if (e.target.closest('.hud')) return;
+    for (const t of e.changedTouches) {
+      touches.set(t.identifier, { x: t.clientX, y: t.clientY });
+    }
+    if (touches.size === 2) {
+      const [a, b] = [...touches.values()];
+      pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener('touchmove', (e) => {
+    const prev = new Map();
+    for (const [id, p] of touches) prev.set(id, { x: p.x, y: p.y });
+    for (const t of e.changedTouches) {
+      if (touches.has(t.identifier)) {
+        touches.set(t.identifier, { x: t.clientX, y: t.clientY });
+      }
+    }
+
+    if (touches.size === 1) {
+      const [id, t] = [...touches.entries()][0];
+      const p = prev.get(id) || t;
+      tx += t.x - p.x;
+      ty += t.y - p.y;
+      apply();
+    } else if (touches.size === 2) {
+      const entries = [...touches.entries()];
+      const [idA, a] = entries[0], [idB, b] = entries[1];
+      const pA = prev.get(idA) || a, pB = prev.get(idB) || b;
+
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      const midX = (a.x + b.x) / 2, midY = (a.y + b.y) / 2;
+      const prevMidX = (pA.x + pB.x) / 2, prevMidY = (pA.y + pB.y) / 2;
+
+      tx += midX - prevMidX;
+      ty += midY - prevMidY;
+
+      if (pinchDist > 0) {
+        zoomAt(dist / pinchDist, midX, midY);
+      } else {
+        apply();
+      }
+      pinchDist = dist;
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  function endTouch(e) {
+    for (const t of e.changedTouches) touches.delete(t.identifier);
+    if (touches.size < 2) pinchDist = 0;
+  }
+  document.addEventListener('touchend',    endTouch);
+  document.addEventListener('touchcancel', endTouch);
+
+  // Refocus
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'f' || e.key === 'F') refocus();
+  });
+  document.getElementById('refocus').addEventListener('click', refocus);
+})();
+</script>
+</body>
+</html>

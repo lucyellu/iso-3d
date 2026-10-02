@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#1f1f1f" />
+<title>Zodiac Wheel — The Twelve Animals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:           #292929;
+    --disc:         #1f1f1f;
+    --disc-hi:      #353535;
+    --disc-lo:      #161616;
+
+    --ink-1:        #f0ece0;
+    --ink-2:        #c8c2b3;
+    --ink-3:        #888378;
+
+    --gold:         #d4ad56;
+    --gold-deep:    #a48132;
+
+    --el-wood:  #3aa856;
+    --el-fire:  #d92e1c;
+    --el-earth: #e6b333;
+    --el-metal: #e8e4d8;
+    --el-water: #2a3a5e;
+
+    --tick-pst: #d4ad56;
+    --tick-cn:  #c8a4d8;
+
+    --shadow-deep: 0 6px 20px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.35);
+    --shadow-soft: 0 2px 6px rgba(0,0,0,0.5);
+
+    --sheet-collapsed: 88px;   /* peek height when collapsed */
+    --sheet-half:      52vh;
+    --sheet-full:      90vh;
+
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top:    env(safe-area-inset-top, 0px);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{ height:100%; background: var(--bg); overscroll-behavior: none; }
+
+  body{
+    color: var(--ink-1);
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 400;
+    overflow: hidden;
+    min-height: 100vh;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+  }
+
+  /* grain */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23f)'/></svg>");
+    opacity: 0.6;
+    mix-blend-mode: screen;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .stage{
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: calc(12px + var(--safe-top)) 14px 0;
+  }
+
+  /* ─── HEADER ─── */
+  header{
+    flex-shrink: 0;
+    display:flex;
+    justify-content:space-between;
+    align-items: flex-start;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .titleblock h1{
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 22px;
+    letter-spacing: 0.01em;
+    color: var(--ink-1);
+    line-height: 1.05;
+  }
+  .titleblock h1 em{
+    font-style: italic;
+    color: var(--gold);
+    font-weight: 300;
+  }
+  .titleblock .sub{
+    display:block;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.28em;
+    color: var(--ink-3);
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+
+  .dual-clocks{
+    display:flex; flex-direction: column; gap: 6px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  .clock-item{
+    display:flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .clock-item .tick-mark{
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 7px solid currentColor;
+    flex-shrink: 0;
+  }
+  .clock-item.local{ color: var(--tick-pst); }
+  .clock-item.cn{    color: var(--tick-cn); }
+  .clock-item .clock-text{
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .clock-item .clock-label{
+    font-family: 'Roboto Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+  }
+  .clock-item .nowtime{
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .clock-item.local .nowtime{ color: var(--tick-pst); }
+  .clock-item.cn .nowtime{    color: var(--tick-cn); }
+  .clock-item .clock-animal{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+
+  /* ─── WHEEL — fills available space above sheet ─── */
+  .wheel-wrap{
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    padding: 8px 0;
+    /* Leave room for the collapsed sheet */
+    padding-bottom: calc(var(--sheet-collapsed) + 12px + var(--safe-bottom));
+    transition: padding-bottom 0.3s ease;
+  }
+  .wheel-wrap svg{
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    display:block;
+    overflow: visible;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6))
+            drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+  }
+
+  .animal-name{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 22px;
+    fill: var(--ink-1);
+    pointer-events: none;
+    letter-spacing: 0.02em;
+  }
+  .element-text{
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.24em;
+    pointer-events: none;
+    text-transform: uppercase;
+  }
+  .direction-text{
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    fill: var(--ink-2);
+    pointer-events: none;
+  }
+  .hour-text{
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    fill: var(--ink-3);
+    pointer-events: none;
+  }
+  .compass-card{
+    font-family: 'Roboto Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.28em;
+    fill: var(--gold);
+    pointer-events:none;
+  }
+
+  .center-label{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    fill: var(--gold);
+    pointer-events:none;
+  }
+  .center-now-animal{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 36px;
+    fill: var(--ink-1);
+    pointer-events:none;
+  }
+  .center-now-time{
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    fill: var(--gold);
+    pointer-events:none;
+  }
+  .center-label-sub{
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    fill: var(--ink-3);
+    text-transform: uppercase;
+    pointer-events:none;
+  }
+
+  .seg{ cursor: pointer; }
+  .seg-fill{ fill: transparent; transition: fill .35s ease; }
+  .seg:hover .seg-fill{ fill: rgba(212,173,86,0.06); }
+  .seg.active .seg-fill{ fill: rgba(212,173,86,0.14); }
+  .seg.active .animal-name{ fill: var(--gold); }
+  .seg.now .seg-fill{ fill: rgba(212,173,86,0.10); }
+  .seg.now-cn .seg-fill{ fill: rgba(200,164,216,0.10); }
+  .seg.now.now-cn .seg-fill{ fill: rgba(220,190,200,0.14); }
+  .seg.relation-target .seg-fill{ fill: rgba(255,255,255,0.04); }
+
+  .ring-divider{ stroke: rgba(255,255,255,0.07); stroke-width: 0.8; fill: none; }
+  .ring-divider-strong{ stroke: rgba(255,255,255,0.14); stroke-width: 1; fill: none; }
+  .spoke{ stroke: rgba(255,255,255,0.04); stroke-width: 1; }
+  .spoke-major{ stroke: rgba(255,255,255,0.10); }
+
+  .now-pointer{
+    stroke-width: 1.5;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+  }
+  .pt-local{ stroke: var(--tick-pst); fill: var(--tick-pst); }
+  .pt-cn{    stroke: var(--tick-cn);  fill: var(--tick-cn); }
+
+  .rel-arrow{
+    fill: none;
+    stroke-linecap: round;
+    transition: opacity .35s ease;
+  }
+  .rel-arrow.nourish-out{ stroke: #4abf6a; stroke-width: 2.2; }
+  .rel-arrow.dampen-out{  stroke: #e8443a; stroke-width: 2.2; stroke-dasharray: 5 4; }
+  .rel-arrow.nourish-in{  stroke: #4abf6a; stroke-width: 1.5; stroke-dasharray: 2 3; opacity: 0.85; }
+  .rel-arrow.dampen-in{   stroke: #e8443a; stroke-width: 1.5; stroke-dasharray: 2 3; opacity: 0.85; }
+  .rel-arrow.faded{ opacity: 0.18; stroke-width: 1.2; }
+
+  /* ─── BOTTOM SHEET ─── */
+  .sheet-backdrop{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 9;
+  }
+  .sheet-backdrop.visible{
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .bottom-sheet{
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--sheet-full);
+    background: var(--disc);
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.6), 0 -2px 6px rgba(0,0,0,0.4);
+    transform: translateY(calc(100% - var(--sheet-collapsed) - var(--safe-bottom)));
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    will-change: transform;
+    padding-bottom: var(--safe-bottom);
+  }
+  .bottom-sheet.dragging{
+    transition: none;
+  }
+  .bottom-sheet.half{
+    transform: translateY(calc(100% - var(--sheet-half)));
+  }
+  .bottom-sheet.full{
+    transform: translateY(0);
+  }
+
+  .sheet-handle-area{
+    flex-shrink: 0;
+    padding: 10px 16px 6px;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .sheet-handle-area:active{ cursor: grabbing; }
+  .sheet-handle{
+    width: 38px;
+    height: 4px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 2px;
+    margin: 0 auto;
+  }
+
+  /* Peek bar — visible always when collapsed */
+  .sheet-peek{
+    flex-shrink: 0;
+    padding: 0 18px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .sheet-peek-name{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 22px;
+    color: var(--ink-1);
+    line-height: 1;
+  }
+  .sheet-peek-name .small{
+    display: block;
+    font-family: 'Roboto Mono', monospace;
+    font-style: normal;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .sheet-peek-chevron{
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-2);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+  }
+  .bottom-sheet.half .sheet-peek-chevron,
+  .bottom-sheet.full .sheet-peek-chevron{
+    transform: rotate(180deg);
+  }
+
+  .sheet-content{
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 14px 16px calc(20px + var(--safe-bottom));
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
+  }
+  .sheet-content::-webkit-scrollbar{ width: 4px; }
+  .sheet-content::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  /* Tabs inside sheet */
+  .sheet-tabs{
+    display: flex;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .sheet-tab{
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--ink-3);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 9px 6px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.2s, color 0.2s;
+  }
+  .sheet-tab.active{
+    background: rgba(255,255,255,0.06);
+    color: var(--ink-1);
+  }
+
+  .panel-card{
+    background: rgba(0,0,0,0.18);
+    border-radius: 12px;
+    padding: 16px 16px;
+    position: relative;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .panel-card:last-child{ margin-bottom: 0; }
+
+  .card-head{
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 12px;
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-head .head-tag{
+    color: var(--gold);
+    text-align: right;
+  }
+
+  /* — controls — */
+  .toggle-row{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    background: rgba(0,0,0,0.3);
+    padding: 4px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  .toggle-row:last-child{ margin-bottom: 0; }
+  .toggle-btn{
+    flex: 1 1 auto;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    background: transparent;
+    border: none;
+    padding: 9px 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border-radius: 6px;
+    transition: background .25s, color .25s;
+    white-space: nowrap;
+    min-height: 36px;
+  }
+  .toggle-btn:active{ background: rgba(255,255,255,0.04); }
+  .toggle-btn.active{
+    background: rgba(255,255,255,0.08);
+    color: var(--ink-1);
+  }
+  .toggle-btn .dot{
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    box-shadow: 0 0 6px currentColor;
+  }
+  .nourish-dot{ background: #4abf6a; color: #4abf6a; }
+  .dampen-dot{  background: #e8443a; color: #e8443a; }
+
+  .toggle-meta{
+    margin-top: 12px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-3);
+  }
+  .toggle-meta em{ color: var(--ink-2); }
+
+  .arrow-legend{
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 10px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    align-items: center;
+  }
+  .arrow-legend .swatch-line{
+    width: 32px;
+    height: 2px;
+    background: currentColor;
+  }
+  .arrow-legend .swatch-line.dashed{
+    background: linear-gradient(to right,
+      currentColor 0, currentColor 5px,
+      transparent 5px, transparent 8px,
+      currentColor 8px, currentColor 13px,
+      transparent 13px, transparent 16px,
+      currentColor 16px, currentColor 21px,
+      transparent 21px, transparent 24px,
+      currentColor 24px, currentColor 32px);
+  }
+  .arrow-legend .swatch-line.dotted{
+    background: linear-gradient(to right,
+      currentColor 0 2px, transparent 2px 4px,
+      currentColor 4px 6px, transparent 6px 8px,
+      currentColor 8px 10px, transparent 10px 12px,
+      currentColor 12px 14px, transparent 14px 16px,
+      currentColor 16px 18px, transparent 18px 20px,
+      currentColor 20px 22px, transparent 22px 24px,
+      currentColor 24px 26px, transparent 26px 28px,
+      currentColor 28px 32px);
+    height: 1.5px;
+  }
+  .arrow-legend .swatch-line.green{ color: #4abf6a; }
+  .arrow-legend .swatch-line.red{   color: #e8443a; }
+
+  /* — info card — */
+  .info-card .name-en{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 36px;
+    line-height: 1;
+    color: var(--ink-1);
+    margin-bottom: 4px;
+  }
+  .info-card .name-tag{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: var(--ink-3);
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .info-card .row{
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    gap: 4px 12px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .info-card .row .lbl{
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    align-self: center;
+  }
+  .info-card .row .val{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink-1);
+  }
+  .info-card .row .val .bearing,
+  .info-card .row .val .meridian-tag{
+    font-family: 'Roboto Mono', monospace;
+    font-style: normal;
+    font-size: 9px;
+    color: var(--ink-3);
+    letter-spacing: 0.06em;
+    margin-left: 6px;
+  }
+  .info-card .row .val .swatch{
+    display:inline-block;
+    width:8px; height:8px;
+    border-radius:50%;
+    margin-right:6px;
+    vertical-align:1px;
+    box-shadow: 0 0 8px currentColor;
+  }
+  .energy-note{
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    font-style: italic;
+  }
+  .energy-note strong{
+    color: var(--gold);
+    font-weight: 400;
+    font-style: normal;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* — relationships — */
+  .rel-grid{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .rel-block h4{
+    font-family: 'Roboto Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display:flex; align-items:center; gap: 5px;
+    line-height: 1.2;
+  }
+  .rel-block h4 .arrow-icon{
+    font-size: 10px;
+  }
+  .rel-block.outgoing.nourish h4{ color: #4abf6a; }
+  .rel-block.outgoing.dampen  h4{ color: #e8443a; }
+  .rel-block.incoming.nourish h4{ color: #4abf6a; opacity: 0.75; }
+  .rel-block.incoming.dampen  h4{ color: #e8443a; opacity: 0.75; }
+  .rel-block .dot{
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    box-shadow: 0 0 6px currentColor;
+    flex-shrink: 0;
+  }
+  .rel-list{
+    display:flex; flex-wrap: wrap; gap: 5px;
+  }
+  .rel-tag{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    padding: 4px 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+    color: var(--ink-1);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .2s, border-color .2s;
+    min-height: 28px;
+  }
+  .rel-tag:active{
+    background: rgba(212,173,86,0.14);
+    border-color: rgba(212,173,86,0.4);
+  }
+  .rel-explainer{
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+
+  /* — description — */
+  .desc-card .desc{
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--ink-1);
+    font-weight: 400;
+  }
+  .desc-card .desc::first-letter{
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2em;
+    float:left;
+    line-height: 0.9;
+    margin-right: 7px;
+    margin-top: 3px;
+    color: var(--gold);
+    font-weight: 400;
+  }
+  .desc-card .traits-row{
+    display:flex; flex-wrap:wrap; gap:5px;
+    margin-bottom: 12px;
+  }
+  .desc-card .chip{
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 12px;
+    padding: 2px 9px;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.03);
+    color: var(--ink-1);
+    border-radius: 10px;
+  }
+
+  /* tab content */
+  .tab-content{ display: none; }
+  .tab-content.active{ display: block; }
+
+  /* On wider screens (tablet/desktop) — show as side panel */
+  @media (min-width: 768px){
+    body{ position: relative; overflow: auto; }
+    .stage{ height: auto; min-height: 100vh; }
+    .wheel-wrap{ padding-bottom: 8px; }
+
+    .bottom-sheet{
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      bottom: 12px;
+      left: auto;
+      width: 380px;
+      height: auto;
+      transform: translateX(0) !important;
+      border-radius: 14px;
+      padding-bottom: 0;
+    }
+    .sheet-handle-area{ display: none; }
+    .sheet-peek{ display: none; }
+    .stage{ padding-right: 408px; }
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <header>
+      <div class="titleblock">
+        <h1>The Twelve <em>Animals</em>
+          <span class="sub">Element · Direction · Hour</span>
+        </h1>
+      </div>
+      <div class="dual-clocks">
+        <div class="clock-item local">
+          <span class="tick-mark"></span>
+          <div class="clock-text">
+            <span class="clock-label">Here</span>
+            <span id="hour-now" class="nowtime">—:—</span>
+            <span class="clock-animal" id="anim-now">—</span>
+          </div>
+        </div>
+        <div class="clock-item cn">
+          <span class="tick-mark"></span>
+          <div class="clock-text">
+            <span class="clock-label">CN</span>
+            <span id="hour-now-cn" class="nowtime">—:—</span>
+            <span class="clock-animal" id="anim-now-cn">—</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="wheel-wrap">
+      <svg viewBox="-400 -400 800 800" id="wheel" aria-label="Chinese zodiac wheel"></svg>
+    </div>
+  </div>
+
+  <!-- backdrop for full-state -->
+  <div class="sheet-backdrop" id="sheet-backdrop"></div>
+
+  <!-- BOTTOM SHEET -->
+  <div class="bottom-sheet" id="sheet">
+    <div class="sheet-handle-area" id="sheet-handle-area">
+      <div class="sheet-handle"></div>
+    </div>
+    <div class="sheet-peek" id="sheet-peek">
+      <div class="sheet-peek-name" id="peek-name">
+        The Rat
+        <span class="small" id="peek-tag">11 pm – 1 am · N</span>
+      </div>
+      <div class="sheet-peek-chevron" id="peek-chevron">
+        <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 4 L6 8 L10 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+
+    <div class="sheet-content" id="sheet-content">
+      <div class="sheet-tabs">
+        <button class="sheet-tab active" data-tab="info">About</button>
+        <button class="sheet-tab" data-tab="rel">Cycles</button>
+        <button class="sheet-tab" data-tab="ctrl">Controls</button>
+      </div>
+
+      <!-- INFO TAB -->
+      <div class="tab-content active" data-tabpanel="info">
+        <div class="panel-card info-card" id="info-card"></div>
+        <div class="panel-card desc-card" id="desc-card"></div>
+      </div>
+
+      <!-- RELATIONSHIPS TAB -->
+      <div class="tab-content" data-tabpanel="rel">
+        <div class="panel-card rel-card" id="rel-card">
+          <div class="card-head">
+            Relationships
+            <span class="head-tag" id="rel-anim-name">—</span>
+          </div>
+          <div class="rel-grid">
+            <div class="rel-block outgoing nourish">
+              <h4><span class="dot nourish-dot"></span>Nourishes<span class="arrow-icon">→</span></h4>
+              <div class="rel-list" id="rel-out-nourish"></div>
+            </div>
+            <div class="rel-block outgoing dampen">
+              <h4><span class="dot dampen-dot"></span>Dampens<span class="arrow-icon">→</span></h4>
+              <div class="rel-list" id="rel-out-dampen"></div>
+            </div>
+            <div class="rel-block incoming nourish">
+              <h4><span class="arrow-icon">←</span>Nourished by<span class="dot nourish-dot"></span></h4>
+              <div class="rel-list" id="rel-in-nourish"></div>
+            </div>
+            <div class="rel-block incoming dampen">
+              <h4><span class="arrow-icon">←</span>Dampened by<span class="dot dampen-dot"></span></h4>
+              <div class="rel-list" id="rel-in-dampen"></div>
+            </div>
+          </div>
+          <div class="rel-explainer" id="rel-explainer"></div>
+        </div>
+      </div>
+
+      <!-- CONTROLS TAB -->
+      <div class="tab-content" data-tabpanel="ctrl">
+        <div class="panel-card controls-card">
+          <div class="card-head">
+            Arrow Display <span class="head-tag" id="cycle-mode-label">Outgoing only</span>
+          </div>
+
+          <div class="toggle-row" data-toggle-group="cycle">
+            <button class="toggle-btn active" data-mode="both">Both</button>
+            <button class="toggle-btn" data-mode="nourish"><span class="dot nourish-dot"></span>Nourish</button>
+            <button class="toggle-btn" data-mode="dampen"><span class="dot dampen-dot"></span>Dampen</button>
+            <button class="toggle-btn" data-mode="off">Off</button>
+          </div>
+
+          <div class="toggle-row" data-toggle-group="scope">
+            <button class="toggle-btn active" data-scope="out">Outgoing</button>
+            <button class="toggle-btn" data-scope="in">Incoming</button>
+            <button class="toggle-btn" data-scope="both">Both</button>
+            <button class="toggle-btn" data-scope="all">All 12</button>
+          </div>
+
+          <div class="toggle-meta" id="toggle-meta">
+            Showing the arrows that go <em>from</em> the selected animal — what it nourishes and dampens.
+          </div>
+
+          <div class="arrow-legend">
+            <div class="swatch-line green"></div>
+            <div>Outgoing nourish</div>
+            <div class="swatch-line red dashed"></div>
+            <div>Outgoing dampen</div>
+            <div class="swatch-line green dotted"></div>
+            <div>Incoming nourish</div>
+            <div class="swatch-line red dotted"></div>
+            <div>Incoming dampen</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const zodiac = [
+  { animal:"Rat",     element:"water", dir:"N",  bearing:0,   hStart:23, hEnd:1, organ:"Gallbladder",
+    traits:["resourceful","quick-witted","ambitious","charming"],
+    desc:"The first of the twelve, the Rat opens the cycle in deep winter midnight. A water-natured creature of cunning, observation, and quiet accumulation — at home in shadow, deft with detail, the strategist who sees the room before entering it." },
+  { animal:"Ox",      element:"earth", dir:"NE", bearing:30,  hStart:1,  hEnd:3, organ:"Liver",
+    traits:["diligent","steady","patient","dependable"],
+    desc:"The Ox carries the deep-earth hour before dawn. Slow to anger, slower to abandon — its strength is sustained labour, the long furrow drawn straight. Conservative, methodical, the bearer of weight." },
+  { animal:"Tiger",   element:"wood",  dir:"NE", bearing:60,  hStart:3,  hEnd:5, organ:"Lung",
+    traits:["bold","competitive","charismatic","unpredictable"],
+    desc:"At the wood-hour before sunrise the Tiger stalks. Full of rising sap, springtime force — courageous, dramatic, restless under restraint. A natural leader who would rather act than deliberate." },
+  { animal:"Rabbit",  element:"wood",  dir:"E",  bearing:90,  hStart:5,  hEnd:7, organ:"Large Intestine",
+    traits:["gentle","gracious","sensitive","artistic"],
+    desc:"Sunrise in the east, soft wood, dewy meadow. The Rabbit is the diplomat — refined, perceptive, valuing harmony and beauty. Beneath the gentleness, an unflinching instinct for self-preservation." },
+  { animal:"Dragon",  element:"earth", dir:"SE", bearing:120, hStart:7,  hEnd:9, organ:"Stomach",
+    traits:["magnetic","visionary","proud","willful"],
+    desc:"Morning thunder, mist rising. The Dragon stands apart — the only mythic beast, magnetic and outsized. The earth element grounds a nature otherwise inclined toward weather and prophecy." },
+  { animal:"Snake",   element:"fire",  dir:"SE", bearing:150, hStart:9,  hEnd:11, organ:"Spleen",
+    traits:["wise","intuitive","private","strategic"],
+    desc:"The hidden fire of late morning. The Snake is contemplative, watchful, drawn to depth and mystery. Patient with a long view; speaks rarely, but precisely." },
+  { animal:"Horse",   element:"fire",  dir:"S",  bearing:180, hStart:11, hEnd:13, organ:"Heart",
+    traits:["spirited","free","social","direct"],
+    desc:"Noon, full sun, true south — fire at its blaze. The Horse runs toward the open. Frank, independent, sociable; allergic to fences and abstraction." },
+  { animal:"Goat",    element:"earth", dir:"SW", bearing:210, hStart:13, hEnd:15, organ:"Small Intestine",
+    traits:["gentle","creative","empathetic","unhurried"],
+    desc:"Warm afternoon pasture. The Goat (or Sheep) is a tender, artistic earth-soul — peace-loving, intuitive about beauty, easily wounded by harshness. Best left to wander where the grass is good." },
+  { animal:"Monkey",  element:"metal", dir:"SW", bearing:240, hStart:15, hEnd:17, organ:"Bladder",
+    traits:["clever","mischievous","inventive","quick"],
+    desc:"Sharp metal of the late-day mind. The Monkey is the trickster-engineer — endlessly curious, agile in argument, restless when bored. Solves problems by reframing them." },
+  { animal:"Rooster", element:"metal", dir:"W",  bearing:270, hStart:17, hEnd:19, organ:"Kidney",
+    traits:["punctual","precise","candid","proud"],
+    desc:"Sunset in the west, the metal hour of clarity. The Rooster keeps time, keeps standards, keeps speaking truth even when nobody asked. Meticulous, well-groomed, more sentimental than admitted." },
+  { animal:"Dog",     element:"earth", dir:"NW", bearing:300, hStart:19, hEnd:21, organ:"Pericardium",
+    traits:["loyal","honest","protective","just"],
+    desc:"Earth at evening, the threshold hour. The Dog is the moralist of the cycle — fiercely loyal to people and principles, suspicious of cant. Will defend what it loves at cost to itself." },
+  { animal:"Pig",     element:"water", dir:"NW", bearing:330, hStart:21, hEnd:23, organ:"Triple Burner",
+    traits:["generous","sincere","sensual","easygoing"],
+    desc:"Deep water before midnight closes the wheel. The Pig is warm-hearted, unpretentious, given to good food and good company. Naïve in the best sense — it expects the world to be kind, and is often right." }
+];
+
+const elementDisplay = {
+  wood:"#4abf6a", fire:"#e8443a", earth:"#f0c050", metal:"#e8e4d8", water:"#5a7ab0"
+};
+
+const generates = { wood:"fire", fire:"earth", earth:"metal", metal:"water", water:"wood" };
+const overcomes = { wood:"earth", earth:"water", water:"fire", fire:"metal", metal:"wood" };
+
+function outNourish(idx){
+  const tgt = generates[zodiac[idx].element];
+  return zodiac.map((_,i)=>i).filter(i => zodiac[i].element === tgt);
+}
+function outDampen(idx){
+  const tgt = overcomes[zodiac[idx].element];
+  return zodiac.map((_,i)=>i).filter(i => zodiac[i].element === tgt);
+}
+function inverse(map){ const m={}; for(const k in map) m[map[k]]=k; return m; }
+const generatedBy = inverse(generates);
+const overcomeBy  = inverse(overcomes);
+
+function inNourish(idx){
+  const src = generatedBy[zodiac[idx].element];
+  return zodiac.map((_,i)=>i).filter(i => zodiac[i].element === src);
+}
+function inDampen(idx){
+  const src = overcomeBy[zodiac[idx].element];
+  return zodiac.map((_,i)=>i).filter(i => zodiac[i].element === src);
+}
+
+function fmt12(h){
+  if (h === 0)  return "12 am";
+  if (h === 12) return "12 pm";
+  if (h < 12)   return `${h} am`;
+  return `${h - 12} pm`;
+}
+function fmtRange(z){ return `${fmt12(z.hStart)} – ${fmt12(z.hEnd)}`; }
+
+const SEG = 360 / 12;
+function angleFor(i){ return i * SEG; }
+function polar(angleDeg, r){
+  const a = (angleDeg - 90) * Math.PI / 180;
+  return { x: Math.cos(a) * r, y: Math.sin(a) * r };
+}
+function arcPath(r1, r2, a1, a2){
+  const p1 = polar(a1, r2), p2 = polar(a2, r2);
+  const p3 = polar(a2, r1), p4 = polar(a1, r1);
+  const large = (a2 - a1) > 180 ? 1 : 0;
+  return `M ${p1.x} ${p1.y} A ${r2} ${r2} 0 ${large} 1 ${p2.x} ${p2.y} L ${p3.x} ${p3.y} A ${r1} ${r1} 0 ${large} 0 ${p4.x} ${p4.y} Z`;
+}
+
+const R = {
+  outer:370, hourOut:370, hourIn:325,
+  dirOut:325, dirIn:280,
+  elOut:280,  elIn:225,
+  animalOut:225, animalIn:170,
+  centerR:170
+};
+
+const svg = document.getElementById("wheel");
+const SVGNS = "http://www.w3.org/2000/svg";
+function el(tag, attrs={}, text){
+  const e = document.createElementNS(SVGNS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(text != null) e.textContent = text;
+  return e;
+}
+
+function drawDefs(){
+  const defs = el("defs");
+  const grad = el("radialGradient",{
+    id:"discGrad", cx:"32%", cy:"28%", r:"85%", fx:"30%", fy:"26%"
+  });
+  grad.appendChild(el("stop",{offset:"0%",   "stop-color":"#3a3a3a", "stop-opacity":"1"}));
+  grad.appendChild(el("stop",{offset:"45%",  "stop-color":"#262626", "stop-opacity":"1"}));
+  grad.appendChild(el("stop",{offset:"100%", "stop-color":"#161616", "stop-opacity":"1"}));
+  defs.appendChild(grad);
+
+  [
+    { id:"arrow-nourish-out", color:"#4abf6a", size:5 },
+    { id:"arrow-dampen-out",  color:"#e8443a", size:5 },
+    { id:"arrow-nourish-in",  color:"#4abf6a", size:4 },
+    { id:"arrow-dampen-in",   color:"#e8443a", size:4 }
+  ].forEach(spec => {
+    const m = el("marker",{
+      id: spec.id, viewBox:"0 0 10 10",
+      refX:"7", refY:"5",
+      markerWidth: spec.size, markerHeight: spec.size,
+      orient:"auto-start-reverse"
+    });
+    m.appendChild(el("path",{ d:"M 0 0 L 10 5 L 0 10 z", fill: spec.color }));
+    defs.appendChild(m);
+  });
+  svg.appendChild(defs);
+}
+
+function drawDisc(){
+  svg.appendChild(el("circle",{ cx:0, cy:0, r:R.outer, fill:"url(#discGrad)" }));
+}
+function drawRingLines(){
+  [R.outer, R.hourIn, R.dirIn, R.elIn, R.animalIn].forEach((r,i) => {
+    svg.appendChild(el("circle",{
+      cx:0, cy:0, r,
+      class: (i===0) ? "ring-divider-strong" : "ring-divider"
+    }));
+  });
+}
+function drawSpokes(){
+  for(let i=0;i<12;i++){
+    const a = angleFor(i) - SEG/2;
+    const p1 = polar(a, R.animalIn), p2 = polar(a, R.outer);
+    svg.appendChild(el("line",{
+      x1:p1.x, y1:p1.y, x2:p2.x, y2:p2.y,
+      class: (i % 3 === 0) ? "spoke-major spoke" : "spoke"
+    }));
+  }
+}
+function drawSegments(){
+  zodiac.forEach((z,i) => {
+    const aCenter = angleFor(i);
+    const a1 = aCenter - SEG/2, a2 = aCenter + SEG/2;
+    const g = el("g", { class:"seg", "data-i": i });
+
+    g.appendChild(el("path", { d: arcPath(R.animalIn, R.outer, a1, a2), class:"seg-fill" }));
+    g.appendChild(el("path",{
+      d: arcPath(R.elIn+2, R.elOut-2, a1+0.5, a2-0.5),
+      fill: elementDisplay[z.element], "fill-opacity": 0.16,
+      stroke: elementDisplay[z.element], "stroke-opacity": 0.6, "stroke-width": 0.7
+    }));
+    {
+      const r = (R.elIn + R.elOut)/2;
+      const p = polar(aCenter, r);
+      g.appendChild(el("text",{
+        x: p.x, y: p.y + 3.5, "text-anchor":"middle",
+        class:"element-text", fill: elementDisplay[z.element]
+      }, z.element.toUpperCase()));
+    }
+    {
+      const r = (R.dirIn + R.dirOut)/2;
+      const p = polar(aCenter, r);
+      g.appendChild(el("text",{
+        x: p.x, y: p.y + 4, "text-anchor":"middle", class:"direction-text"
+      }, z.dir));
+    }
+    {
+      const r = (R.hourIn + R.hourOut)/2;
+      const p = polar(aCenter, r);
+      g.appendChild(el("text",{
+        x: p.x, y: p.y + 3, "text-anchor":"middle", class:"hour-text",
+        transform: `rotate(${aCenter} ${p.x} ${p.y})`
+      }, fmtRange(z)));
+    }
+    {
+      const r = (R.animalIn + R.animalOut)/2;
+      const p = polar(aCenter, r);
+      g.appendChild(el("text",{
+        x: p.x, y: p.y + 7, "text-anchor":"middle", class:"animal-name"
+      }, z.animal));
+    }
+
+    g.addEventListener("click", () => selectIndex(i));
+    svg.appendChild(g);
+  });
+}
+
+function drawCompassLabels(){
+  [
+    { label:"N", angle:0   }, { label:"E", angle:90  },
+    { label:"S", angle:180 }, { label:"W", angle:270 }
+  ].forEach(c => {
+    const p = polar(c.angle, R.outer + 26);
+    svg.appendChild(el("text",{
+      x:p.x, y:p.y + 4, "text-anchor":"middle", class:"compass-card"
+    }, c.label));
+  });
+}
+
+let centerLabelEl = null;
+function drawCenterLabel(){
+  centerLabelEl = el("g", { id:"center-label" });
+  svg.appendChild(centerLabelEl);
+  updateCenterLabel(0);
+}
+function updateCenterLabel(i){
+  const z = zodiac[i];
+  centerLabelEl.innerHTML = "";
+  centerLabelEl.appendChild(el("text",{
+    x:0, y:-30, "text-anchor":"middle", class:"center-label"
+  }, "Hour of the"));
+  centerLabelEl.appendChild(el("text",{
+    x:0, y:8, "text-anchor":"middle", class:"center-now-animal"
+  }, z.animal));
+  centerLabelEl.appendChild(el("text",{
+    x:0, y:36, "text-anchor":"middle", class:"center-now-time"
+  }, fmtRange(z).toUpperCase()));
+  centerLabelEl.appendChild(el("text",{
+    x:0, y:58, "text-anchor":"middle", class:"center-label-sub"
+  }, `${z.element.toUpperCase()} · ${z.dir} ${z.bearing}°`));
+}
+
+let relLayer = null;
+function ensureRelLayer(){
+  if (relLayer) return relLayer;
+  relLayer = el("g", { id:"rel-layer" });
+  svg.appendChild(relLayer);
+  return relLayer;
+}
+function clearRelArrows(){ if (relLayer) relLayer.innerHTML = ""; }
+
+const ARROW_PAD = 6;
+function animalAnchor(i){
+  const a = angleFor(i);
+  return polar(a, R.animalIn - 4);
+}
+function drawRelArrow(fromIdx, toIdx, kind, faded){
+  const layer = ensureRelLayer();
+  const from = animalAnchor(fromIdx);
+  const to   = animalAnchor(toIdx);
+  const dx = to.x - from.x, dy = to.y - from.y;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  if (dist < 1) return;
+  const ux = dx/dist, uy = dy/dist;
+  const sx = from.x + ux*ARROW_PAD, sy = from.y + uy*ARROW_PAD;
+  const ex = to.x   - ux*ARROW_PAD, ey = to.y   - uy*ARROW_PAD;
+
+  const mx = (sx+ex)/2, my = (sy+ey)/2;
+  const mr = Math.sqrt(mx*mx + my*my) || 1;
+  const pull = Math.min(0.55, dist / 600);
+  const cx = mx - (mx/mr) * (mr * pull);
+  const cy = my - (my/mr) * (mr * pull);
+
+  const path = el("path",{
+    d:`M ${sx} ${sy} Q ${cx} ${cy} ${ex} ${ey}`,
+    class:`rel-arrow ${kind}${faded ? " faded" : ""}`,
+    "marker-end": faded ? "" : `url(#arrow-${kind})`
+  });
+  layer.appendChild(path);
+}
+
+let nowPointerLocal = null, nowPointerCN = null;
+function drawNowPointer(){
+  nowPointerLocal = el("g", { id:"now-pointer-local" });
+  nowPointerLocal.appendChild(el("polygon",{
+    points: `0,${-R.outer-3} -7,${-R.outer-16} 7,${-R.outer-16}`,
+    class:"now-pointer pt-local"
+  }));
+  svg.appendChild(nowPointerLocal);
+
+  nowPointerCN = el("g", { id:"now-pointer-cn" });
+  nowPointerCN.appendChild(el("polygon",{
+    points: `0,${-R.outer-20} -7,${-R.outer-33} 7,${-R.outer-33}`,
+    class:"now-pointer pt-cn"
+  }));
+  svg.appendChild(nowPointerCN);
+}
+
+let nowIdx = 0, nowIdxCN = 0;
+function getZodiacAngleFor(date, tzOffsetHoursFromUTC){
+  const utcMs = date.getTime() + date.getTimezoneOffset() * 60000;
+  const tzMs  = utcMs + tzOffsetHoursFromUTC * 3600 * 1000;
+  const tzDate = new Date(tzMs);
+  const h = tzDate.getHours();
+  const m = tzDate.getMinutes();
+  const s = tzDate.getSeconds();
+  const idx = Math.floor(((h + 1) % 24) / 2);
+  const minutes = m + s/60;
+  const blockHour = (h - (zodiac[idx].hStart % 24) + 24) % 24;
+  const fracIntoBlock = (blockHour * 60 + minutes) / 120;
+  const aPrecise = (angleFor(idx) - SEG/2) + fracIntoBlock * SEG;
+  return { idx, aPrecise, h, m, h12: ((h%12)===0?12:h%12), ampm: h<12?"am":"pm" };
+}
+function localOffsetHours(){ return -new Date().getTimezoneOffset() / 60; }
+
+function updateNowPointer(){
+  const now = new Date();
+  const local = getZodiacAngleFor(now, localOffsetHours());
+  const china = getZodiacAngleFor(now, 8);
+
+  nowIdx = local.idx;
+  nowIdxCN = china.idx;
+
+  nowPointerLocal.setAttribute("transform", `rotate(${local.aPrecise})`);
+  nowPointerCN   .setAttribute("transform", `rotate(${china.aPrecise})`);
+
+  document.querySelectorAll(".seg").forEach(s => {
+    s.classList.remove("now","now-cn");
+  });
+  const segLocal = document.querySelector(`.seg[data-i="${local.idx}"]`);
+  const segCN    = document.querySelector(`.seg[data-i="${china.idx}"]`);
+  if (segLocal) segLocal.classList.add("now");
+  if (segCN)    segCN.classList.add("now-cn");
+
+  const pad = n => String(n).padStart(2,"0");
+  document.getElementById("hour-now").textContent    = `${local.h12}:${pad(local.m)} ${local.ampm}`;
+  document.getElementById("hour-now-cn").textContent = `${china.h12}:${pad(china.m)} ${china.ampm}`;
+  document.getElementById("anim-now").textContent    = zodiac[local.idx].animal;
+  document.getElementById("anim-now-cn").textContent = zodiac[china.idx].animal;
+
+  return local.idx;
+}
+
+const infoCardEl   = document.getElementById("info-card");
+const relAnimNameEl = document.getElementById("rel-anim-name");
+const relOutNourishEl = document.getElementById("rel-out-nourish");
+const relOutDampenEl  = document.getElementById("rel-out-dampen");
+const relInNourishEl  = document.getElementById("rel-in-nourish");
+const relInDampenEl   = document.getElementById("rel-in-dampen");
+const relExplainerEl  = document.getElementById("rel-explainer");
+const descCardEl   = document.getElementById("desc-card");
+const toggleMetaEl = document.getElementById("toggle-meta");
+const cycleModeLabelEl = document.getElementById("cycle-mode-label");
+const peekNameEl = document.getElementById("peek-name");
+const peekTagEl = document.getElementById("peek-tag");
+
+function renderPeek(i){
+  const z = zodiac[i];
+  peekNameEl.firstChild.textContent = `The ${z.animal}`;
+  peekTagEl.textContent = `${fmtRange(z)} · ${z.dir} · ${z.element}`;
+}
+
+function renderInfoCard(i){
+  const z = zodiac[i];
+  const elColor = elementDisplay[z.element];
+  const isLocal = (i === nowIdx), isCN = (i === nowIdxCN);
+  let badge;
+  if (isLocal && isCN) badge = "Active here & in China";
+  else if (isLocal)    badge = "Active here";
+  else if (isCN)       badge = "Active in China";
+  else                 badge = "Selected";
+
+  infoCardEl.innerHTML = `
+    <div class="card-head">
+      ${badge}
+      <span class="head-tag">No. ${String(i+1).padStart(2,"0")} / 12</span>
+    </div>
+    <div class="name-en">The ${z.animal}</div>
+    <div class="name-tag">${fmtRange(z)} · ${z.dir} ${z.bearing}°</div>
+
+    <div class="row">
+      <div class="lbl">Element</div>
+      <div class="val"><span class="swatch" style="background:${elColor}; color:${elColor}"></span>${z.element}</div>
+      <div class="lbl">Direction</div>
+      <div class="val">${z.dir}<span class="bearing">${z.bearing}°</span></div>
+      <div class="lbl">Hours</div>
+      <div class="val">${fmtRange(z)}</div>
+      <div class="lbl">Meridian</div>
+      <div class="val">${z.organ}<span class="meridian-tag">peak qi</span></div>
+    </div>
+
+    <div class="energy-note">
+      <strong>Peak energy</strong>
+      Each animal's two-hour block is when its associated organ-meridian is at peak qi in TCM. The ${z.animal} is most active during its hour, mirrored inside the body by the ${z.organ.toLowerCase()} meridian doing its strongest work.
+    </div>
+  `;
+}
+
+function renderRelationshipsCard(i){
+  const z = zodiac[i];
+  relAnimNameEl.textContent = `The ${z.animal}`;
+
+  const tag = idx => `<button class="rel-tag" data-jump="${idx}">${zodiac[idx].animal}</button>`;
+  relOutNourishEl.innerHTML = outNourish(i).map(tag).join("");
+  relOutDampenEl .innerHTML = outDampen(i) .map(tag).join("");
+  relInNourishEl .innerHTML = inNourish(i) .map(tag).join("");
+  relInDampenEl  .innerHTML = inDampen(i)  .map(tag).join("");
+
+  relExplainerEl.innerHTML = `
+    The ${z.animal}'s element is <strong style="color:${elementDisplay[z.element]}">${z.element}</strong>.
+    It nourishes <strong style="color:${elementDisplay[generates[z.element]]}">${generates[z.element]}</strong>,
+    dampens <strong style="color:${elementDisplay[overcomes[z.element]]}">${overcomes[z.element]}</strong>,
+    is nourished by <strong style="color:${elementDisplay[generatedBy[z.element]]}">${generatedBy[z.element]}</strong>,
+    and is dampened by <strong style="color:${elementDisplay[overcomeBy[z.element]]}">${overcomeBy[z.element]}</strong>.
+  `;
+
+  document.querySelectorAll(".rel-tag").forEach(btn => {
+    btn.addEventListener("click", () => selectIndex(+btn.dataset.jump));
+  });
+}
+
+function renderDescriptionCard(i){
+  const z = zodiac[i];
+  descCardEl.innerHTML = `
+    <div class="card-head">
+      Disposition
+      <span class="head-tag">${z.element.toUpperCase()}</span>
+    </div>
+    <div class="traits-row">
+      ${z.traits.map(t => `<span class="chip">${t}</span>`).join("")}
+    </div>
+    <p class="desc">${z.desc}</p>
+  `;
+}
+
+let activeIndex = 0;
+let cycleMode = "both";
+let cycleScope = "out";
+
+function collectArrows(){
+  const tuples = [];
+  if (cycleMode === "off") return tuples;
+
+  if (cycleScope === "all"){
+    for (let src = 0; src < 12; src++){
+      if (cycleMode === "both" || cycleMode === "nourish")
+        outNourish(src).forEach(t => tuples.push([src, t, "nourish-out", true]));
+      if (cycleMode === "both" || cycleMode === "dampen")
+        outDampen(src).forEach(t => tuples.push([src, t, "dampen-out", true]));
+    }
+    return tuples;
+  }
+
+  const i = activeIndex;
+  const wantOut = (cycleScope === "out" || cycleScope === "both");
+  const wantIn  = (cycleScope === "in"  || cycleScope === "both");
+
+  if (cycleMode === "both" || cycleMode === "nourish"){
+    if (wantOut) outNourish(i).forEach(t => tuples.push([i, t, "nourish-out", false]));
+    if (wantIn)  inNourish(i).forEach(s  => tuples.push([s, i, "nourish-in",  false]));
+  }
+  if (cycleMode === "both" || cycleMode === "dampen"){
+    if (wantOut) outDampen(i).forEach(t  => tuples.push([i, t, "dampen-out",  false]));
+    if (wantIn)  inDampen(i).forEach(s   => tuples.push([s, i, "dampen-in",   false]));
+  }
+  return tuples;
+}
+
+function redrawRelArrows(){
+  clearRelArrows();
+  collectArrows().forEach(([f,t,k,faded]) => drawRelArrow(f, t, k, faded));
+}
+
+function highlightRelatedSegments(){
+  document.querySelectorAll(".seg").forEach(s => s.classList.remove("relation-target"));
+  if (cycleMode === "off" || cycleScope === "all") return;
+  const i = activeIndex;
+  const targets = new Set();
+  const wantOut = (cycleScope === "out" || cycleScope === "both");
+  const wantIn  = (cycleScope === "in"  || cycleScope === "both");
+
+  if (cycleMode === "both" || cycleMode === "nourish"){
+    if (wantOut) outNourish(i).forEach(idx => targets.add(idx));
+    if (wantIn)  inNourish(i).forEach(idx  => targets.add(idx));
+  }
+  if (cycleMode === "both" || cycleMode === "dampen"){
+    if (wantOut) outDampen(i).forEach(idx  => targets.add(idx));
+    if (wantIn)  inDampen(i).forEach(idx   => targets.add(idx));
+  }
+  targets.forEach(idx => {
+    const s = document.querySelector(`.seg[data-i="${idx}"]`);
+    if (s) s.classList.add("relation-target");
+  });
+}
+
+function selectIndex(i){
+  activeIndex = i;
+  document.querySelectorAll(".seg").forEach(s => s.classList.remove("active"));
+  const seg = document.querySelector(`.seg[data-i="${i}"]`);
+  if (seg) seg.classList.add("active");
+  highlightRelatedSegments();
+  updateCenterLabel(i);
+  renderPeek(i);
+  renderInfoCard(i);
+  renderRelationshipsCard(i);
+  renderDescriptionCard(i);
+  redrawRelArrows();
+}
+
+function updateModeLabel(){
+  if (cycleMode === "off"){
+    cycleModeLabelEl.textContent = "Off";
+    toggleMetaEl.innerHTML = "All arrows hidden.";
+    return;
+  }
+  if (cycleScope === "all"){
+    cycleModeLabelEl.textContent = "All 12 animals";
+    toggleMetaEl.innerHTML = "Showing every animal's outgoing relationships at once — a faded network of the whole system. Switch to <em>Outgoing</em> or <em>Both</em> to focus on a single animal.";
+    return;
+  }
+  const modeWord = cycleMode === "both" ? "nourish + dampen"
+                  : cycleMode === "nourish" ? "nourishing"
+                  : "dampening";
+  let scopeWord;
+  if (cycleScope === "out")       scopeWord = `<em>from</em> the selected animal`;
+  else if (cycleScope === "in")   scopeWord = `<em>to</em> the selected animal`;
+  else                            scopeWord = `<em>to and from</em> the selected animal`;
+  cycleModeLabelEl.textContent =
+    (cycleScope === "out" ? "Outgoing" :
+     cycleScope === "in"  ? "Incoming" : "Bidirectional") +
+    (cycleMode === "both" ? "" : ` · ${cycleMode}`);
+  toggleMetaEl.innerHTML = `Showing ${modeWord} arrows ${scopeWord}.`;
+}
+
+document.querySelectorAll('[data-toggle-group="cycle"] .toggle-btn').forEach(btn => {
+  btn.addEventListener("click", () => {
+    cycleMode = btn.dataset.mode;
+    document.querySelectorAll('[data-toggle-group="cycle"] .toggle-btn')
+      .forEach(b => b.classList.toggle("active", b===btn));
+    updateModeLabel();
+    selectIndex(activeIndex);
+  });
+});
+document.querySelectorAll('[data-toggle-group="scope"] .toggle-btn').forEach(btn => {
+  btn.addEventListener("click", () => {
+    cycleScope = btn.dataset.scope;
+    document.querySelectorAll('[data-toggle-group="scope"] .toggle-btn')
+      .forEach(b => b.classList.toggle("active", b===btn));
+    updateModeLabel();
+    selectIndex(activeIndex);
+  });
+});
+
+/* ─── BOTTOM SHEET INTERACTION ─── */
+const sheet = document.getElementById("sheet");
+const sheetHandle = document.getElementById("sheet-handle-area");
+const sheetPeek = document.getElementById("sheet-peek");
+const sheetBackdrop = document.getElementById("sheet-backdrop");
+const sheetContent = document.getElementById("sheet-content");
+
+let sheetState = "collapsed"; // collapsed | half | full
+
+function setSheetState(state){
+  sheetState = state;
+  sheet.classList.remove("half", "full");
+  if (state === "half") sheet.classList.add("half");
+  if (state === "full") sheet.classList.add("full");
+  sheetBackdrop.classList.toggle("visible", state === "full");
+}
+
+function cycleSheetState(){
+  if (sheetState === "collapsed") setSheetState("half");
+  else if (sheetState === "half") setSheetState("full");
+  else setSheetState("collapsed");
+}
+
+sheetPeek.addEventListener("click", (e) => {
+  // Don't cycle if user clicked on chevron during a drag
+  cycleSheetState();
+});
+
+sheetBackdrop.addEventListener("click", () => setSheetState("collapsed"));
+
+// Drag handle
+let dragStart = null;
+let dragStartTransform = 0;
+let viewportH = window.innerHeight;
+
+function getCurrentTranslateY(){
+  // get the current effective translateY in pixels
+  const collapsedY = viewportH - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sheet-collapsed')) - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')) || 0);
+  const halfY = viewportH - viewportH * 0.52;
+  const fullY = 0;
+  if (sheetState === "collapsed") return collapsedY;
+  if (sheetState === "half") return halfY;
+  return fullY;
+}
+
+function onDragStart(e){
+  const t = e.touches ? e.touches[0] : e;
+  dragStart = { x: t.clientX, y: t.clientY, time: Date.now() };
+  viewportH = window.innerHeight;
+  dragStartTransform = getCurrentTranslateY();
+  sheet.classList.add("dragging");
+  sheet.classList.remove("half", "full");
+  sheet.style.transform = `translateY(${dragStartTransform}px)`;
+}
+function onDragMove(e){
+  if (!dragStart) return;
+  const t = e.touches ? e.touches[0] : e;
+  const dy = t.clientY - dragStart.y;
+  let newY = dragStartTransform + dy;
+  newY = Math.max(0, Math.min(viewportH - 60, newY));
+  sheet.style.transform = `translateY(${newY}px)`;
+  if (e.cancelable) e.preventDefault();
+}
+function onDragEnd(e){
+  if (!dragStart) return;
+  const t = e.changedTouches ? e.changedTouches[0] : e;
+  const dy = t.clientY - dragStart.y;
+  const dt = Date.now() - dragStart.time;
+  const velocity = dy / Math.max(dt, 1); // px per ms
+  const finalY = dragStartTransform + dy;
+
+  sheet.classList.remove("dragging");
+  sheet.style.transform = "";
+
+  const collapsedY = viewportH - 88;
+  const halfY = viewportH * 0.48;
+  const fullY = 0;
+
+  // velocity-based snapping
+  if (Math.abs(velocity) > 0.5){
+    if (velocity < 0){ // flicked up
+      if (sheetState === "collapsed") setSheetState("half");
+      else setSheetState("full");
+    } else { // flicked down
+      if (sheetState === "full") setSheetState("half");
+      else setSheetState("collapsed");
+    }
+  } else {
+    // distance-based snapping
+    const distances = [
+      { state: "collapsed", d: Math.abs(finalY - collapsedY) },
+      { state: "half",      d: Math.abs(finalY - halfY) },
+      { state: "full",      d: Math.abs(finalY - fullY) }
+    ];
+    distances.sort((a,b) => a.d - b.d);
+    setSheetState(distances[0].state);
+  }
+  dragStart = null;
+}
+
+sheetHandle.addEventListener("touchstart", onDragStart, { passive: true });
+sheetHandle.addEventListener("touchmove", onDragMove, { passive: false });
+sheetHandle.addEventListener("touchend", onDragEnd);
+sheetHandle.addEventListener("mousedown", (e) => {
+  onDragStart(e);
+  const move = (ev) => onDragMove(ev);
+  const up = (ev) => {
+    onDragEnd(ev);
+    document.removeEventListener("mousemove", move);
+    document.removeEventListener("mouseup", up);
+  };
+  document.addEventListener("mousemove", move);
+  document.addEventListener("mouseup", up);
+});
+
+// Auto-open the sheet to half when user taps a wheel segment
+document.querySelectorAll(".seg").forEach(seg => {
+  seg.addEventListener("click", () => {
+    if (sheetState === "collapsed") setSheetState("half");
+  });
+});
+
+// Tabs
+document.querySelectorAll(".sheet-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    const target = tab.dataset.tab;
+    document.querySelectorAll(".sheet-tab").forEach(t => t.classList.toggle("active", t === tab));
+    document.querySelectorAll(".tab-content").forEach(p => {
+      p.classList.toggle("active", p.dataset.tabpanel === target);
+    });
+    // Auto-expand to half if collapsed
+    if (sheetState === "collapsed") setSheetState("half");
+  });
+});
+
+// Handle resize
+window.addEventListener("resize", () => {
+  viewportH = window.innerHeight;
+});
+
+// BOOT
+drawDefs();
+drawDisc();
+drawRingLines();
+drawSpokes();
+drawSegments();
+drawCompassLabels();
+drawCenterLabel();
+drawNowPointer();
+
+const startIdx = updateNowPointer();
+selectIndex(startIdx);
+updateModeLabel();
+setInterval(updateNowPointer, 60_000);
+</script>
+</body>
+</html>

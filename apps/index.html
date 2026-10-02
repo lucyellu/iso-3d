@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apps &amp; Games · Lucy Lu</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%23c85838%22/><path d=%22M24 18l24 14-24 14z%22 fill=%22white%22/></svg>">
+<meta name="description" content="Games, web apps and small toys by Lucy Lu: play them in the browser, open them, or watch them in action.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@200;300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #e8e3d9; --paper-2: #d8d2c5; --card: rgba(255,255,255,.55); --card-solid: #f6f3ec;
+    --ink: #1a1410; --ink-2: rgba(26,20,16,.62); --ink-3: rgba(26,20,16,.42); --line: rgba(26,20,16,.09);
+    --go-a: #8a3858; --go-b: #c85838; --open-a: #2f5f74; --open-b: #3f8a86; --watch-a: #5a5048; --watch-b: #8a7c6c;
+    --r: 22px; --gut: max(20px, env(safe-area-inset-left));
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper-2); }
+  body { margin: 0; min-height: 100vh; color: var(--ink); font: 300 15px/1.5 'Inter Tight', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; background: radial-gradient(ellipse 90% 60% at 50% 0%, var(--paper) 0%, var(--paper-2) 100%) fixed; }
+  body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 100; opacity: .06; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+  a { color: inherit; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+  .mono { font-family: 'DM Mono', monospace; letter-spacing: .16em; text-transform: uppercase; font-size: 10.5px; }
+  img, video { display: block; }
+
+  /* ── header ── */
+  header { max-width: 1240px; margin: 0 auto; padding: 22px var(--gut) 0; display: flex; align-items: center; gap: 16px; }
+  .back { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--ink-2); padding: 8px 14px 8px 10px;
+    border-radius: 999px; background: var(--card); border: 1px solid var(--line); }
+  .back:hover { color: var(--ink); }
+  header .spacer { flex: 1; }
+  .intro { max-width: 1240px; margin: 0 auto; padding: 34px var(--gut) 8px; }
+  .intro h1 { font-weight: 200; font-size: clamp(40px, 7vw, 76px); line-height: .98; letter-spacing: -.035em; margin: 10px 0 14px; }
+  .intro p { max-width: 560px; color: var(--ink-2); margin: 0; font-size: 16px; }
+
+  .tabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); }
+  .tabs button { padding: 8px 15px; border-radius: 999px; color: var(--ink-3); transition: background .25s, color .25s; }
+  .tabs button[aria-pressed="true"] { background: var(--ink); color: #f6f3ec; }
+  .tabs button:not([aria-pressed="true"]):hover { color: var(--ink); }
+
+  /* ── how-to legend ── */
+  .legend { max-width: 1240px; margin: 26px auto 0; padding: 0 var(--gut); display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .legend div { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); }
+  .legend b { font-weight: 500; display: block; font-size: 14px; }
+  .legend span { color: var(--ink-2); font-size: 13px; line-height: 1.4; }
+  .legend i { font-style: normal; display: block; }
+  .legend .chip { color: #fff; font-size: 10px; }
+  .chip { flex-shrink: 0; display: inline-grid; place-items: center; height: 26px; padding: 0 11px; border-radius: 999px; color: #fff; margin-top: 1px; }
+
+  /* ── featured ── */
+  .rail { display: grid; grid-auto-flow: column; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+    padding: 4px var(--gut) 18px; scroll-padding: 0 var(--gut); }
+  .rail::-webkit-scrollbar { display: none; }
+  .wrap { max-width: 1240px; margin: 0 auto; position: relative; }
+  .featured { margin-top: 26px; }
+  .featured .rail { grid-auto-columns: min(86%, 760px); }
+  .hero { position: relative; scroll-snap-align: start; aspect-ratio: 16 / 9.4; border-radius: 28px; overflow: hidden; background: #222; color: #fff;
+    text-align: left; box-shadow: 0 26px 50px -30px rgba(26,20,16,.7); isolation: isolate; }
+  .hero .media { position: absolute; inset: 0; z-index: -1; }
+  .hero::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.72) 100%); }
+  .hero .txt { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 28px; display: flex; align-items: flex-end; gap: 16px; }
+  .hero .txt > div { flex: 1; min-width: 0; }
+  .hero .eyebrow { color: rgba(255,255,255,.75); }
+  .hero h2 { font-weight: 300; font-size: clamp(26px, 4vw, 42px); letter-spacing: -.025em; line-height: 1.02; margin: 6px 0 4px; }
+  .hero p { margin: 0; color: rgba(255,255,255,.82); }
+
+  /* ── shelves ── */
+  section.shelf { margin-top: 30px; }
+  .shelf-h { max-width: 1240px; margin: 0 auto; padding: 0 var(--gut); display: flex; align-items: baseline; gap: 14px; }
+  .shelf-h h2 { font-weight: 300; font-size: 26px; letter-spacing: -.02em; margin: 0; }
+  .shelf-h p { margin: 0; color: var(--ink-3); flex: 1; }
+  .arrows { display: flex; gap: 6px; }
+  .arrows button { width: 34px; height: 34px; border-radius: 50%; background: var(--card); border: 1px solid var(--line); color: var(--ink-2); }
+  .arrows button:hover { color: var(--ink); }
+  .shelf .rail { grid-auto-columns: min(82%, 330px); padding-top: 14px; }
+
+  .card { scroll-snap-align: start; display: flex; flex-direction: column; border-radius: var(--r); background: var(--card); border: 1px solid var(--line);
+    overflow: hidden; text-align: left; transition: transform .25s, box-shadow .25s; }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 18px 34px -24px rgba(26,20,16,.55); }
+  .card .media { aspect-ratio: 16 / 10; }
+  .card .row { display: flex; align-items: center; gap: 12px; padding: 12px 12px 14px; }
+  .card .who { flex: 1; min-width: 0; }
+  .nm { font-size: 16px; font-weight: 400; letter-spacing: -.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sub { color: var(--ink-2); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .how { color: var(--ink-3); margin-top: 3px; font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* media tile: poster, a loop that plays on hover or when featured, phone captures framed on a blurred copy */
+  .media { position: relative; overflow: hidden; background: #2a2622; }
+  .media img, .media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .media video { opacity: 0; transition: opacity .4s; }
+  .media.playing video { opacity: 1; }
+  .media.phone > .blur { filter: blur(22px) saturate(1.2) brightness(.8); transform: scale(1.2); }
+  .media.phone > .ph { left: 50%; top: 8%; height: 92%; width: auto; aspect-ratio: 390 / 844; transform: translateX(-50%); border-radius: 18px 18px 0 0;
+    box-shadow: 0 0 0 5px #111, 0 18px 40px rgba(0,0,0,.5); object-position: top; }
+  .media .mono-ic { position: absolute; inset: 0; display: grid; place-items: center; font-size: 64px; font-weight: 200; color: rgba(255,255,255,.9); }
+  .badge { position: absolute; top: 10px; left: 10px; padding: 5px 9px; border-radius: 999px; background: rgba(20,16,12,.62); color: #fff;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-size: 9px; }
+
+  .ic { width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0; object-fit: cover; box-shadow: 0 2px 6px rgba(0,0,0,.22);
+    display: grid; place-items: center; color: #fff; font-size: 22px; font-weight: 300; }
+
+  /* the get-it pill: colour says what kind of access it is */
+  .pill { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 0 15px;
+    border-radius: 999px; color: #fff; white-space: nowrap; text-decoration: none; font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: .16em;
+    text-transform: uppercase; box-shadow: 0 6px 14px -8px rgba(26,20,16,.8); }
+  .pill.big { min-height: 48px; padding: 0 24px; font-size: 11.5px; }
+  .play  { background: linear-gradient(135deg, var(--go-a), var(--go-b)); }
+  .open  { background: linear-gradient(135deg, var(--open-a), var(--open-b)); }
+  .watch { background: linear-gradient(135deg, var(--watch-a), var(--watch-b)); }
+  .pill[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+
+  footer { max-width: 1240px; margin: 46px auto 0; padding: 22px var(--gut) 40px; border-top: 1px solid var(--line); color: var(--ink-3);
+    display: flex; flex-wrap: wrap; gap: 8px 22px; }
+  footer a { color: var(--ink-2); }
+
+  /* ── details sheet ── */
+  dialog { width: min(920px, 100vw - 24px); max-height: calc(100vh - 32px); margin: auto; padding: 0; border: 0; border-radius: 28px; background: var(--card-solid);
+    color: var(--ink); box-shadow: 0 40px 90px -30px rgba(0,0,0,.6); overflow: auto; overscroll-behavior: contain; }
+  dialog::backdrop { background: rgba(26,20,16,.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  dialog[open] { animation: rise .32s cubic-bezier(.2,.8,.2,1); }
+  @keyframes rise { from { transform: translateY(24px); opacity: 0; } }
+  .d-media { aspect-ratio: 16 / 9; border-radius: 0; }
+  .d-media.phone { aspect-ratio: 16 / 11; }
+  .d-media iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .d-media .playbtn { position: absolute; inset: 0; display: grid; place-items: center; }
+  .d-media .playbtn span { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 999px; background: rgba(20,16,12,.7); color: #fff;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .x { position: sticky; top: 12px; float: right; margin: 12px 12px -48px 0; z-index: 3; width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(20,16,12,.6); color: #fff; font-size: 18px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .d-body { padding: 24px 28px 30px; }
+  .d-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .d-top .ic { width: 72px; height: 72px; border-radius: 17px; font-size: 32px; }
+  .d-top h2 { margin: 0; font-weight: 300; font-size: 30px; letter-spacing: -.025em; line-height: 1.05; }
+  .d-top .who { flex: 1; min-width: 180px; }
+  .getit { margin-top: 20px; padding: 16px 18px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255,255,255,.6); display: flex; gap: 14px; align-items: flex-start; }
+  .getit b { font-weight: 500; }
+  .getit p { margin: 2px 0 0; color: var(--ink-2); }
+  .getit .note { margin-top: 6px; color: #8a5a20; }
+  .facts { margin: 20px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .facts div { padding: 12px 14px 12px 0; }
+  .facts dt { color: var(--ink-3); }
+  .facts dd { margin: 3px 0 0; font-size: 14px; }
+  .d-desc { font-size: 16.5px; line-height: 1.6; margin: 20px 0 0; max-width: 640px; }
+  .shots { display: grid; grid-auto-flow: column; grid-auto-columns: min(70%, 300px); gap: 10px; overflow-x: auto; margin-top: 20px; scrollbar-width: thin; }
+  .shots img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); }
+  .shots img.tall { aspect-ratio: 390 / 600; object-position: top; }
+
+  @media (max-width: 760px) {
+    .legend { grid-template-columns: 1fr; gap: 6px; }
+    .legend div { padding: 9px 12px; align-items: center; border-radius: 14px; }
+    .legend i { display: none; }
+    .legend .chip { width: 64px; }
+    header .tabs { display: none; }
+    .tabs.m { display: inline-flex; margin-top: 18px; }
+    .arrows { display: none; }
+    .hero .txt { flex-direction: column; align-items: flex-start; padding: 18px; }
+    .hero { aspect-ratio: 4 / 5; }
+    .d-body { padding: 20px 18px 26px; }
+    .d-media.phone { aspect-ratio: 1; }
+  }
+  @media (min-width: 761px) { .tabs.m { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .card, dialog[open] { transition: none; animation: none; } }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <a class="back mono" href="../">← The harbour</a>
+  <span class="spacer"></span>
+  <nav class="tabs mono" aria-label="Show"></nav>
+</header>
+
+<div class="intro">
+  <div class="mono" style="color:var(--ink-3)">Lucy Lu · Paperbox Studio</div>
+  <h1>Apps &amp; Games</h1>
+  <p>Things I've made that you can try. Most run right here in your browser; the rest open on their own sites. A couple of retired iPad games live on as gameplay videos.</p>
+  <nav class="tabs mono m" aria-label="Show"></nav>
+</div>
+
+<div class="legend" aria-label="How to get them">
+  <div><span class="chip play mono">Play</span><span><b>Runs right here</b><i>Hosted on this site. Nothing to install, no account.</i></span></div>
+  <div><span class="chip open mono">Open</span><span><b>A live web app</b><i>Opens its own site in a new tab. Nothing to install.</i></span></div>
+  <div><span class="chip watch mono">Watch</span><span><b>Retired from the App Store</b><i>Can't be downloaded anymore; watch it being played.</i></span></div>
+</div>
+
+<section class="featured wrap" aria-label="Featured"><div class="rail" id="featured"></div></section>
+<main id="shelves"></main>
+
+<footer class="mono">
+  <span>© Lucy Lu</span>
+  <a href="../">lucylu.org</a>
+  <a href="https://github.com/lucyellu">GitHub</a>
+  <a href="https://www.youtube.com/@lucyxlu">YouTube</a>
+</footer>
+
+<dialog id="sheet" aria-labelledby="d-name"></dialog>
+
+<script src="catalog.js"></script>
+<script>
+const { apps, featured } = window.CATALOG;
+const byId = Object.fromEntries(apps.map(a => [a.id, a]));
+const SHELVES = [
+  { kind: 'game', title: 'Games', blurb: 'Puzzles, a trading game and two retired iPad titles.' },
+  { kind: 'app', title: 'Apps', blurb: 'Useful, mostly. Live on the web.' },
+  { kind: 'toy', title: 'Toys & experiments', blurb: 'Small single-page things, all hosted here.' },
+];
+const DEVICES = { desktop: 'Computer', phone: 'Phone', ipad: 'iPad' };
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const host = u => { try { return new URL(u, location.href).host.replace(/^www\./, ''); } catch { return u; } };
+
+// what the button says, and the one-line answer to "how do I get it?"
+function access(a) {
+  if (a.access === 'play') return { cls: 'play', label: 'Play', cta: 'Play in your browser', how: 'Runs here',
+    long: 'It runs right here on lucylu.org, in your browser. Nothing to install and no account. It opens in a new tab.' };
+  if (a.access === 'open') return { cls: 'open', label: 'Open ↗', cta: `Open ${host(a.url)} ↗`, how: host(a.url),
+    long: `A live web app on its own site, ${host(a.url)}. It opens in a new tab; nothing to install.` };
+  const vid = a.media.youtube;
+  return { cls: 'watch', label: 'Watch', cta: vid ? 'Watch gameplay' : 'No footage yet', how: 'Retired · video', disabled: !vid,
+    long: vid ? `${a.status || 'Retired'}, so it can't be downloaded anymore. Watch it being played instead.` : `${a.status || 'Retired'}, and there's no footage of it here yet.` };
+}
+function icon(a, cls = 'ic') {
+  if (a.icon) return `<img class="${cls}" src="${esc(a.icon)}" alt="" loading="lazy">`;
+  return `<span class="${cls}" style="background:linear-gradient(135deg,${a.hue[0]},${a.hue[1]})" aria-hidden="true">${esc(a.name[0])}</span>`;
+}
+function media(a, cls = '') {
+  const m = a.media, poster = m.poster ? 'media/' + m.poster : '';
+  let inner;
+  if (!poster) inner = `<div class="mono-ic" style="background:linear-gradient(135deg,${a.hue[0]},${a.hue[1]})">${esc(a.name[0])}</div>`;
+  else if (m.phone) inner = `<img class="blur" src="${poster}" alt="" loading="lazy"><img class="ph" src="${poster}" alt="" loading="lazy">`;
+  else inner = `<img src="${poster}" alt="" loading="lazy">`;
+  if (m.video) inner += `<video muted loop playsinline preload="none" data-src="media/${m.video}"${m.phone ? ' class="ph"' : ''}></video>`;
+  return `<div class="media${m.phone ? ' phone' : ''} ${cls}">${inner}</div>`;
+}
+function button(a, big) {
+  const x = access(a);
+  const attrs = a.access === 'watch' ? `href="#${a.id}" data-watch="${a.id}"` : `href="${esc(a.url)}" target="_blank" rel="noopener"`;
+  return `<a class="pill ${x.cls}${big ? ' big' : ''}" ${attrs}${x.disabled ? ' aria-disabled="true"' : ''} aria-label="${esc(x.cta)}: ${esc(a.name)}">${esc(big ? x.cta : x.label)}</a>`;
+}
+
+// ── featured rail ──
+document.getElementById('featured').innerHTML = featured.map(id => byId[id]).filter(Boolean).map(a => {
+  const x = access(a);
+  const eyebrow = { play: 'Play in your browser', open: 'Live on the web', watch: 'Watch it in action' }[a.access];
+  return `<article class="hero" data-id="${a.id}" data-kind="${a.kind}" tabindex="0" aria-label="${esc(a.name)}: details">
+    ${media(a)}
+    <div class="txt"><div><div class="mono eyebrow">${eyebrow}</div><h2>${esc(a.name)}</h2><p>${esc(a.subtitle)}</p></div>${button(a, true)}</div>
+  </article>`;
+}).join('');
+
+// ── shelves ──
+document.getElementById('shelves').innerHTML = SHELVES.map(s => {
+  const list = apps.filter(a => a.kind === s.kind);
+  return `<section class="shelf" data-kind="${s.kind}">
+    <div class="shelf-h"><h2>${s.title}</h2><p>${s.blurb}</p>
+      <div class="arrows"><button data-dir="-1" aria-label="Scroll ${s.title} left">←</button><button data-dir="1" aria-label="Scroll ${s.title} right">→</button></div></div>
+    <div class="wrap"><div class="rail">${list.map(a => {
+      const x = access(a);
+      return `<article class="card" data-id="${a.id}" tabindex="0" aria-label="${esc(a.name)}: details">
+        ${media(a)}
+        <div class="row">${icon(a)}<div class="who"><div class="nm">${esc(a.name)}</div><div class="sub">${esc(a.subtitle)}</div>
+          <div class="how mono">${esc(x.how)}</div></div>${button(a)}</div>
+      </article>`;
+    }).join('')}</div></div>
+  </section>`;
+}).join('');
+
+// ── filter tabs ──
+const TABS = [['all', 'All'], ['game', 'Games'], ['app', 'Apps'], ['toy', 'Toys']];
+document.querySelectorAll('.tabs').forEach(nav => nav.innerHTML = TABS.map(([k, l]) => `<button data-k="${k}" aria-pressed="${k === 'all'}">${l}</button>`).join(''));
+document.addEventListener('click', e => {
+  const t = e.target.closest('.tabs button'); if (!t) return;
+  const k = t.dataset.k;
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
+  document.querySelectorAll('.shelf').forEach(s => s.hidden = k !== 'all' && s.dataset.kind !== k);
+  document.querySelectorAll('.hero').forEach(h => h.hidden = k !== 'all' && h.dataset.kind !== k);
+  document.querySelector('.featured').hidden = ![...document.querySelectorAll('.hero')].some(h => !h.hidden);
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('.arrows button'); if (!b) return;
+  const rail = b.closest('.shelf').querySelector('.rail');
+  rail.scrollBy({ left: +b.dataset.dir * rail.clientWidth * 0.8, behavior: reduceMotion ? 'auto' : 'smooth' });
+});
+
+// ── loops: featured ones play while on screen; shelf ones play on hover ──
+function play(m, on) {
+  const v = m && m.querySelector('video'); if (!v) return;
+  if (on && !reduceMotion) {
+    if (!v.src) v.src = v.dataset.src;
+    v.play().then(() => m.classList.add('playing')).catch(() => {});
+  } else { v.pause(); m.classList.remove('playing'); }
+}
+const seen = new IntersectionObserver(es => es.forEach(e => play(e.target, e.isIntersecting && e.intersectionRatio > 0.6)), { threshold: [0, 0.6] });
+document.querySelectorAll('.hero .media').forEach(m => seen.observe(m));
+document.querySelectorAll('.card').forEach(c => {
+  const m = c.querySelector('.media');
+  c.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') play(m, true); });
+  c.addEventListener('pointerleave', () => play(m, false));
+  c.addEventListener('focus', () => play(m, true));
+  c.addEventListener('blur', () => play(m, false));
+});
+
+// ── details sheet ──
+const sheet = document.getElementById('sheet');
+function openSheet(id, autoplay) {
+  const a = byId[id]; if (!a) return;
+  const x = access(a), m = a.media;
+  const yt = m.youtube ? `<button class="playbtn" data-yt="${m.youtube}" aria-label="Play the gameplay video"><span class="mono">▶ Play gameplay video</span></button>` : '';
+  const shots = [m.poster, ...(m.shots || [])].filter(Boolean);
+  sheet.innerHTML = `<button class="x" aria-label="Close">×</button>
+    ${media(a, 'd-media')}
+    <div class="d-body">
+      <div class="d-top">${icon(a)}<div class="who"><h2 id="d-name">${esc(a.name)}</h2><div class="sub" style="white-space:normal">${esc(a.subtitle)}</div></div>${button(a, true)}</div>
+      <div class="getit"><span class="chip ${x.cls} mono">${esc(x.label.replace(' ↗', ''))}</span><div><b>How to get it</b><p>${esc(x.long)}</p>${a.note ? `<p class="note">${esc(a.note)}</p>` : ''}</div></div>
+      <dl class="facts">
+        <div><dt class="mono">Works on</dt><dd>${a.devices.map(d => DEVICES[d]).join(', ')}</dd></div>
+        <div><dt class="mono">${a.access === 'open' ? 'Lives at' : 'Hosted'}</dt><dd>${a.access === 'open' ? esc(host(a.url)) : a.access === 'play' ? 'lucylu.org' : 'Not available'}</dd></div>
+        <div><dt class="mono">Made with</dt><dd>${esc(a.made)}</dd></div>
+        <div><dt class="mono">Year</dt><dd>${a.year}</dd></div>
+      </dl>
+      <p class="d-desc">${esc(a.body)}</p>
+      ${shots.length > 1 || (shots.length && m.video) ? `<div class="shots">${shots.map(s => `<img src="media/${s}" alt="${esc(a.name)} screenshot" loading="lazy"${m.phone ? ' class="tall"' : ''}>`).join('')}</div>` : ''}
+    </div>`;
+  const dm = sheet.querySelector('.d-media');
+  if (yt) dm.insertAdjacentHTML('beforeend', yt);
+  if (!sheet.open) sheet.showModal();
+  sheet.scrollTop = 0;
+  if (history.replaceState) history.replaceState(null, '', '#' + id);
+  if (autoplay && m.youtube) startYT(dm.querySelector('.playbtn')); else play(dm, true);
+}
+function startYT(btn) {
+  const dm = btn.closest('.media');
+  play(dm, false);
+  dm.insertAdjacentHTML('beforeend', `<iframe src="https://www.youtube-nocookie.com/embed/${btn.dataset.yt}?autoplay=1&rel=0&playsinline=1" title="Gameplay video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`);
+  btn.remove();
+}
+function closeSheet() { sheet.close(); }
+sheet.addEventListener('close', () => { sheet.innerHTML = ''; if (history.replaceState) history.replaceState(null, '', location.pathname + location.search); });
+sheet.addEventListener('click', e => {
+  if (e.target === sheet) return closeSheet();   // the backdrop
+  if (e.target.closest('.x')) return closeSheet();
+  const y = e.target.closest('[data-yt]'); if (y) startYT(y);
+  const w = e.target.closest('[data-watch]'); if (w) { e.preventDefault(); const p = sheet.querySelector('.playbtn'); if (p) startYT(p); }
+});
+document.addEventListener('click', e => {
+  if (sheet.contains(e.target)) return;
+  const w = e.target.closest('[data-watch]');
+  if (w) { e.preventDefault(); return openSheet(w.dataset.watch, true); }
+  if (e.target.closest('a, button')) return;
+  const c = e.target.closest('.card, .hero'); if (c) openSheet(c.dataset.id);
+});
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card, .hero')) { e.preventDefault(); openSheet(e.target.dataset.id); }
+});
+if (location.hash.length > 1) openSheet(decodeURIComponent(location.hash.slice(1)));
+</script>
+</body>
+</html>

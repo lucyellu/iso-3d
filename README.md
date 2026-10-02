@@ -9,7 +9,7 @@ A boat rides the loop, tips over a sluice gate at the top of the waterfall, and 
 ## Sections
 
 1. **Hello:** 3D animation work on Beat Bugs (Netflix) and Little Charmers (Nick Jr., Treehouse TV)
-2. **Games & Apps:** Lunescape, Starbreaker, Math Gym, 3D Periodic Table, Neuralens
+2. **Games & Apps:** links to the app store at `apps/`
 3. **Writing:** recent posts from lulucy.org
 4. **Math:** *On the Prime Pairs*, with Suqin Ao
 5. **Contact:** email form, GitHub, YouTube, X, Instagram, LinkedIn
@@ -46,6 +46,16 @@ The **Sound** button (on by default from the first tap, turning it off is rememb
 - **Events:** a splash when the paper boat lands, occasional synthesized gulls (not at night), and everything muffled while the rider is underwater.
 
 `audio/` holds trimmed, loudness-matched web copies of the originals in `Ambient_and_SFX/`, which is kept out of git.
+
+## App store (`apps/`)
+
+`apps/index.html` is a store page for the games, web apps and toys, at [lucylu.org/apps](https://lucylu.org/apps/). Everything on it comes from `apps/catalog.js`; each entry's `access` decides its button and its "How to get it" note:
+
+- `play`: hosted in this repo under `apps/<id>/` (single-file pages, copied from the Claude artifacts)
+- `open`: a live web app on its own site
+- `watch`: retired from the App Store; plays the gameplay video
+
+Posters and the short muted loops live in `apps/media/`, captured from the live pages with headless Chrome and ffmpeg. Opening `apps/#<id>` goes straight to that app's details.
 
 ## Hosting
 
