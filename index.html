@@ -955,7 +955,7 @@ function buildLevel(M) {
   // rider on a paper boat
   const boat = paperBoat(M);
   const rider = creature(M, { glasses: true });
-  rider.g.scale.setScalar(0.82); rider.g.position.y = 0.09;
+  rider.g.scale.setScalar(0.82); rider.g.position.y = 0.16;
   boat.add(rider.g);
   boat.rotation.order = 'YZX';
   live(boat);
