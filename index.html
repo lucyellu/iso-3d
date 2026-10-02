@@ -17,6 +17,18 @@
     --accent-ink: #1d1a12;
   }
   body[data-time="day"] { --ink: #1f2b29; --ink-dim: rgba(31, 43, 41, 0.66); }
+  /* light text over white clouds: a soft dark halo (two wide, one tight) keeps it readable without a visible box */
+  body:not([data-time="day"]) :is(.brand, .crumb, .card h1, .card p, .kicker, .card a, .hint) {
+    text-shadow: 0 0 1px rgba(14,24,23,.7), 0 0 4px rgba(14,24,23,.6), 0 0 12px rgba(14,24,23,.55), 0 0 28px rgba(14,24,23,.45); }
+  body:not([data-time="day"]) { --ink-dim: rgba(239, 233, 220, 0.82); }
+  /* soft dark fade behind the header so it holds up over bright clouds */
+  .top::before { content: ""; position: absolute; inset: 0 0 -24px 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity .6s;
+    background: linear-gradient(rgba(14,24,23,.5), rgba(14,24,23,.28) 55%, rgba(14,24,23,0)); }
+  body:not([data-time="day"]) .top::before { opacity: 1; }
+  body:not([data-time="day"]) .brand .mark { background: rgba(14,24,23,.35); }
+  /* and a gentle always-on scrim behind the card; close-ups still get the stronger one */
+  body:not([data-time="day"]) .card::before { opacity: .55; }
+  body:not([data-time="day"]).close .card::before { opacity: 1; }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #4a6662; color: var(--ink);
     font-family: "Manrope", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
