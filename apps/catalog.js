@@ -84,9 +84,9 @@ window.CATALOG = {
       body: 'The periodic table as a 3D object you can turn and explore.',
       made: 'Three.js', year: 2024 },
     { id: 'neuralens', name: 'Neuralens', subtitle: 'Checkout in one snap', kind: 'app',
-      access: 'open', url: 'https://paperboxstudio.wixsite.com/neuralens2', devices: ['desktop'],
-      media: { poster: 'neuralens.jpg', video: 'neuralens.mp4' }, hue: ['#1f2d4a', '#9a7cff'],
-      body: 'A computer-vision checkout: take one photo of the basket and it rings up every item. This is the project page.',
+      access: 'play', url: 'neuralens/', devices: ['desktop', 'phone'],
+      media: { poster: 'neuralens.jpg', video: 'neuralens.mp4' }, icon: 'icons/neuralens.png', hue: ['#1f2d4a', '#9a7cff'],
+      body: 'A computer-vision checkout: take one photo of the basket and it rings up every item. This is the project page, with the iOS demo apps.',
       made: 'Computer vision', year: 2023 },
 
     // ── Toys & experiments (all hosted here) ───────────────
