@@ -230,7 +230,7 @@ const SITE = {
               { label: 'Freelance reel', href: 'https://vimeo.com/lucylu' }],
       view: { yaw: 0, pitch: 0 } },
     { title: 'Games & Apps', body: 'Games, web apps and small toys, most of which run right in your browser: a fast-forward paper trading game, a daily Morse puzzle, a planet’s worth of sensors. Lunescape and Starbreaker were Paperbox Studio’s iPad games; they’ve retired, but you can still watch them played.',
-      links: [{ label: 'Browse the store', href: 'apps/' },
+      links: [{ label: 'Browse all', href: 'apps/', newTab: true },
               { label: 'Stockwave', href: 'https://www.playstockwave.com/' },
               { label: 'Starbreaker', href: 'apps/#starbreaker', embed: 'https://youtu.be/ELOKL_uuzIE' },
               { label: 'Lunescape', href: 'apps/#lunescape', embed: 'https://youtu.be/8Jjn_P_nJzQ' }],
@@ -1975,7 +1975,7 @@ function renderCard(i, instant) {
     const ul = $('links'); ul.innerHTML = '';
     for (const l of c.links) {
       const li = document.createElement('li'); const a = document.createElement('a'); a.href = l.href; a.textContent = l.label;
-      if (/^https?:/.test(l.href)) { a.target = '_blank'; a.rel = 'noopener'; }
+      if (l.newTab || /^https?:/.test(l.href)) { a.target = '_blank'; a.rel = 'noopener'; }
       const em = embedFor(l); if (em) { a.dataset.embed = em.kind; a.dataset.i = c.links.indexOf(l); }
       li.appendChild(a); ul.appendChild(li);
     }
