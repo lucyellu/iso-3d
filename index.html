@@ -2257,10 +2257,10 @@ lens.ctx = lens.cv.getContext('2d');
 const lensTex = new THREE.CanvasTexture(lens.cv), bgTex = new THREE.CanvasTexture(bg);
 for (const t of [lensTex, bgTex]) { t.minFilter = t.magFilter = THREE.LinearFilter; t.generateMipmaps = false; }
 const lensMat = new THREE.ShaderMaterial({
-  uniforms: { tFrame: { value: null }, tBg: { value: bgTex }, tDrops: { value: lensTex }, uAspect: { value: 1 }, uLight: { value: 1 } },
+  uniforms: { tFrame: { value: null }, tBg: { value: bgTex }, tDrops: { value: lensTex }, uAspect: { value: 1 }, uLight: { value: 1 }, uFade: { value: 1 } },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
   fragmentShader: `
-uniform sampler2D tFrame, tBg, tDrops; uniform float uAspect, uLight;
+uniform sampler2D tFrame, tBg, tDrops; uniform float uAspect, uLight, uFade;
 varying vec2 vUv;
 // the frame is premultiplied with a see-through sky, so lay it over the backdrop
 vec3 behind(vec2 uv){ vec4 f = texture2D(tFrame, uv); return f.rgb + texture2D(tBg, uv).rgb * (1.0 - f.a); }
@@ -2279,7 +2279,7 @@ void main(){
   float sp = pow(max(dot(N, normalize(vec3(-0.35, -0.62, 0.7))), 0.0), 70.0) * 1.1
            + pow(max(dot(N, normalize(vec3(0.5, -0.2, 0.84))), 0.0), 180.0) * 0.35;
   dc += sp * vec3(1.0, 0.95, 0.88) * uLight;
-  gl_FragColor = vec4(min(dc, 1.0), cover);
+  gl_FragColor = vec4(min(dc, 1.0), cover * uFade);
 }`,
   transparent: true, depthTest: false, depthWrite: false, toneMapped: false,
 });
@@ -2345,7 +2345,7 @@ function simLens(dt, rate) {
   for (let i = 0; i < D.length && cut > 0; i++) if (!D[i].slide) { D.splice(i, 1); i--; cut--; }
 }
 // called right after the first-person frame is drawn, while it's still in the drawing buffer
-function renderLens(dt) {
+function renderLens(dt, fpOn) {
   if (!lens.on) {
     const s = Math.min(1, 1400 / innerWidth);
     lens.cv.width = Math.round(innerWidth * s); lens.cv.height = Math.round(innerHeight * s);
@@ -2355,7 +2355,7 @@ function renderLens(dt) {
   // under water the lens is all water; coming back up it streams off in big beads
   if (fpUnder > 0.5) { lens.drops.length = 0; lens.under = true; return; }
   if (lens.under) { lens.under = false; lensSpray(Math.round(220 * lensArea()), true); }
-  simLens(dt, 0.6 + 16 * cur.rain + (A.phase === 'fall' ? 30 : 0));
+  simLens(dt, (fpOn ? 0.6 : 0) + 16 * cur.rain + (A.phase === 'fall' ? 30 : 0));
   if (!lens.drops.length) return;
 
   const c = lens.ctx; c.clearRect(0, 0, lens.cv.width, lens.cv.height);
@@ -2375,6 +2375,7 @@ function renderLens(dt) {
   renderer.copyFramebufferToTexture(lens.frame);
   lensMat.uniforms.uAspect.value = innerWidth / innerHeight;
   lensMat.uniforms.uLight.value = 1 - cur.night * 0.5;
+  lensMat.uniforms.uFade.value = fpOn ? 1 : smooth(clamp01((cur.rain - 0.02) / 0.3));
   renderer.render(lensScene, lensCam);
 }
 
@@ -2616,7 +2617,8 @@ function frame(nowMs) {
     camera.layers.enableAll(); camera.layers.disable(PRIME); renderer.render(scene, camera);
   }
   if (!fpOn && (cur.rain > 0.01 || cur.puffs > 0.01)) { camera.layers.set(0); renderer.render(cloudScene, camera); }
-  if (fpOn) { drawBg(simT); renderLens(dt); } else lens.on = false;
+  // rain beads on the lens: always in first person, and over the whole still view while it rains
+  if (fpOn || cur.rain > 0.02) { drawBg(simT); renderLens(dt, fpOn); } else lens.on = false;
   drawFx(simT);
   updateAmbience(dt, fpOn);
   requestAnimationFrame(frame);
