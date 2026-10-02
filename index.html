@@ -240,7 +240,7 @@ const SITE = {
               { label: 'The Geminids', href: 'https://www.lulucy.org/post/the-geminids-a-yearly-delivery-of-non-earth-material-we-barely-instrument' },
               { label: 'Reading Level Slider', href: 'https://www.lulucy.org/post/reading-level-slider' },
               { label: 'All posts', href: 'https://www.lulucy.org/lately' }],
-      view: { yaw: -0.25, pitch: 0.48, zoom: 1.12 } },
+      view: { yaw: -0.25, pitch: 0.48, zoom: 1.32 } },
     { title: 'Math', body: 'On the Prime Pairs, with Suqin Ao: a modified Sieve of Eratosthenes that ties the Twin Prime Conjecture to Goldbach. Loops that almost close, one prime at a time.',
       links: [{ label: 'Read the paper', href: 'https://www.lulucy.org/post/study-of-prime-pairs-paper' },
               { label: 'Colab', href: 'https://colab.research.google.com/drive/1rCmKD5afjBGVD_aEKufKGqePYt_Jmh0w?usp=sharing' },
@@ -1654,7 +1654,7 @@ scene.fog = new THREE.FogExp2(0x000000, 0);
 const state = {
   mode: 'still', chapter: 0,
   yaw: 0, pitch: 0, vy: 0, vp: 0, dragging: false, home: false,
-  zoom: 1, focus: 'loop',
+  zoom: 1.2, focus: 'loop',
   ride: 0,
 };
 const camTarget = new THREE.Vector3();
@@ -1701,7 +1701,7 @@ function focusPoint(key, out) {
   return o.getWorldPosition(out).add(HEAD);
 }
 function goView(v, instant) {
-  const to = { yaw: v.yaw || 0, pitch: v.pitch || 0, zoom: v.zoom || 1, focus: v.focus || 'loop' };
+  const to = { yaw: v.yaw || 0, pitch: v.pitch || 0, zoom: v.zoom || 1.2, focus: v.focus || 'loop' };
   state.home = false; state.vy = state.vp = 0;
   if (instant || reduceMotion) {
     Object.assign(state, { yaw: to.yaw, pitch: to.pitch, zoom: to.zoom, focus: to.focus });
@@ -1806,7 +1806,7 @@ let press = null, pinch = 0;
 const pinchSpan = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };
 function zoomBy(k) {
   if (state.mode === 'fp') return;
-  const cl = z => THREE.MathUtils.clamp(z, 0.2, 1.6);
+  const cl = z => THREE.MathUtils.clamp(z, 0.2, 2.6);
   if (tween.on) { tween.from.zoom = cl(tween.from.zoom * k); tween.to.zoom = cl(tween.to.zoom * k); }
   else state.zoom = cl(state.zoom * k);
 }
