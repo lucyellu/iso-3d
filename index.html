@@ -196,10 +196,11 @@
 <div class="fallback" id="fallback">This page needs WebGL to draw its impossible harbour.</div>
 
 <script type="importmap">
-{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/" } }
 </script>
 <script type="module">
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 // ─────────────────────────────────────────────────────────────
 //  Site content: edit this block to make it yours.
@@ -673,11 +674,17 @@ function applyHaze(M, h) {
 // ─────────────────────────────────────────────────────────────
 //  Mesh helpers
 // ─────────────────────────────────────────────────────────────
+// Every box gets a hairline bevel with smooth normals (an edge loop close to the corner, then smooth),
+// so edges catch a thin highlight instead of cutting off dead sharp.
+const BEVEL = 0.035, BEVEL_SEG = 2;
 function box(mat, x0, x1, y0, y1, z0, z1, skipFace = -1) {
-  const geo = new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0);
+  const w = x1 - x0, h = y1 - y0, d = z1 - z0;
+  const r = Math.min(BEVEL, Math.min(w, h, d) * 0.4);
+  const geo = new RoundedBoxGeometry(w, h, d, BEVEL_SEG, r);
   if (skipFace >= 0) {  // drop one face (0..5 = +x,-x,+y,-y,+z,-z); used where overlay pieces meet the main pass
-    const idx = Array.from(geo.index.array);
-    idx.splice(skipFace * 6, 6);
+    const gr = geo.groups[skipFace], n = geo.attributes.position.count;
+    const idx = geo.index ? Array.from(geo.index.array) : Array.from({ length: n }, (_, i) => i);
+    idx.splice(gr.start, gr.count);
     geo.setIndex(idx);
   }
   const m = new THREE.Mesh(geo, mat);
