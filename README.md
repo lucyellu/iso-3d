@@ -39,7 +39,7 @@ On Windows, `launch-waterway.bat` starts that server if it isn't already running
 
 ## Sound
 
-The **Sound** button (off by default, remembered per device) loads the recordings in `audio/` and plays:
+The **Sound** button (on by default from the first tap, turning it off is remembered per device) loads the recordings in `audio/` and plays:
 
 - **Beds**, each looped with a crossfade: the sea's waves, the waterfall (louder in close-ups and near it in first person), and a time-of-day layer: morning birds at Sunrise, an afternoon bed at Dusk, a night bed at Night. Rain is synthesized.
 - **Interface sounds:** a tick on the time and camera buttons, water drops on taps and links, a swoosh between sections, bubbles when sound turns on.
