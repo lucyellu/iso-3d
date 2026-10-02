@@ -1239,14 +1239,14 @@ function buildHarbour() {
   const row = new THREE.Group();
   row.add(new THREE.Mesh(hullGeo(1.9, 0.78, 0.34), [H.deckWood, H.hullWhite]));
   for (const x of [-0.45, 0.25]) row.add(box(H.deckWood, x - 0.09, x + 0.09, 0.17, 0.2, -0.33, 0.33));
-  const rower = creature(M); rower.g.scale.setScalar(0.42); rower.g.position.set(-0.1, 0.18, 0); rower.g.rotation.y = Math.PI / 2; row.add(rower.g);
+  const rower = creature(M); rower.g.scale.setScalar(0.42); rower.g.position.set(-0.1, 0.25, 0); rower.g.rotation.y = Math.PI / 2; row.add(rower.g);
   row.position.set(8.0, SEA_Y, 18.4); row.rotation.y = -0.5; add(row); bobbers.push(row);
 
   const motor = new THREE.Group();
   motor.add(new THREE.Mesh(hullGeo(1.7, 0.74, 0.4), [H.cream, H.hullWhite]));
   motor.add(box(H.dark, 0.05, 0.12, 0.2, 0.44, -0.28, 0.28));
   motor.add(box(H.hull, -0.85, -0.65, -0.05, 0.4, -0.12, 0.12));
-  const driver = creature(M, { glasses: true }); driver.g.scale.setScalar(0.4); driver.g.position.set(-0.35, 0.2, 0); driver.g.rotation.y = Math.PI / 2; motor.add(driver.g);
+  const driver = creature(M, { glasses: true }); driver.g.scale.setScalar(0.4); driver.g.position.set(-0.35, 0.27, 0); driver.g.rotation.y = Math.PI / 2; motor.add(driver.g);
   live(motor);
 
   // patrons at the kiosk and a figure on the dock
