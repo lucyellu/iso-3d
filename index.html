@@ -335,11 +335,15 @@ scene.add(hemi, sun, sun.target);
 const world = new THREE.Group();
 scene.add(world);
 
+// glow sprites that flicker a little at night: { s, base, ph }
+const FLICKER = [];
+const flicker = (s, ph) => { FLICKER.push({ s, base: s.scale.x, ph: ph ?? Math.random() * 100 }); return s; };
 // soft radial sprite used for lantern glow
 const glowTex = (() => {
   const c = document.createElement('canvas'); c.width = c.height = 64;
   const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.1, 'rgba(255,250,235,.95)'); gr.addColorStop(0.22, 'rgba(255,225,170,.5)');
+  gr.addColorStop(0.5, 'rgba(255,170,90,.16)'); gr.addColorStop(1, 'rgba(255,140,60,0)');
   g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 })();
@@ -949,7 +953,7 @@ function buildLevel(M) {
     const lamp = box(M.lamp, -0.09, 0.09, 0, 0.2, -0.09, 0.09); lamp.position.copy(base).y += 0.62;
     details.push(add(lamp, p[2] < ZSPLIT ? OVERLAY : 0));
     const s = new THREE.Sprite(M.glow); s.position.copy(lamp.position); s.scale.setScalar(1.8);
-    add(s, p[2] < ZSPLIT ? OVERLAY : 0); glows.push(s);
+    add(s, p[2] < ZSPLIT ? OVERLAY : 0); glows.push(s); flicker(s);
   }
 
   // rider on a paper boat
@@ -1007,6 +1011,7 @@ const HM = (() => {
   const lam = c => new THREE.MeshLambertMaterial({ color: c });
   const H = {};
   for (const k of ['hull', 'hullWhite', 'deckWood', 'gull', 'awning', 'glass', 'dark']) H[k] = lam(HC[k]);
+  H.glass = new THREE.MeshPhongMaterial({ color: HC.glass, specular: '#dcecf0', shininess: 140 });   // sky-tinted sheen, no transparency
   const steel = (c, spec, shin) => new THREE.MeshPhongMaterial({ color: c, specular: spec, shininess: shin });
   H.metal = steel(HC.metal, '#b4c2be', 90);         // mast, rails, poles, stair
   H.cream = metalify(steel(HC.cream, '#9a9a90', 30), 0.55);   // AC units, tank, boat cabin
@@ -1021,6 +1026,7 @@ const HM = (() => {
 const C_UNLIT = new THREE.Color(HC.glass), C_WIN = new THREE.Color(HC.win), C_BULB = new THREE.Color(HC.bulb), C_LANT = new THREE.Color(HC.lantern);
 function lightHarbour() {
   const n = cur.night;
+  HM.glass.emissive.copy(cur.sky).multiplyScalar(0.34 * (1 - n)).lerp(C_UNLIT, 0.15);
   HM.win.color.copy(C_UNLIT).lerp(C_WIN, Math.min(1, n * 1.15));
   HM.bulb.color.copy(cur.stone).lerp(C_BULB, Math.min(1, n * 1.3));
   HM.lantern.color.copy(C_LANT).multiplyScalar(0.55 + 0.45 * n);
@@ -1185,7 +1191,7 @@ function buildHarbour() {
     const o = new THREE.Group();
     if (i % 3 === 1) { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.17, 10), H.lantern); l.position.y = -0.12; o.add(l); }
     else o.add(box(H.bulb, -0.045, 0.045, -0.12, -0.03, -0.045, 0.045));
-    const s = new THREE.Sprite(H.glow); s.position.y = -0.08; s.scale.setScalar(i % 3 === 1 ? 0.9 : 0.6); o.add(s);
+    const s = new THREE.Sprite(H.glow); s.position.y = -0.08; s.scale.setScalar(i % 3 === 1 ? 0.9 : 0.6); o.add(s); flicker(s);
     return o;
   };
   const flag = i => {
@@ -1232,7 +1238,7 @@ function buildHarbour() {
   fish.add(stick(H.metal, v3(0.65, 0.33, 0), v3(0.65, 2.0, 0), 0.05));
   fish.add(stick(H.metal, v3(0.65, 1.7, 0), v3(-0.9, 1.15, 0), 0.025));
   fish.add(box(H.bulb, 0.59, 0.71, 2.0, 2.12, -0.06, 0.06));
-  const fg = new THREE.Sprite(H.glow); fg.position.set(0.65, 2.06, 0); fg.scale.setScalar(0.9); fish.add(fg);
+  const fg = new THREE.Sprite(H.glow); fg.position.set(0.65, 2.06, 0); fg.scale.setScalar(0.9); fish.add(fg); flicker(fg);
   for (const z of [-0.26, 0.24]) { const br = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.3, 10), H.deckWood); br.position.set(0.95, 0.48, z); fish.add(br); }
   fish.position.set(5.2, SEA_Y, 14.6); fish.rotation.y = 0.04; add(fish); bobbers.push(fish);
 
@@ -1476,7 +1482,12 @@ function updateHarbour(t) {
     gl.userData.wings[0].rotation.z = flap; gl.userData.wings[1].rotation.z = -flap;
   });
   lightHarbour();
-  HB.lights.forEach(l => l.intensity = cur.night * 5.5);
+  const ft = uTime.value;
+  for (const f of FLICKER) {
+    const k = 1 + 0.07 * Math.sin(ft * 7.3 + f.ph) + 0.05 * Math.sin(ft * 13.1 + f.ph * 1.7);
+    f.s.scale.setScalar(f.base * k);
+  }
+  HB.lights.forEach((l, i) => l.intensity = cur.night * 5.5 * (1 + 0.06 * Math.sin(ft * 6.1 + i * 2.3) + 0.04 * Math.sin(ft * 11.7 + i)));
   HB.signs.forEach(m => m.color.setScalar(0.62 + 0.38 * cur.night));
 }
 
