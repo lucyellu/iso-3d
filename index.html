@@ -647,10 +647,12 @@ void main(){
 // ─────────────────────────────────────────────────────────────
 const FIXED = { ink: '#2a2320', paper: '#fbfaf6', leaf: '#6e9f55', pencil: '#f2c14e', eraser: '#ef8fa0', wood: '#6b4a34', bobber: '#e2463c', lamp: '#ffd27a' };
 const FIXED_C = Object.fromEntries(Object.entries(FIXED).map(([k, v]) => [k, new THREE.Color(v)]));
+// hue / saturation / lightness offsets from the theme's creature colour: oranges through salmons
+const SHADES = [[0, 0, 0], [0.025, 0.05, 0.07], [-0.012, -0.08, 0.1], [0.04, 0.1, -0.05], [-0.02, -0.12, 0.17], [0.015, 0.02, -0.09]];
 function makeMats() {
   const lam = () => new THREE.MeshLambertMaterial();
   return {
-    stone: concreteify(lam()), rim: concreteify(lam(), 0.7), creature: lam(), ink: lam(), paper: lam(), leaf: lam(), pencil: lam(), eraser: lam(), wood: lam(), bobber: lam(),
+    stone: concreteify(lam()), rim: concreteify(lam(), 0.7), creature: lam(), shades: SHADES.map(lam), ink: lam(), paper: lam(), leaf: lam(), pencil: lam(), eraser: lam(), wood: lam(), bobber: lam(),
     lamp: new THREE.MeshBasicMaterial(),
     foam: new THREE.MeshBasicMaterial(),
     water: waterMat(), fall: fallMat(),
@@ -658,10 +660,11 @@ function makeMats() {
     line: new THREE.LineBasicMaterial({ transparent: true, opacity: 0.7 }),
   };
 }
-const tmpC = new THREE.Color();
+const tmpC = new THREE.Color(), tmpC2 = new THREE.Color();
 function applyHaze(M, h) {
   const set = (m, base) => { m.color.copy(base).multiplyScalar(1 - h); m.emissive.copy(cur.haze).multiplyScalar(h); };
   set(M.stone, cur.stone); set(M.rim, cur.rim); set(M.creature, cur.creature);
+  SHADES.forEach((o, i) => set(M.shades[i], tmpC2.copy(cur.creature).offsetHSL(...o)));
   for (const k of ['ink', 'paper', 'leaf', 'pencil', 'eraser', 'wood', 'bobber']) set(M[k], FIXED_C[k]);
   const hz = (out, c) => out.copy(c).lerp(cur.haze, h);
   hz(M.lamp.color, tmpC.copy(FIXED_C.lamp).lerp(cur.stone, 1 - cur.night));
@@ -711,18 +714,13 @@ function stick(mat, a, b, t) {
 }
 function setLayer(obj, n) { obj.traverse(o => o.layers.set(n)); }
 
-// Little cube-octopus
+// Little cube, each in a slightly different orange/salmon
+let shadeN = 0;
 function creature(M, { glasses = false, pencil = false } = {}) {
   const g = new THREE.Group();
-  const B = 0.72, H = 0.64, legH = 0.16, zf = B / 2;
-  g.add(box(M.creature, -B / 2, B / 2, legH, legH + H, -B / 2, B / 2));
-  for (let i = 0; i < 4; i++) {
-    const x = -B / 2 + 0.1 + i * (B - 0.2) / 3;
-    g.add(box(M.creature, x - 0.055, x + 0.055, 0, legH + 0.01, zf - 0.13, zf - 0.02));
-    g.add(box(M.creature, x - 0.055, x + 0.055, 0.02, legH + 0.01, -zf + 0.02, -zf + 0.13));
-  }
-  g.add(box(M.creature, -B / 2 - 0.09, -B / 2, legH + 0.16, legH + 0.3, -0.07, 0.07));
-  g.add(box(M.creature, B / 2, B / 2 + 0.09, legH + 0.16, legH + 0.3, -0.07, 0.07));
+  const B = 0.72, H = 0.64, legH = 0, zf = B / 2;
+  const body = M.shades[shadeN++ % M.shades.length];
+  g.add(box(body, -B / 2, B / 2, legH, legH + H, -B / 2, B / 2));
   const eyeY = legH + H * 0.6;
   const eyes = [box(M.ink, -0.21, -0.12, eyeY - 0.07, eyeY + 0.07, zf, zf + 0.02), box(M.ink, 0.12, 0.21, eyeY - 0.07, eyeY + 0.07, zf, zf + 0.02)];
   eyes.forEach(e => g.add(e));
