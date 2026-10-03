@@ -2462,7 +2462,7 @@ function startAmbience() {
   const muffle = ctx.createBiquadFilter(); muffle.type = 'lowpass'; muffle.frequency.value = 18000;
   const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3;
   master.connect(muffle).connect(comp).connect(ctx.destination);
-  const ui = ctx.createGain(); ui.gain.value = 0.26; ui.connect(comp);   // interface sounds skip the underwater muffle
+  const ui = ctx.createGain(); ui.gain.value = 0.18; ui.connect(comp);   // interface sounds skip the underwater muffle
   Object.assign(amb, { master, muffle, ui, nextGull: ctx.currentTime + 4 + Math.random() * 6, lastPhase: '' });
   // rain has no recording, so it stays synthesized: bright patter over a soft roar
   const white = amb.white = noiseBuffer(ctx, 3);
@@ -2551,7 +2551,7 @@ function updateAmbience(dt, fpOn) {
   amb.gain += ((soundOn && !document.hidden ? 1 : 0) - amb.gain) * k;
   amb.fpBoost = (amb.fpBoost || 0) + ((fpOn ? 1 : 0) - (amb.fpBoost || 0)) * (1 - Math.exp(-dt * 1.5));
   amb.duck = (amb.duck ?? 1) + ((pip.kind === 'video' ? 0.2 : 1) - (amb.duck ?? 1)) * k;   // the harbour quietens under a playing clip
-  amb.master.gain.setTargetAtTime(amb.gain * 0.52 * (1 + 0.35 * amb.fpBoost) * amb.duck, t, 0.05);
+  amb.master.gain.setTargetAtTime(amb.gain * 0.36 * (1 + 0.35 * amb.fpBoost) * amb.duck, t, 0.05);
   if (amb.gain < 0.002) return;
   const set = (node, v) => node.gain.setTargetAtTime(v, t, 0.3);
   // how near the waterfall the listener is: close-ups and first person bring it up
@@ -2580,8 +2580,8 @@ function updateAmbience(dt, fpOn) {
     if (Math.random() < gullAmt) gullCall(t + 0.05, 0.03 + Math.random() * 0.025, Math.random() * 1.6 - 0.8);
     amb.nextGull = t + 8 + Math.random() * 14;
   }
-  if (A.phase === 'settle' && amb.lastPhase === 'fall') { splashdown(0.67); sfx('splash', { vol: 1.17, rate: jitter(0.05), toMaster: true });
-    sfx('bigsplash', { vol: 0.3, rate: jitter(0.04), toMaster: true }); }
+  if (A.phase === 'settle' && amb.lastPhase === 'fall') { splashdown(1.1); sfx('splash', { vol: 1.9, rate: jitter(0.05), toMaster: true });
+    sfx('bigsplash', { vol: 0.5, rate: jitter(0.04), toMaster: true }); }
   amb.lastPhase = A.phase;
 }
 function setSound(on, fromClick) {
