@@ -181,7 +181,11 @@
   @media (min-width: 761px) { .tabs.m { display: none; } }
   @media (prefers-reduced-motion: reduce) { .card, dialog[open] { transition: none; animation: none; } }
   [hidden] { display: none !important; }
+  /* ?embed=1: shown inside the harbour's window, so no way back and a tighter header */
+  .embed header .back, .embed .intro p { display: none; }
+  .embed .intro { padding-top: 18px; }
 </style>
+<script>if (/[?&]embed/.test(location.search)) document.documentElement.classList.add('embed');</script>
 </head>
 <body>
 <header>
