@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atlas Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Libre+Caslon+Display&family=Libre+Caslon+Text:ital,wght@0,400;1,400&display=swap">
+<style>
+  :root {
+    --paper: #ECEEE8; --paper-2: #E4E7E0; --ink: #1A2130; --muted: #5B6474; --rule: #C3C8BF; --accent: #6D72E8;
+    --display: 'Libre Caslon Display', 'Libre Caslon Text', Georgia, serif; --text: 'Libre Caslon Text', Georgia, serif;
+    --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --paper: #0E131D; --paper-2: #131a27; --ink: #D8DDE6; --muted: #8C95A7; --rule: #2A3345; --accent: #B1B9F9; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --paper: #0E131D; --paper-2: #131a27; --ink: #D8DDE6; --muted: #8C95A7; --rule: #2A3345; --accent: #B1B9F9; color-scheme: dark; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { min-height: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 var(--text); padding: 16px; display: grid; place-items: center; min-height: 100vh; }
+  main { width: min(820px, 100%); }
+  .eyebrow { font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  h1 { font: 400 clamp(38px, 7vw, 56px)/1.05 var(--display); margin: 10px 0 8px; }
+  .lede { color: var(--muted); margin: 0 0 32px; max-width: 52ch; }
+  .shelf { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  a.book { display: block; text-decoration: none; color: inherit; border: 1px solid var(--rule); background: var(--paper-2); padding: 22px 22px 20px; transition: border-color .15s, transform .15s; }
+  a.book:hover, a.book:focus-visible { border-color: var(--ink); transform: translateY(-2px); outline: none; }
+  a.book h2 { font: 400 30px/1.1 var(--display); margin: 10px 0 8px; }
+  a.book p { margin: 0 0 16px; color: var(--muted); font-size: 15px; }
+  .go { font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  .foot { margin-top: 28px; font: 12px/1.5 var(--mono); color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Three atlases</div>
+  <h1>Atlas Library</h1>
+  <p class="lede">Interactive atlases of the universe: how big, how heavy and how hot things get.</p>
+  <div class="shelf">
+    <a class="book" href="atlas.html">
+      <div class="eyebrow">10⁻³⁵ m — 10²⁷ m</div>
+      <h2>Atlas of Scale</h2>
+      <p>From the Planck length to the observable universe, by size.</p>
+      <span class="go">Open →</span>
+    </a>
+    <a class="book" href="mass.html">
+      <div class="eyebrow">10⁻³⁶ kg — 10⁵³ kg</div>
+      <h2>Atlas of Mass</h2>
+      <p>From the lightest particle to all the matter there is, by weight.</p>
+      <span class="go">Open →</span>
+    </a>
+    <a class="book" href="temp.html">
+      <div class="eyebrow">0 K — 10³² K — below 0 K</div>
+      <h2>Atlas of Temperature</h2>
+      <p>From absolute zero, which never arrives, to the Planck temperature, and the negative temperatures past infinity.</p>
+      <span class="go">Open →</span>
+    </a>
+  </div>
+</main>
+</body>
+</html>

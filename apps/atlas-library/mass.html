@@ -1,0 +1,1254 @@
+<meta charset="utf-8">
+<title>Atlas of Mass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Libre+Caslon+Display&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+  :root {
+    --paper: #ECEEE8; --paper-2: #E4E7E0; --ink: #1A2130; --muted: #5B6474; --rule: #C3C8BF;
+    --accent: #6D72E8; --accent-b: #D63A8C; --mark-all: #A67A00; --mark-view: #6D72E8; --wash: 1; --dark: 0;
+    --display: 'Libre Caslon Display', 'Libre Caslon Text', Georgia, 'Times New Roman', serif;
+    --text: 'Libre Caslon Text', Georgia, 'Times New Roman', serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --paper: #0E131D; --paper-2: #131a27; --ink: #D8DDE6; --muted: #8C95A7; --rule: #2A3345; --accent: #B1B9F9; --accent-b: #FD5DB1; --mark-all: #FFC107; --mark-view: #B1B9F9; --wash: 1.25; --dark: 1; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --paper: #0E131D; --paper-2: #131a27; --ink: #D8DDE6; --muted: #8C95A7; --rule: #2A3345; --accent: #B1B9F9; --accent-b: #FD5DB1; --mark-all: #FFC107; --mark-view: #B1B9F9; --wash: 1.25; --dark: 1; color-scheme: dark; }
+
+  html, body { height: 100%; }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font: 15px/1.55 var(--text); padding-inline: 16px; padding-block: 16px; }
+  .app { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 372px; gap: 20px; }
+  .stage { position: relative; min-height: 0; border: 1px solid var(--rule); background: var(--paper); }
+  .stage::before, .stage::after { content: ''; position: absolute; inset: 5px; border: 1px solid var(--rule); pointer-events: none; opacity: .7; }
+  .stage::after { inset: -1px; border: none; background:
+      linear-gradient(var(--ink), var(--ink)) left top / 14px 1px no-repeat, linear-gradient(var(--ink), var(--ink)) left top / 1px 14px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) right top / 14px 1px no-repeat, linear-gradient(var(--ink), var(--ink)) right top / 1px 14px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) left bottom / 14px 1px no-repeat, linear-gradient(var(--ink), var(--ink)) left bottom / 1px 14px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) right bottom / 14px 1px no-repeat, linear-gradient(var(--ink), var(--ink)) right bottom / 1px 14px no-repeat; opacity: .8; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  canvas.hover { cursor: pointer; }
+  canvas:active { cursor: grabbing; }
+  canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -8px; }
+  .toggles { position: absolute; right: 22px; top: 42px; display: flex; gap: 6px; }
+  .rtoggle { display: flex; align-items: center; gap: 8px; font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: var(--paper); border: 1px solid var(--rule); padding: 7px 10px; cursor: pointer; }
+  .rtoggle:hover { color: var(--ink); border-color: var(--ink); }
+  .rtoggle i { width: 22px; height: 12px; border: 1px solid currentColor; border-radius: 6px; position: relative; }
+  .rtoggle i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 6px; height: 6px; border-radius: 50%; background: currentColor; transition: left .15s; }
+  .rtoggle[aria-pressed="true"] { color: var(--ink); border-color: var(--ink); }
+  .rtoggle[aria-pressed="true"] i::after { left: 12px; }
+  .rtoggle .short { display: none; }
+  .rseg { display: flex; align-items: stretch; font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; border: 1px solid var(--rule); background: var(--paper); }
+  .rseg .rlab { display: flex; align-items: center; padding: 0 8px 0 10px; color: var(--muted); }
+  .rseg button { font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--muted); background: transparent; border: 0; border-left: 1px solid var(--rule); padding: 7px 10px; cursor: pointer; }
+  .rseg button:hover { color: var(--ink); }
+  .rseg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  a.libback { position: absolute; right: 22px; top: 80px; text-decoration: none; }
+  a.libback:hover { color: var(--ink); border-color: var(--ink); }
+  .hint { position: absolute; right: 22px; top: 18px; font: 12px/1.4 var(--mono); color: var(--muted); pointer-events: none; text-align: right; }
+
+  .app.collapsed { grid-template-columns: minmax(0, 1fr) 0; gap: 0; }
+  .app.collapsed .panel { display: none; }
+  .ptab { position: absolute; right: -1px; top: 50%; transform: translateY(-50%); z-index: 2; width: 20px; height: 64px; padding: 0; border: 1px solid var(--rule); border-right: 0; background: var(--paper); color: var(--muted); font: 14px/1 var(--mono); cursor: pointer; }
+  .ptab:hover { color: var(--ink); border-color: var(--ink); }
+  .panel { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 22px; padding-right: 4px; }
+  header h1 { font: 400 34px/1.05 var(--display); margin: 2px 0 8px; letter-spacing: .005em; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; max-width: 34em; }
+  .eyebrow { font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+
+  .seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--ink); }
+  .seg button { font: 500 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; padding: 11px 8px; background: transparent; color: var(--ink); border: 0; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--ink); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .card { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--ink); padding-top: 14px; }
+  .card h2 { font: 400 28px/1.1 var(--display); margin: 0; text-wrap: balance; }
+  .size { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .size b { font-weight: 500; font-size: 22px; }
+  .size span { color: var(--muted); font-size: 13px; }
+  .measure { font-style: italic; color: var(--muted); font-size: 14px; }
+  .note { margin: 2px 0 0; font-size: 14.5px; max-width: 36em; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { font: 500 12px/1 var(--mono); letter-spacing: .08em; padding: 9px 12px; border: 1px solid var(--rule); background: var(--paper-2); color: var(--ink); cursor: pointer; }
+  .btn:hover { border-color: var(--ink); }
+  .btn.primary { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+
+  .slots { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: end; }
+  .slot label { display: flex; align-items: center; gap: 6px; font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .slot label i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .slot select { width: 100%; font: 14px var(--text); color: var(--ink); background: var(--paper-2); border: 1px solid var(--rule); padding: 8px 6px; }
+  .slot.active select { border-color: var(--ink); }
+  .swap { height: 38px; width: 38px; padding: 0; font-size: 16px; }
+  .verdict { font: 400 24px/1.25 var(--display); margin: 0; text-wrap: balance; }
+  .sub { font: 13px/1.5 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .presets button { font: italic 13.5px/1 var(--text); padding: 7px 10px; border: 1px solid var(--rule); background: transparent; color: var(--ink); cursor: pointer; }
+  .presets button:hover { border-color: var(--ink); }
+
+  .formula { font: 13px/1.5 var(--mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+  .consts h3 { font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 6px 0 4px; }
+  .consts > p { margin: 0 0 6px; font-size: 13.5px; color: var(--muted); }
+  .const { display: grid; grid-template-columns: 2.4em minmax(0, 1fr); column-gap: 10px; row-gap: 3px; padding: 9px 0; border-bottom: 1px solid var(--rule); }
+  .const .sym { grid-row: span 3; font: italic 19px/1.2 var(--text); }
+  .const .nm { font-size: 14px; }
+  .const .tag { margin-left: 8px; font: 500 9.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--rule); padding: 2px 5px; vertical-align: 2px; }
+  .const .val { font: 12.5px/1.4 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .const .seen { display: flex; flex-wrap: wrap; gap: 4px; }
+  .const .seen button { font: italic 12.5px/1 var(--text); padding: 4px 7px; border: 1px solid var(--rule); background: transparent; color: var(--ink); cursor: pointer; }
+  .const .seen button:hover { border-color: var(--ink); }
+  .cat h3 { font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 18px 0 6px; }
+  .cat ul { list-style: none; margin: 0; padding: 0; }
+  .cat li button { width: 100%; display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: baseline; text-align: left; padding: 6px 4px; background: transparent; border: 0; border-bottom: 1px solid var(--rule); color: var(--ink); font: 14.5px/1.3 var(--text); cursor: pointer; }
+  .cat li button:hover { background: var(--paper-2); }
+  .cat li.lim button span:nth-child(2) { font-style: italic; color: var(--muted); }
+  .cat li button .v { font: 12.5px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cat li button .m { font: 500 10px/1 var(--mono); color: var(--paper); border-radius: 50%; width: 16px; height: 16px; display: grid; place-items: center; align-self: center; }
+  .cat li button[aria-current="true"] { background: var(--paper-2); }
+  .cat li button[aria-current="true"] span:nth-child(2) { font-weight: 700; }
+  footer { font-size: 12.5px; color: var(--muted); padding-bottom: 8px; }
+
+  @media (max-width: 900px) {
+    .toggles { top: 16px; right: 16px; }
+    .rtoggle .long { display: none; } .rtoggle .short { display: inline; }
+    .rseg .rlab { display: none; } .rseg button:first-of-type { border-left: 0; } .rseg button { padding: 7px 8px; }
+    .stage canvas { top: 44px; height: calc(100% - 44px); } .toggles { top: 10px; right: 12px; } a.libback { top: 10px; left: 12px; right: auto; }
+    html, body { height: auto; }
+    .app { display: flex; flex-direction: column; height: auto; }
+    .stage { height: 62svh; min-height: 360px; }
+    .panel { overflow: visible; }
+    .hint { display: none; }
+    .ptab { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  .sister { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); text-decoration: none; }
+  .sister:hover { text-decoration: underline; }
+  .equiv { font: 13px/1.5 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+</style>
+
+<div class="app">
+  <main class="stage" id="stage">
+    <canvas id="plate" tabindex="0" aria-label="Mass plate. Scroll to zoom, drag to pan, arrow keys step between objects, click an object to select it."></canvas>
+    <div class="hint" id="hint">scroll to zoom · drag to pan · ← → step · F or double-click to centre · R reset</div>
+    <div class="toggles" id="toggles">
+      <button class="rtoggle" id="resetBtn" title="Zoom back out to the whole range (R)">Reset</button>
+      <div class="rseg" id="rSeg" role="group" aria-label="Along the scale" title="Pictures or words along the scale (L)"><span class="rlab">Scale</span><button data-m="pics" aria-pressed="true">Pictures</button><button data-m="words" aria-pressed="false">Words</button></div>
+      <button class="rtoggle" id="gToggle" aria-pressed="true" title="Show what gravity does to each mass along the beam (G)"><i></i><span class="long">Gravity</span><span class="short">Gravity</span></button>
+    </div>
+    <button class="ptab" id="pTab" aria-controls="panel" aria-expanded="true" title="Hide the side panel (P)">›</button>
+  </main>
+
+  <aside class="panel" id="panel">
+    <header>
+      <div class="eyebrow">10⁻³⁶ kg — 10⁵³ kg</div>
+      <h1>Atlas of Mass</h1>
+      <p>Forty-four things, from the lightest known particle to all the matter in the observable universe, plus five <em>limits and constants</em>. Mass cannot be drawn to scale, so each sits on a logarithmic beam where every long tick is ten times heavier. Or put any two on the scales.</p>
+      <p style="margin-top:10px"><a class="sister" href="https://claude.ai/artifact/KWGsbqF4Zd48RnNKmA2f5s" data-local="atlas.html" target="_blank" rel="noopener">← Atlas of Scale: the same, by size</a></p>
+    </header>
+
+    <div class="seg" role="group" aria-label="Mode">
+      <button id="mExplore" aria-pressed="true">Explore</button>
+      <button id="mCompare" aria-pressed="false">Compare</button>
+    </div>
+
+    <section class="card" id="detail" aria-live="polite">
+      <div class="eyebrow" id="dRealm"></div>
+      <h2 id="dName"></h2>
+      <div class="size"><b id="dSize"></b><span id="dSci"></span></div>
+      <div class="measure" id="dMeasure"></div>
+      <div class="formula" id="dFormula" hidden></div>
+      <div class="equiv" id="dEquiv"></div>
+      <p class="note" id="dNote"></p>
+      <div class="row">
+        <button class="btn" id="prev">← Lighter</button>
+        <button class="btn" id="next">Heavier →</button>
+        <button class="btn primary" id="toCompare">Weigh against…</button>
+      </div>
+    </section>
+
+    <section class="card" id="compare" hidden aria-live="polite">
+      <div class="slots">
+        <div class="slot" id="slotA"><label for="selA"><i style="background:var(--accent)"></i>A</label><select id="selA"></select></div>
+        <button class="btn swap" id="swap" aria-label="Swap A and B">⇄</button>
+        <div class="slot" id="slotB"><label for="selB"><i style="background:var(--accent-b)"></i>B</label><select id="selB"></select></div>
+      </div>
+      <p class="verdict" id="verdict"></p>
+      <div class="sub" id="verdictSub"></div>
+      <div class="eyebrow" style="margin-top:8px">Try</div>
+      <div class="presets" id="presets"></div>
+    </section>
+
+    <section class="cat" id="cat" aria-label="Catalogue"></section>
+    <section class="consts" id="consts" aria-label="Fundamental constants"></section>
+    <footer>Masses are typical measured values; where nature varies or the figure is an estimate, the note says so (“~” marks approximate values, “&lt;” an upper limit). Italic entries are limits, units and masses set by constants rather than objects. Constant values are CODATA 2022. Drawings are not to scale. “Same mass as a cube of water” uses 1 g per cm³. The coloured band under the beam shows what gravity does to a lump of that much matter, from shapeless rock to round worlds, brown dwarfs, stars coloured by mass, and clusters; hover it for the thresholds, which are approximate.</footer>
+  </aside>
+</div>
+
+<script>
+(() => {
+'use strict';
+const TAU = Math.PI * 2;
+const $ = s => document.querySelector(s);
+const cv = $('#plate'), c = cv.getContext('2d');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W = 0, H = 0, DPR = 1, dirty = true;
+// ---------- helpers ----------
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, u) => a + (b - a) * u;
+const sstep = (a, b, x) => { const u = clamp((x - a) / (b - a), 0, 1); return u * u * (3 - 2 * u); };
+function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const hash = (i, j, k = 0) => { const v = Math.sin(i * 127.1 + j * 311.7 + k * 74.7) * 43758.5453; return v - Math.floor(v); };
+const gauss = r => Math.sqrt(-2 * Math.log(r() + 1e-12)) * Math.cos(TAU * r());
+function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${clamp(a, 0, 1)})`; }
+const SUP = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+const sup = n => String(n).split('').map(ch => SUP[ch] || ch).join('');
+
+// ---------- fundamental constants list (shared by both atlases) ----------
+function renderConsts(el, intro, list, byId, onPick) {
+  el.innerHTML = '<h3>Fundamental constants</h3><p>' + intro + '</p>' + list.map(([sym, name, val, exact, ids]) => `<div class="const"><span class="sym">${sym}</span><span class="nm">${name}<span class="tag">${exact ? 'exact' : 'measured'}</span></span><span class="val">${val}</span><span class="seen">${ids.filter(id => byId[id]).map(id => `<button data-id="${id}">${byId[id].short || byId[id].name}</button>`).join('')}</span></div>`).join('');
+  el.onclick = e => { const b = e.target.closest('button[data-id]'); if (b) onPick(byId[b.dataset.id]); };
+}
+
+// ---------- theme ----------
+const T = {};
+function readTheme() {
+  const cs = getComputedStyle(document.documentElement), g = k => cs.getPropertyValue(k).trim();
+  const hex = v => { if (v.startsWith('#')) return v.length === 4 ? '#' + [...v.slice(1)].map(x => x + x).join('') : v; return '#888888'; };
+  T.paper = hex(g('--paper')); T.ink = hex(g('--ink')); T.muted = hex(g('--muted')); T.rule = hex(g('--rule'));
+  T.A = hex(g('--accent')); T.B = hex(g('--accent-b')); T.M1 = hex(g('--mark-all')); T.M2 = hex(g('--mark-view')); T.wash = parseFloat(g('--wash')) || 1; T.dark = g('--dark') === '1';
+  dirty = true;
+}
+
+// ---------- formatting ----------
+const AU = 1.496e11, LY = 9.4607e15;
+function nice(x) { if (x >= 1000) return Math.round(x).toLocaleString('en-US'); if (x >= 100) return String(Math.round(x)); return String(+x.toPrecision(3)); }
+function sci(m) { const e = Math.floor(Math.log10(m)), mant = m / Math.pow(10, e); const mt = +mant.toFixed(2); return mt === 1 ? `10${sup(e)} m` : `${mt} × 10${sup(e)} m`; }
+function fmtLen(m) {
+  if (m < 1e-15 * 0.999) return sci(m);
+  const u = [[1e-15, 'fm'], [1e-12, 'pm'], [1e-9, 'nm'], [1e-6, 'µm'], [1e-3, 'mm'], [1, 'm']];
+  if (m < 1e4) { let best = u[0]; for (const x of u) if (m / x[0] >= 0.999) best = x; if (best[1] === 'm' && m < 0.1) best = u[4]; return `${nice(m / best[0])} ${best[1]}`; }
+  if (m < 1e11) return `${nice(m / 1e3)} km`;
+  if (m < 2e11) return `${nice(m / 1e9)} million km`;
+  if (m < 1e15) return `${nice(m / AU)} AU`;
+  const ly = m / LY;
+  if (ly < 1e6) return `${nice(ly)} light-years`;
+  if (ly < 1e9) return `${nice(ly / 1e6)} million light-years`;
+  return `${nice(ly / 1e9)} billion light-years`;
+}
+const sizeText = o => (o.pre || '') + fmtLen(o.size);
+function fmtRatio(r) {
+  if (r < 10) return String(+r.toFixed(1));
+  if (r < 1e6) return Math.round(r).toLocaleString('en-US');
+  const w = [[1e12, 'trillion'], [1e9, 'billion'], [1e6, 'million']];
+  for (const [v, n] of w) if (r >= v && r < v * 1000) return `${+(r / v).toPrecision(2)} ${n}`;
+  const e = Math.floor(Math.log10(r)), mt = +(r / Math.pow(10, e)).toFixed(1); return mt === 1 ? `10${sup(e)}` : `${mt} × 10${sup(e)}`;
+}
+// labels that must always show, such as the ends and middle of a range, in priority order; returns the spans they took so tick labels can give way
+function pinLabels(list, y, font) { const taken = []; c.font = font;
+  for (const [t, x, align, col] of list) { const w = c.measureText(t).width, l = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x; if (taken.some(([a, b]) => l < b && l + w > a)) continue; knock(t, x, y, align, font, col); c.font = font; taken.push([l - 8, l + w + 8]); }
+  return taken; }
+const clearOf = (taken, x, w) => taken.every(([a, b]) => x + w / 2 < a || x - w / 2 > b);
+function diamond(x, y, r, col) { c.globalAlpha = 1; c.fillStyle = col; c.beginPath(); c.moveTo(x, y - r); c.lineTo(x + r, y); c.lineTo(x, y + r); c.lineTo(x - r, y); c.closePath(); c.fill(); }
+function diamondO(x, y, r, col) { c.globalAlpha = 1; c.fillStyle = T.paper; c.strokeStyle = col; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x, y - r); c.lineTo(x + r, y); c.lineTo(x, y + r); c.lineTo(x - r, y); c.closePath(); c.fill(); c.stroke(); }
+// the two ends of a sorted catalogue, the logarithmic middle between them, and whatever sits nearest that middle; it is tagged "~ middle" unless it is dead on
+function extremes(list, e, loTag, hiTag) { const lo = list[0], hi = list[list.length - 1], mid = (e(lo) + e(hi)) / 2, near = list.reduce((p, q) => Math.abs(e(q) - mid) < Math.abs(e(p) - mid) ? q : p);
+  return { lo, hi, mid, near, lt: loTag, ht: hiTag, tag: new Map([[lo, loTag], [hi, hiTag], [near, Math.abs(e(near) - mid) < 1e-3 ? 'middle' : '~ middle']]) }; }
+// the same for whatever lies in the window on screen [E0, E1]: its lightest/smallest, heaviest/largest, and the one nearest the window's centre
+let VX = { tag: new Map() };
+function viewExtremes(list, e, E0, E1, loTag, hiTag) { const vis = list.filter(o => e(o) >= E0 - 1e-9 && e(o) <= E1 + 1e-9); if (!vis.length) return { tag: new Map() };
+  const mid = (E0 + E1) / 2, near = vis.reduce((p, q) => Math.abs(e(q) - mid) < Math.abs(e(p) - mid) ? q : p), tag = new Map();
+  tag.set(near, Math.abs(e(near) - mid) < .02 * (E1 - E0) ? 'middle' : '~ middle'); tag.set(vis[0], loTag); tag.set(vis[vis.length - 1], hiTag); return { tag }; }
+// every mark an object carries: [text, kind], 'all' for the whole catalogue, 'view' for the window; a view mark that only repeats the overall one is dropped
+const baseOf = t => t.replace('~ ', '');
+function marksOf(o) { const a = EX.tag.get(o), v = VX.tag.get(o), out = []; if (a) out.push([`${a} of all`, 'all']); if (v && !(a && baseOf(a) === baseOf(v))) out.push([`${v} in view`, 'view']); return out; }
+const isMarked = o => EX.tag.has(o) || VX.tag.has(o);
+const markCol = o => { const m = marksOf(o)[0]; return m ? (m[1] === 'all' ? T.M1 : T.M2) : null; };
+// what is drawn fades: each marked object carries an opacity that eases towards 1 while it is marked and back to 0 after,
+// keeping its last marks to fade out with. Call fadeMarks once a frame, after VX is set.
+const MF = new Map(); let PILLA = 1;
+function fadeMarks(list) { const now = performance.now();
+  for (const o of list) { const ms = marksOf(o); let st = MF.get(o); if (!ms.length && !st) continue;
+    if (!st) { st = { a: reduced ? 1 : 0, ms, t: now }; MF.set(o, st); }
+    const dt = Math.min(50, now - st.t), to = ms.length ? 1 : 0; st.t = now; if (ms.length) st.ms = ms;
+    st.a += (to - st.a) * (reduced ? 1 : 1 - Math.exp(-dt / 170)); if (Math.abs(to - st.a) < .01) st.a = to; else dirty = true;
+    if (!to && !st.a) MF.delete(o); } }
+const marksShown = o => MF.get(o)?.ms || [], markA = o => MF.get(o)?.a || 0;
+// a mark is a bold capsule in its own colour, with a soft glow, so it reads at a glance: gold for the whole catalogue, teal for the window
+const tagFont = () => `700 10px ${MONO}`, TAG_H = 17;
+function tagW(t) { c.font = tagFont(); c.letterSpacing = '1px'; const w = c.measureText(t.toUpperCase()).width; c.letterSpacing = '0px'; return w + 14; }
+function pill(t, x, cy, kind, align = 'center') { const w = tagW(t), l = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x, col = kind === 'all' ? T.M1 : T.M2;
+  c.save(); c.globalAlpha = PILLA; c.shadowColor = hexA(col, T.dark ? .75 : .55); c.shadowBlur = 10; c.fillStyle = col; c.beginPath(); c.roundRect(l, cy - TAG_H / 2, w, TAG_H, TAG_H / 2); c.fill(); c.restore();
+  c.globalAlpha = PILLA; c.font = tagFont(); c.letterSpacing = '1px'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillStyle = T.paper; c.fillText(t.toUpperCase(), l + 7, cy + .5); c.letterSpacing = '0px'; c.textBaseline = 'alphabetic'; c.globalAlpha = 1; return w; }
+// all of an object's marks side by side; y is a text baseline, as for knock()
+const marksW = o => marksShown(o).reduce((s, [t]) => s + tagW(t) + 5, -5);
+function marksAt(o, x, y, align = 'center') { const ms = marksShown(o); if (!ms.length) return 0; const tw = marksW(o); let l = align === 'center' ? x - tw / 2 : align === 'right' ? x - tw : x;
+  PILLA = markA(o); for (const [t, k] of ms) l += pill(t, l, y - 4, k, 'left') + 5; PILLA = 1; return tw; }
+// marks for many objects at once, [o, x, y] each; a set that would overlap one already drawn climbs above it
+function placeMarks(list) { const taken = [];
+  for (const [o, x, y] of list) { const w = marksW(o); if (w <= 0) continue; const l = clamp(x - w / 2, 8, W - 8 - w); let yy = y;
+    while (taken.some(t => l < t[1] + 6 && l + w > t[0] - 6 && Math.abs(t[2] - yy) < TAG_H + 2)) yy -= TAG_H + 3;
+    marksAt(o, l, yy, 'left'); taken.push([l, l + w, yy]); } }
+// marks for a label set at an angle: level, stacked above the end of the words, and kept on the canvas
+function marksAtTip(o, ax, ay, len) { const ms = marksShown(o); PILLA = markA(o); let tx = ax + Math.cos(RTH) * len + 4, ty = ay - Math.sin(RTH) * len - 10;
+  for (const [t, k] of ms) { const w = tagW(t); pill(t, clamp(tx, 12, W - 12 - w), Math.max(ty, TAG_H), k, 'left'); ty -= TAG_H + 4; } PILLA = 1; }
+// a glowing ring round a marked medallion
+function halo(x, y, R, col, a = 1) { c.save(); c.globalAlpha = a; c.shadowColor = col; c.shadowBlur = 16; c.strokeStyle = col; c.lineWidth = 3.5; circ(x, y, R + 3.5); c.stroke(); c.restore(); }
+// the same, faded in and out with the object's marks
+function haloFor(o, x, y, R) { const st = MF.get(o); if (st && st.a > .01) halo(x, y, R, st.ms[0][1] === 'all' ? T.M1 : T.M2, st.a); }
+// jumps of the view window (F, double-click, R) are one slow move that eases in and out; any other change to the view cancels it
+const VIEW_MS = 1600; let RVA = null;
+function setRVEased(e0, span) { setRV(e0, span); if (!reduced) RVA = { a0: rv.e0, a1: rv.e1, t0: performance.now() }; }
+function viewEase() { if (!RVA) return false; const u = clamp((performance.now() - RVA.t0) / VIEW_MS, 0, 1), k = easeIO(u);
+  rv.e0 = RVA.a0 + (rv.t0 - RVA.a0) * k; rv.e1 = RVA.a1 + (rv.t1 - RVA.a1) * k; dirty = true; if (u >= 1) RVA = null; return true; }
+// put e at the middle of the ruler, zooming in only as far as it takes to get it off the ends
+function centreOn(e) { const sp = rv.t1 - rv.t0, ns = Math.min(sp, 2 * Math.min(e - FE0, FE1 - e)); setRVEased(e - ns / 2, ns); }
+// Pictures along the scale are laid out like labels on a map. Rows are worked out for the whole catalogue at once, from spacing
+// in pixels, which depends only on the zoom, never on where the view is, so panning (or F) cannot move a picture between rows.
+// The layout is redone only when the zoom crosses a step of 2^⅓, each picture keeping its old row if it still fits there.
+const TIERS = new Map(); let LAYOUT = { key: '', tier: new Map() };
+// near the two ends of the whole range, pictures are nudged inwards so the first and last are never cut off by the frame
+const edgeShift = (e, ppd, R) => Math.max(0, R - 34 - (e - FE0) * ppd) - Math.max(0, R - 34 - (FE1 - e) * ppd);
+// The selected picture (hot) goes in first, so it always has one however crowded it gets. Then, so that pictures come and go
+// as little as possible, whatever was showing in the last layout keeps its place before anything new is let in, and a picture
+// that is not one of the key benchmarks needs a little more room to come in than to stay, so none flickers at the threshold.
+function tierLayout(list, D, nT, ppd, R, key, hot = []) {
+  const pb = Math.pow(2, Math.floor(Math.log2(ppd) * 3) / 3), k0 = [pb, nT, Math.round(D), ...hot.map(o => o.id)].join('|'); if (LAYOUT.key === k0) return LAYOUT.tier;
+  const was = LAYOUT.tier, isHot = o => hot.includes(o);
+  const order = list.slice().sort((p, q) => isHot(q) - isHot(p) || EX.tag.has(q) - EX.tag.has(p) || was.has(q) - was.has(p) || key(q) - key(p) || p.idx - q.idx);
+  const tiers = Array.from({ length: nT }, () => []), tier = new Map();
+  for (const o of order) { const xw = o.e * pb + edgeShift(o.e, pb, R), room = D + 18 + (was.has(o) || isHot(o) || key(o) || EX.tag.has(o) ? 0 : D * .15), fit = k => tiers[k].every(x => Math.abs(x - xw) >= room), m = TIERS.get(o);
+    const k = m != null && m < nT && fit(m) ? m : tiers.findIndex((t, i) => fit(i)); if (k < 0) continue; tiers[k].push(xw); tier.set(o, k); TIERS.set(o, k); }
+  LAYOUT = { key: k0, tier }; return tier; }
+// When the layout does change, a picture that changes row glides there, and one that appears or goes grows or shrinks, all eased.
+// Only its offset from its true position is eased, so panning still carries every picture along exactly with the scale.
+const SLIDE = new Map(); let SFRAME = 0; const SLIDE_MS = 650;
+const easeIO = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;   // cubic ease in and out
+// one eased value: a jump in its target (more than `jump`) starts a new glide from wherever it is now; a smaller nudge just moves the end point
+function glide(g, to, now, jump = 1) { const cur = g.from + (g.to - g.from) * easeIO(clamp((now - g.t0) / SLIDE_MS, 0, 1));
+  if (Math.abs(to - g.to) > jump) { g.from = cur; g.to = to; g.t0 = now; } else g.to = to;
+  const u = clamp((now - g.t0) / SLIDE_MS, 0, 1); if (u < 1) dirty = true; return g.from + (g.to - g.from) * easeIO(u); }
+function slide(o, tx, x, y) { const now = performance.now(); let s = SLIDE.get(o);
+  if (!s) { s = { rel: { from: x - tx, to: x - tx, t0: 0 }, y: { from: y, to: y, t0: 0 }, sc: { from: reduced ? 1 : 0, to: 1, t0: now } }; SLIDE.set(o, s); } s.seen = SFRAME;
+  if (reduced) return [x, y, 1];
+  return [tx + glide(s.rel, x - tx, now), glide(s.y, y, now), glide(s.sc, 1, now, .01)]; }
+// once per frame: ease every placed picture, and return the ones no longer placed as [o, x, y, scale] while they shrink away
+function slideAll(placed, get, put, txOf) { SFRAME++; const now = performance.now(), ghosts = []; for (const p of placed) put(p, slide(...get(p)));
+  for (const [o, s] of SLIDE) { if (s.seen === SFRAME) continue; const sc = reduced ? 0 : glide(s.sc, 0, now, .01);
+    if (sc < .03) { SLIDE.delete(o); continue; } ghosts.push([o, txOf(o) + s.rel.to, s.y.to, sc]); }
+  return ghosts; }
+// run locally (file or localhost), sister atlases are the files next door rather than the published pages, and the library is one link away
+if (location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) { const ss = document.querySelectorAll('a.sister[data-local]');
+  ss.forEach(a => { a.href = a.dataset.local; a.removeAttribute('target'); a.removeAttribute('rel'); });
+  if (ss.length) { const p = document.createElement('p'); p.style.marginTop = '6px'; p.innerHTML = '<a class="sister" href="library.html">← Atlas Library</a>'; ss[ss.length - 1].parentElement.after(p); }
+  const back = document.createElement('a'); back.className = 'rtoggle libback'; back.href = 'library.html'; back.title = 'Back to the Atlas Library to pick another atlas'; back.textContent = '← Library'; document.getElementById('stage').appendChild(back); }
+// the side panel folds away (P) to give the plate the whole width
+(() => { const app = document.querySelector('.app'), tab = document.getElementById('pTab'), key = /Mass/.test(document.title) ? 'mass.panel' : /Temperature/.test(document.title) ? 'temp.panel' : 'atlas.panel';
+  const set = open => { app.classList.toggle('collapsed', !open); tab.textContent = open ? '›' : '‹'; tab.title = `${open ? 'Hide' : 'Show'} the side panel (P)`; tab.setAttribute('aria-expanded', open); try { localStorage.setItem(key, open ? '1' : '0'); } catch (e) {} };
+  let open = true; try { open = localStorage.getItem(key) !== '0'; } catch (e) {} set(open);
+  tab.addEventListener('click', () => set(app.classList.contains('collapsed')));
+  document.addEventListener('keydown', e => { if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || e.metaKey || e.ctrlKey || e.altKey) return; if (e.key === 'p' || e.key === 'P') set(app.classList.contains('collapsed')); }); })();
+
+// ---------- drawing primitives ----------
+function circ(x, y, r) { c.beginPath(); c.arc(x, y, Math.max(r, 0), 0, TAU); }
+function ink(a = 1, lw = 1) { c.strokeStyle = T.ink; c.globalAlpha = a; c.lineWidth = lw; }
+function wash(col, a) { c.fillStyle = hexA(col, a * T.wash); }
+function smooth(pts, closed = true) { // catmull-rom through points
+  const n = pts.length; c.moveTo(pts[0][0], pts[0][1]);
+  const P = i => pts[closed ? (i + n) % n : clamp(i, 0, n - 1)];
+  for (let i = 0; i < (closed ? n : n - 1); i++) {
+    const p0 = P(i - 1), p1 = P(i), p2 = P(i + 1), p3 = P(i + 2);
+    c.bezierCurveTo(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6, p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6, p2[0], p2[1]);
+  }
+  if (closed) c.closePath();
+}
+function hatch(clip, bx0, by0, bx1, by1, ang, gap, a = 0.35, lw = 0.7) {
+  bx0 = Math.max(bx0, -20); by0 = Math.max(by0, -20); bx1 = Math.min(bx1, W + 20); by1 = Math.min(by1, H + 20);
+  if (bx1 <= bx0 || by1 <= by0) return;
+  const L = Math.hypot(bx1 - bx0, by1 - by0) / 2 + 2; gap = Math.max(gap, 1.7, L / 700);
+  c.save(); clip(); c.clip();
+  const cx = (bx0 + bx1) / 2, cy = (by0 + by1) / 2, ca = Math.cos(ang), sa = Math.sin(ang);
+  c.beginPath(); for (let d = -L; d <= L; d += gap) { const px = cx - sa * d, py = cy + ca * d; c.moveTo(px - ca * L, py - sa * L); c.lineTo(px + ca * L, py + sa * L); }
+  ink(a, lw); c.stroke(); c.restore();
+}
+// stipple sets
+const STIP = (() => { const r = rng(11), L = [-0.5, -0.62, 0.6], n = Math.hypot(...L), l = L.map(v => v / n), lt = [], dk = [];
+  for (let i = 0; i < 9000; i++) { let x, y; do { x = r() * 2 - 1; y = r() * 2 - 1; } while (x * x + y * y > 1); const z = Math.sqrt(1 - x * x - y * y); const b = Math.max(0, x * l[0] + y * l[1] + z * l[2]); const h = r();
+    if (Math.pow(1 - b, 1.7) > h && lt.length < 4000) lt.push([x, y]); if (Math.pow(b, 1.5) * 0.85 + 0.03 > h && dk.length < 4000) dk.push([x, y]); }
+  return [lt, dk]; })();
+const LIMB = (() => { const r = rng(12), lt = [], dk = []; for (let i = 0; i < 12000; i++) { let x, y; do { x = r() * 2 - 1; y = r() * 2 - 1; } while (x * x + y * y > 1); const mu = Math.sqrt(1 - x * x - y * y), h = r();
+  if (Math.pow(1 - mu, 1.4) * 0.9 + 0.04 > h && lt.length < 3500) lt.push([x, y]); if (mu * 0.7 + 0.05 > h && dk.length < 3500) dk.push([x, y]); } return [lt, dk]; })();
+function stipple(x, y, r, k = 1, set = STIP, a = 0.62) {
+  if (r < 2.5) return; const pts = set[T.dark ? 1 : 0]; const n = Math.min(pts.length, Math.floor(r * r * 0.085 * k)); const d = clamp(r * 0.011, 0.7, 1.35);
+  c.fillStyle = T.ink; c.globalAlpha = a; for (let i = 0; i < n; i++) { const p = pts[i]; c.fillRect(x + p[0] * r - d / 2, y + p[1] * r - d / 2, d, d); } c.globalAlpha = 1;
+}
+function sphere(x, y, r, tint, k = 1, outline = 1) {
+  if (tint) { const g = c.createRadialGradient(x - r * .35, y - r * .4, r * .05, x, y, r); g.addColorStop(0, hexA(tint, .06 * T.wash)); g.addColorStop(1, hexA(tint, .32 * T.wash)); c.fillStyle = g; circ(x, y, r); c.fill(); }
+  stipple(x, y, r, k);
+  if (outline) { ink(outline, 1); circ(x, y, r); c.stroke(); }
+}
+function blobPts(x, y, rx, ry, seed, bump = 0.12, n = 22, rot = 0) { const pts = []; for (let i = 0; i < n; i++) { const a = i / n * TAU, f = 1 + bump * (hash(seed, i) - 0.5) * 2; const px = Math.cos(a) * rx * f, py = Math.sin(a) * ry * f; pts.push([x + px * Math.cos(rot) - py * Math.sin(rot), y + px * Math.sin(rot) + py * Math.cos(rot)]); } return pts; }
+function dimH(x1, x2, y, text, col, a = 1) { c.save(); c.globalAlpha = a; c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 1; c.beginPath(); c.moveTo(x1, y); c.lineTo(x2, y); c.moveTo(x1, y - 5); c.lineTo(x1, y + 5); c.moveTo(x2, y - 5); c.lineTo(x2, y + 5); c.stroke(); if (text) { c.font = `12px ${MONO}`; c.textAlign = 'center'; c.fillText(text, (x1 + x2) / 2, y - 8); } c.restore(); }
+function dimV(x, y1, y2, text, col, a = 1, side = -1) { c.save(); c.globalAlpha = a; c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 1; c.beginPath(); c.moveTo(x, y1); c.lineTo(x, y2); c.moveTo(x - 5, y1); c.lineTo(x + 5, y1); c.moveTo(x - 5, y2); c.lineTo(x + 5, y2); c.stroke(); if (text) { c.font = `12px ${MONO}`; c.textAlign = side < 0 ? 'right' : 'left'; c.fillText(text, x + side * 9, (y1 + y2) / 2 + 4); } c.restore(); }
+const MONO = "'IBM Plex Mono', ui-monospace, Consolas, monospace", SERIF = "'Libre Caslon Text', Georgia, serif", DISPLAY = "'Libre Caslon Display', Georgia, serif";
+function note(text, x, y, align = 'left', col) { c.save(); c.font = `italic 12.5px ${SERIF}`; c.fillStyle = col || T.muted; c.textAlign = align; c.fillText(text, x, y); c.restore(); }
+
+// ---------- precomputed geometry ----------
+const HCLOUD = (() => { const r = rng(5), p = []; for (let i = 0; i < 2600; i++) { const rr = -(Math.log(r()) + Math.log(r()) + Math.log(r())) * 0.5; const u = r() * 2 - 1, a = r() * TAU, s = Math.sqrt(1 - u * u); p.push([rr * s * Math.cos(a), rr * s * Math.sin(a)]); } return p; })(); // units of Bohr radius
+const NUC = (() => { const r = rng(9), p = []; while (p.length < 238) { const x = r() * 2 - 1, y = r() * 2 - 1, z = r() * 2 - 1; if (x * x + y * y + z * z < 1) p.push([x, y, z, p.length < 92]); } return p.sort((a, b) => a[2] - b[2]); })();
+const MW = (() => { const r = rng(7), p = [], bar = 25 * Math.PI / 180;
+  for (let i = 0; i < 1100; i++) { const x = gauss(r) * 0.07, y = gauss(r) * 0.025; p.push([x * Math.cos(bar) - y * Math.sin(bar), x * Math.sin(bar) + y * Math.cos(bar), 2]); }
+  for (let i = 0; i < 700; i++) { const rr = Math.abs(gauss(r)) * 0.05, a = r() * TAU; p.push([Math.cos(a) * rr, Math.sin(a) * rr, 2]); }
+  for (let arm = 0; arm < 4; arm++) { const major = arm < 2, n = major ? 2600 : 1100; for (let i = 0; i < n; i++) { const th = Math.pow(r(), 0.85) * 2.7 * Math.PI; const rr = 0.14 * Math.exp(0.21 * th) * 0.5 / 0.78 * 1.55; if (rr > 0.52) continue; const a = bar + arm * Math.PI / (major ? 1 : 1) + (major ? 0 : Math.PI / 2) + th; const sc = 0.012 + 0.05 * rr; p.push([Math.cos(a) * rr + gauss(r) * sc, Math.sin(a) * rr + gauss(r) * sc, major ? 1 : 3]); } }
+  for (let i = 0; i < 2200; i++) { const rr = Math.min(0.5, -Math.log(r()) * 0.13), a = r() * TAU; p.push([Math.cos(a) * rr, Math.sin(a) * rr, 4]); }
+  return p; })(); // unit: diameter 1
+const WEB = (() => { const r = rng(99), nodes = []; while (nodes.length < 190) { const x = r() * 2 - 1, y = r() * 2 - 1; if (x * x + y * y < 0.96) nodes.push([x, y, 0.4 + r()]); }
+  const pts = [], edges = new Set(); nodes.forEach((n, i) => { nodes.map((m, j) => [Math.hypot(m[0] - n[0], m[1] - n[1]), j]).sort((a, b) => a[0] - b[0]).slice(1, 4).forEach(([, j]) => edges.add(i < j ? i + '_' + j : j + '_' + i)); });
+  for (const e of edges) { const [i, j] = e.split('_').map(Number), A = nodes[i], B = nodes[j], len = Math.hypot(B[0] - A[0], B[1] - A[1]), n = Math.floor(len * 240), bend = gauss(r) * 0.03;
+    for (let k = 0; k < n; k++) { const u = r(), nx = -(B[1] - A[1]) / len, ny = (B[0] - A[0]) / len, b = Math.sin(u * Math.PI) * bend; pts.push([lerp(A[0], B[0], u) + nx * b + gauss(r) * 0.006, lerp(A[1], B[1], u) + ny * b + gauss(r) * 0.006]); } }
+  for (const n of nodes) for (let k = 0; k < 34 * n[2]; k++) pts.push([n[0] + gauss(r) * 0.011, n[1] + gauss(r) * 0.011]);
+  return pts.filter(p => p[0] * p[0] + p[1] * p[1] < 1); })();
+const LANI = (() => { const r = rng(41), lines = [], G = [0.12, 0.04]; for (let i = 0; i < 150; i++) { let a = r() * TAU, rr = 0.55 + r() * 0.42, x = Math.cos(a) * rr * 1.1, y = Math.sin(a) * rr * 0.8; const L = [[x, y]];
+  for (let k = 0; k < 40; k++) { const dx = G[0] - x, dy = G[1] - y, d = Math.hypot(dx, dy); if (d < 0.05) break; x += dx / d * 0.022 - dy / d * 0.008; y += dy / d * 0.022 + dx / d * 0.008; L.push([x, y]); } lines.push(L); } return lines; })();
+const CONT = (() => { const raw = {
+  na: [[-168, 65], [-162, 70], [-140, 70], [-125, 70], [-95, 72], [-80, 68], [-62, 60], [-55, 52], [-66, 45], [-70, 42], [-76, 35], [-81, 31], [-80, 25], [-82, 28], [-90, 30], [-97, 27], [-97, 20], [-90, 16], [-83, 9], [-78, 8], [-86, 14], [-95, 16], [-105, 20], [-110, 23], [-117, 32], [-124, 40], [-124, 48], [-135, 58], [-150, 60], [-165, 60]],
+  sa: [[-78, 8], [-72, 12], [-62, 10], [-50, 0], [-35, -5], [-39, -15], [-48, -26], [-58, -38], [-65, -45], [-68, -55], [-74, -50], [-73, -40], [-71, -30], [-70, -18], [-77, -12], [-81, -5], [-80, 0]],
+  eu: [[-10, 36], [-9, 43], [-2, 44], [-5, 48], [3, 51], [8, 54], [10, 58], [5, 62], [15, 69], [28, 71], [40, 67], [60, 69], [70, 73], [90, 76], [110, 77], [130, 72], [150, 71], [170, 70], [180, 66], [170, 60], [160, 55], [142, 52], [140, 45], [130, 42], [126, 37], [122, 31], [120, 23], [110, 20], [108, 12], [104, 9], [100, 14], [98, 8], [92, 20], [88, 22], [80, 15], [77, 8], [73, 20], [67, 24], [57, 25], [52, 28], [48, 30], [56, 24], [58, 20], [52, 15], [44, 12], [40, 20], [34, 28], [35, 33], [30, 37], [26, 40], [23, 36], [20, 40], [13, 45], [12, 42], [16, 38], [9, 44], [3, 43], [0, 39], [-6, 36]],
+  af: [[-17, 21], [-16, 12], [-12, 7], [-8, 4], [0, 5], [9, 4], [10, -2], [12, -8], [13, -17], [15, -27], [18, -34], [25, -34], [32, -28], [35, -24], [40, -15], [40, -10], [39, -5], [43, 0], [51, 11], [43, 12], [38, 18], [33, 28], [32, 31], [20, 32], [10, 37], [0, 36], [-6, 35], [-10, 30], [-15, 26]],
+  au: [[114, -22], [114, -34], [118, -35], [124, -33], [132, -31], [138, -35], [141, -38], [147, -39], [150, -37], [153, -30], [153, -25], [146, -19], [142, -11], [141, -17], [136, -12], [130, -12], [126, -14], [122, -18]],
+  gl: [[-73, 78], [-60, 82], [-30, 83], [-20, 76], [-22, 70], [-40, 65], [-43, 60], [-50, 63], [-55, 70], [-65, 76]],
+  uk: [[-5, 50], [1, 51], [0, 53], [-3, 56], [-5, 58], [-6, 55], [-3, 54], [-5, 52]], mg: [[44, -25], [47, -25], [50, -15], [49, -12], [44, -17]],
+  jp: [[130, 31], [135, 34], [140, 36], [142, 40], [141, 45], [139, 38], [133, 34]], bo: [[109, 2], [117, 7], [119, 1], [116, -4], [110, -3]], su: [[95, 5], [106, -6], [102, -4]], ng: [[131, -1], [141, -3], [150, -10], [141, -9], [137, -5]] };
+  const out = []; for (const k in raw) { const P = raw[k], d = []; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; const n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 3); for (let j = 0; j < n; j++) d.push([lerp(a[0], b[0], j / n), lerp(a[1], b[1], j / n)]); } out.push(d); } return out; })();
+function ortho(lon, lat, l0, p0) { const D = Math.PI / 180, l = (lon - l0) * D, p = lat * D, q = p0 * D; const x = Math.cos(p) * Math.sin(l), y = Math.cos(q) * Math.sin(p) - Math.sin(q) * Math.cos(p) * Math.cos(l), z = Math.sin(q) * Math.sin(p) + Math.cos(q) * Math.cos(p) * Math.cos(l); return [x, y, z]; }
+
+// ---------- the objects ----------
+// size: headline length (m); w,h: drawing bounds (m); dim: which way the headline is measured
+const O = [];
+function def(o) { o.w = o.w ?? o.size; o.h = o.h ?? o.size; o.dim = o.dim || 'w'; O.push(o); }
+const REALMS = ['Quantum', 'Atoms & molecules', 'Microscopic', 'Small things', 'Human scale', 'Planetary', 'Stellar', 'Galaxies & beyond'];
+
+def({ id: 'planck', name: 'Planck length', one: 'the Planck length', many: 'Planck lengths', realm: 0, size: 1.616e-35, w: 1.616e-35 * 7, h: 1.616e-35 * 7, field: true, measure: 'a length, not an object', tint: '#6b5aa8',
+  note: 'The scale at which our theories of space and time stop working. It is not a pixel of space; it is the smallest length current physics can meaningfully describe.',
+  draw(X, Y, s, o, opt) { const cp = o.size * s; let i0, i1, j0, j1, ox = X - cp / 2, oy = Y - cp / 2;
+    if (opt.mode === 'explore') { i0 = Math.floor(-ox / cp) - 1; i1 = Math.ceil((W - ox) / cp); j0 = Math.floor(-oy / cp) - 1; j1 = Math.ceil((opt.plotH - oy) / cp); } else { i0 = -3; i1 = 3; j0 = -3; j1 = 3; }
+    const fa = opt.mode === 'explore' ? sstep(14, 40, cp) : 1; if (fa <= 0) return;
+    c.lineWidth = 1; c.strokeStyle = T.ink;
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const h1 = hash(i, j), h2 = hash(i, j, 1), h3 = hash(i, j, 2); const x = ox + (i + 0.5 + (h1 - .5) * .6) * cp, y = oy + (j + 0.5 + (h2 - .5) * .6) * cp;
+      c.globalAlpha = 0.45 * fa; circ(x, y, cp * (0.14 + 0.36 * h3)); c.stroke(); if (h3 > 0.55) { c.globalAlpha = 0.22 * fa; circ(x + cp * .1, y - cp * .08, cp * (0.08 + 0.3 * h1)); c.stroke(); } }
+    c.globalAlpha = 1; if (cp > 24) dimH(X - cp / 2, X + cp / 2, Y + cp * 0.9, 'ℓP', T.A, fa); } });
+def({ id: 'proton', name: 'Proton', one: 'a proton', many: 'protons', realm: 0, size: 1.68e-15, w: 2.1e-15, h: 2.1e-15, vol: true, measure: 'charge diameter', tint: '#9C3D2E',
+  note: 'Charge radius 0.84 fm, so about 1.7 fm across. The three quarks are drawn as points: no experiment has found them to have any size, down to 10⁻¹⁸ m.',
+  draw(X, Y, s, o) { const R = o.size * s / 2; stipple(X, Y, R, 0.28, LIMB, 0.45); c.setLineDash([3, 4]); ink(0.8); circ(X, Y, R); c.stroke(); c.setLineDash([]);
+    const q = [0, 1, 2].map(k => [X + Math.cos(-1.2 + k * TAU / 3) * R * 0.42, Y + Math.sin(-1.2 + k * TAU / 3) * R * 0.42]);
+    ink(0.55, 0.8); for (let k = 0; k < 3; k++) { const a = q[k], b = q[(k + 1) % 3], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy); c.beginPath(); for (let t = 0; t <= 1.0001; t += 0.01) { const w = Math.sin(t * 12 * Math.PI) * R * 0.03 * Math.sin(t * Math.PI); const x = a[0] + dx * t - dy / L * w, y = a[1] + dy * t + dx / L * w; t ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); }
+    ['#b0453a', '#3f7d58', '#34589a'].forEach((col, k) => { c.globalAlpha = 1; c.fillStyle = T.dark ? T.ink : col; circ(q[k][0], q[k][1], clamp(R * 0.02, 1.5, 3.2)); c.fill(); }); } });
+def({ id: 'uranium', name: 'Uranium-238 nucleus', one: 'a uranium nucleus', many: 'uranium nuclei', realm: 0, size: 1.48e-14, vol: true, measure: 'diameter', tint: '#9C3D2E',
+  note: '238 protons and neutrons packed into a sphere of radius about 7.4 fm (r ≈ 1.2 fm × A^⅓). Protons are tinted; each nucleon is about 1.7 fm across.',
+  draw(X, Y, s, o) { const R = o.size * s / 2, rn = 0.85e-15 * s; c.lineWidth = 1;
+    for (const [x, y, z, p] of NUC) { const px = X + x * (R - rn), py = Y + y * (R - rn); c.globalAlpha = 1; c.fillStyle = T.paper; circ(px, py, rn); c.fill(); if (p) { wash(o.tint, 0.35 + 0.2 * z); c.fill(); } c.globalAlpha = 0.35 + 0.45 * (z + 1) / 2; c.strokeStyle = T.ink; c.stroke(); } } });
+def({ id: 'hatom', name: 'Hydrogen atom', one: 'a hydrogen atom', many: 'hydrogen atoms', realm: 1, size: 1.058e-10, w: 2.7e-10, h: 2.7e-10, vol: true, measure: 'twice the Bohr radius', tint: '#2B4C86',
+  note: 'Atoms have no hard edge. The dots sample where the electron is likely to be found; the dashed ring is the Bohr radius, 52.9 pm. The nucleus, one proton, is about 60,000 times narrower than the atom.',
+  draw(X, Y, s, o) { const a0 = 5.29e-11 * s, d = clamp(a0 * 0.012, 0.8, 1.4); c.fillStyle = T.ink; c.globalAlpha = 0.55; for (const [x, y] of HCLOUD) c.fillRect(X + x * a0 - d / 2, Y + y * a0 - d / 2, d, d);
+    c.globalAlpha = 1; c.setLineDash([3, 5]); ink(0.6); circ(X, Y, a0); c.stroke(); c.setLineDash([]); c.fillStyle = T.ink; circ(X, Y, 1.2); c.fill(); } });
+def({ id: 'water', name: 'Water molecule', one: 'a water molecule', many: 'water molecules', realm: 1, size: 2.75e-10, w: 3.9e-10, h: 3.3e-10, measure: 'effective diameter', tint: '#2B4C86',
+  note: 'One oxygen and two hydrogens at 104.5°, drawn with their van der Waals radii (152 pm and 120 pm) and 95.8 pm bonds.',
+  draw(X, Y, s, o) { const b = 95.8e-12 * s, a = 52.25 * Math.PI / 180, oy = Y - 0.35e-10 * s; const hs = [[X - Math.sin(a) * b, oy + Math.cos(a) * b], [X + Math.sin(a) * b, oy + Math.cos(a) * b]];
+    for (const [x, y] of hs) { c.fillStyle = T.paper; circ(x, y, 120e-12 * s); c.fill(); sphere(x, y, 120e-12 * s, null, 0.7); }
+    c.fillStyle = T.paper; circ(X, oy, 152e-12 * s); c.fill(); sphere(X, oy, 152e-12 * s, '#9C3D2E', 0.8); } });
+def({ id: 'dna', name: 'DNA double helix', one: 'a strand of DNA', many: 'DNA strands', realm: 1, size: 2.0e-9, h: 6.8e-9, strand: true, measure: 'width', tint: '#2B4C86',
+  note: 'B-form DNA is 2 nm wide and makes one full twist every 3.4 nm, about 10.5 base pairs. Unwound, the DNA in a single human cell would stretch about 2 m.',
+  draw(X, Y, s, o, opt) { const R = 1e-9 * s, pitch = 3.4e-9 * s, bp = pitch / 10.5, y0 = Y - opt.span, y1 = Y + opt.span, off = 0.62 * TAU;
+    if (bp > 2.5) { ink(0.5, 1); c.beginPath(); for (let k = Math.floor((y0 - Y) / bp); k * bp + Y < y1; k++) { const y = Y + k * bp, t = TAU * (y - Y) / pitch; c.moveTo(X + R * 0.85 * Math.sin(t), y); c.lineTo(X + R * 0.85 * Math.sin(t + off), y); } c.stroke(); }
+    const step = Math.max(1.5, pitch / 80);
+    for (const pass of [0, 1]) for (const ph of [0, off]) { c.beginPath(); let pen = false;
+      for (let y = y0; y <= y1; y += step) { const t = TAU * (y - Y) / pitch + ph, front = Math.cos(t) > 0; if (front === !!pass) { const x = X + R * Math.sin(t); pen ? c.lineTo(x, y) : c.moveTo(x, y); pen = true; } else pen = false; }
+      ink(pass ? 1 : 0.45, pass ? Math.max(1, R * 0.16) : Math.max(1, R * 0.1)); c.lineCap = 'round'; c.stroke(); } } });
+def({ id: 'hemo', name: 'Hemoglobin', one: 'a hemoglobin molecule', many: 'hemoglobin molecules', realm: 1, size: 6.5e-9, vol: true, measure: 'diameter', tint: '#9C3D2E',
+  note: 'The oxygen-carrying protein of red blood cells: four subunits, each holding one iron-bearing heme group. One red blood cell holds about 270 million of them.',
+  draw(X, Y, s, o) { const R = o.size * s / 2; [[-.28, -.22, 11], [.28, -.24, 12], [-.26, .26, 13], [.27, .25, 14]].forEach(([dx, dy, sd], i) => { c.beginPath(); smooth(blobPts(X + dx * R, Y + dy * R, R * .52, R * .5, sd, 0.22, 16, i)); c.fillStyle = T.paper; c.globalAlpha = 1; c.fill(); wash(o.tint, i % 2 ? .18 : .3); c.fill(); ink(0.9); c.stroke(); stipple(X + dx * R, Y + dy * R, R * .45, 0.5); });
+    [[-.3, -.2], [.32, -.26], [-.24, .3], [.3, .22]].forEach(([dx, dy]) => { ink(0.9); c.beginPath(); c.ellipse(X + dx * R, Y + dy * R, R * .1, R * .05, 0.6, 0, TAU); c.stroke(); }); } });
+def({ id: 'ribo', name: 'Ribosome', one: 'a ribosome', many: 'ribosomes', realm: 1, size: 2.5e-8, h: 2.3e-8, measure: 'diameter', tint: '#5d7a54',
+  note: 'The cell’s protein factory: a large and a small subunit of RNA and protein, about 20–25 nm across. A bacterium contains tens of thousands.',
+  draw(X, Y, s, o) { const R = o.size * s / 2; c.beginPath(); smooth(blobPts(X, Y - R * .18, R * .92, R * .62, 21, .16, 20)); c.fillStyle = T.paper; c.fill(); wash(o.tint, .25); c.fill(); ink(1); c.stroke(); stipple(X, Y - R * .18, R * .7, .6);
+    c.beginPath(); smooth(blobPts(X - R * .05, Y + R * .52, R * .7, R * .34, 22, .18, 18)); c.fillStyle = T.paper; c.fill(); wash(o.tint, .12); c.fill(); ink(1); c.stroke(); stipple(X - R * .05, Y + R * .52, R * .4, .5);
+    ink(.7, 1); c.beginPath(); for (let t = -1.4; t <= 1.4; t += 0.02) { const x = X + t * R, y = Y + R * .28 + Math.sin(t * 9) * R * .03; t > -1.4 ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); } });
+def({ id: 'virus', name: 'Coronavirus', one: 'a coronavirus', many: 'coronaviruses', realm: 2, size: 1.0e-7, w: 1.4e-7, h: 1.4e-7, vol: true, measure: 'envelope diameter', tint: '#5d7a54',
+  note: 'SARS-CoV-2: an envelope 60–140 nm across (100 nm drawn), studded with spike proteins about 20 nm long. Too small to see in a light microscope.',
+  draw(X, Y, s, o) { const R = o.size * s / 2; ink(0.9, 1); const n = 30;
+    for (let k = 0; k < n; k++) { const a = k / n * TAU + hash(k, 3) * .1, ca = Math.cos(a), sa = Math.sin(a); c.beginPath(); c.moveTo(X + ca * R, Y + sa * R); c.lineTo(X + ca * R * 1.3, Y + sa * R * 1.3); c.stroke(); c.beginPath(); c.ellipse(X + ca * R * 1.34, Y + sa * R * 1.34, R * .07, R * .045, a + Math.PI / 2, 0, TAU); c.stroke(); }
+    c.fillStyle = T.paper; c.globalAlpha = 1; circ(X, Y, R); c.fill(); sphere(X, Y, R, o.tint, 0.9);
+    ink(0.55, 1); for (let k = 0; k < 16; k++) { const rr = Math.sqrt(hash(k, 7)) * R * .8, a = hash(k, 8) * TAU; circ(X + Math.cos(a) * rr, Y + Math.sin(a) * rr, R * .06); c.stroke(); } } });
+def({ id: 'light', name: 'Wavelength of green light', one: 'a wavelength of green light', many: 'wavelengths of green light', realm: 2, size: 5.5e-7, w: 1.65e-6, h: 5.0e-7, measure: 'one wavelength, λ = 550 nm', tint: '#5d7a54',
+  note: 'Visible light spans roughly 380–750 nm. Anything much smaller than about 200 nm, such as a virus, cannot be resolved by an ordinary light microscope.',
+  draw(X, Y, s, o) { const lam = o.size * s, A = 1.2e-7 * s, x0 = X - 1.5 * lam; ink(1, 1.2); c.strokeStyle = T.dark ? T.ink : '#3f6e3a'; c.beginPath(); for (let i = 0; i <= 300; i++) { const x = x0 + i / 300 * 3 * lam, y = Y - A * Math.sin(i / 100 * TAU); i ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
+    ink(0.35, 1); c.beginPath(); c.moveTo(x0, Y); c.lineTo(x0 + 3 * lam, Y); c.stroke(); if (lam > 30) dimH(x0 + lam * .25, x0 + lam * 1.25, Y - A - 14, 'λ', T.A); } });
+def({ id: 'ecoli', name: 'E. coli bacterium', one: 'an E. coli bacterium', many: 'E. coli bacteria', realm: 2, size: 2.0e-6, w: 2.0e-6, h: 0.8e-6, measure: 'length', tint: '#5d7a54',
+  note: 'A typical E. coli is a rod about 2 µm long and 0.8 µm wide. Its flagella are only about 20 nm thick but several micrometres long.',
+  draw(X, Y, s, o) { const L = o.size * s, Wd = 0.8e-6 * s; ink(0.7, 1); for (let k = 0; k < 4; k++) { c.beginPath(); const sx = X - L / 2 + L * (0.1 + 0.25 * k), sy = Y + (k % 2 ? 1 : -1) * Wd * .48; for (let t = 0; t <= 1; t += 0.01) { const x = sx - t * L * 2.2 * (0.6 + k * .1), y = sy + (k % 2 ? 1 : -1) * t * Wd * 1.2 + Math.sin(t * 2.2 * L / (2.5e-6 * s) * TAU) * 0.25e-6 * s * Math.min(1, t * 4); t ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); }
+    const path = () => { c.beginPath(); c.roundRect(X - L / 2, Y - Wd / 2, L, Wd, Wd / 2); };
+    path(); c.globalAlpha = 1; c.fillStyle = T.paper; c.fill(); wash(o.tint, .25); c.fill(); hatch(path, X - L / 2, Y - Wd / 2, X + L / 2, Y + Wd / 2, 0, Wd / 14, .12); ink(1, 1); path(); c.stroke();
+    ink(0.5, 1); c.beginPath(); for (let t = 0; t <= 1; t += .01) { const x = X - L * .3 + t * L * .6, y = Y + Math.sin(t * 17) * Wd * .12 + Math.sin(t * 5) * Wd * .08; t ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
+    ink(0.5, 0.8); c.beginPath(); for (let k = 0; k < 26; k++) { const a = k / 26 * TAU, px = X + Math.cos(a) * L / 2 * .98, py = Y + Math.sin(a) * Wd / 2 * .98; c.moveTo(px, py); c.lineTo(px + Math.cos(a) * Wd * .12, py + Math.sin(a) * Wd * .12); } c.stroke(); } });
+const rbcT = rho => Math.sqrt(Math.max(0, 1 - rho * rho)) * (0.81 + 7.83 * rho * rho - 4.39 * rho ** 4) * 1e-6; // Evans–Fung thickness
+def({ id: 'rbc', name: 'Red blood cell', one: 'a red blood cell', many: 'red blood cells', realm: 2, size: 7.8e-6, w: 7.8e-6, h: 11.8e-6, measure: 'diameter', tint: '#9C3D2E',
+  note: 'A biconcave disc about 7.8 µm across, 2.5 µm thick at the rim and under 1 µm at the centre. The profile below is drawn from the Evans–Fung equation.',
+  draw(X, Y, s, o) { const R = o.size * s / 2, cy = Y - 2e-6 * s;
+    const g = c.createRadialGradient(X, cy, 0, X, cy, R); for (let i = 0; i <= 10; i++) { const rho = i / 10; g.addColorStop(rho, hexA(o.tint, (0.1 + rbcT(rho) / 2.5e-6 * 0.38) * T.wash)); } c.fillStyle = g; circ(X, cy, R); c.fill();
+    if (R > 8) { c.lineWidth = 0.8; for (let i = 1; i < 40; i++) { const rho = i / 40, slope = Math.abs(rbcT(rho + .01) - rbcT(rho - .01)) / 0.02 / 1e-5; c.strokeStyle = T.ink; c.globalAlpha = clamp(slope * 0.5, 0, 0.55); circ(X, cy, rho * R); c.stroke(); } }
+    ink(1, 1); circ(X, cy, R); c.stroke();
+    const sy = Y + R + 0.6e-6 * s; c.beginPath(); for (let i = 0; i <= 80; i++) { const rho = -1 + i / 40; c.lineTo(X + rho * R, sy - rbcT(Math.abs(rho)) / 2 * s); } for (let i = 80; i >= 0; i--) { const rho = -1 + i / 40; c.lineTo(X + rho * R, sy + rbcT(Math.abs(rho)) / 2 * s); } c.closePath();
+    c.globalAlpha = 1; wash(o.tint, .35); c.fill(); ink(1, 1); c.stroke(); if (R > 40) note('in section', X + R + 8, sy + 4); } });
+def({ id: 'hair', name: 'Human hair', one: 'a human hair', many: 'human hairs', realm: 2, size: 7.5e-5, h: 3.2e-4, strand: true, measure: 'width', tint: '#8a6a45',
+  note: 'Human hair ranges from about 17 µm to 180 µm across; 75 µm is typical. The overlapping edges are cuticle scales, spaced 5–10 µm apart.',
+  draw(X, Y, s, o, opt) { const R = o.size * s / 2, y0 = Y - opt.span, y1 = Y + opt.span; const path = () => { c.beginPath(); c.rect(X - R, y0, 2 * R, y1 - y0); };
+    c.globalAlpha = 1; wash(o.tint, .3); path(); c.fill();
+    if (R > 3) { ink(0.45, 0.8); c.beginPath(); for (let i = 1; i < 36; i++) { const x = X - R * Math.cos(i / 36 * Math.PI); if (Math.abs(x - X) < R * 0.45) continue; c.moveTo(x, Math.max(y0, -10)); c.lineTo(x, Math.min(y1, H + 10)); } c.stroke();
+      const sp = 7e-6 * s; if (sp > 3) { ink(0.7, 0.9); c.beginPath(); const start = Math.max(y0, -sp) ; for (let y = Y + Math.floor((start - Y) / sp) * sp; y < Math.min(y1, H + sp); y += sp) { c.moveTo(X - R, y + sp * .5); c.bezierCurveTo(X - R * .4, y - sp * .1, X + R * .3, y - sp * .2, X + R, y + sp * .35); } c.stroke(); } }
+    ink(1, 1); c.beginPath(); c.moveTo(X - R, y0); c.lineTo(X - R, y1); c.moveTo(X + R, y0); c.lineTo(X + R, y1); c.stroke(); } });
+def({ id: 'egg', name: 'Human egg cell', one: 'a human egg cell', many: 'human egg cells', realm: 2, size: 1.2e-4, w: 1.5e-4, h: 1.5e-4, vol: true, measure: 'diameter of the cell', tint: '#8a6a45',
+  note: 'About 120 µm across, the largest cell in the human body and just visible to the naked eye. It sits inside a glycoprotein shell, the zona pellucida.',
+  draw(X, Y, s, o) { const R = 60e-6 * s, Rz = 75e-6 * s; c.globalAlpha = 1; wash(o.tint, .12); circ(X, Y, Rz); c.fill();
+    if (Rz > 30) { ink(.35, .7); c.beginPath(); for (let k = 0; k < 220; k++) { const a = k / 220 * TAU; c.moveTo(X + Math.cos(a) * (R + 3e-6 * s), Y + Math.sin(a) * (R + 3e-6 * s)); c.lineTo(X + Math.cos(a) * Rz, Y + Math.sin(a) * Rz); } c.stroke(); }
+    ink(1); circ(X, Y, Rz); c.stroke(); c.fillStyle = T.paper; circ(X, Y, R); c.fill(); sphere(X, Y, R, o.tint, .55);
+    ink(.9); circ(X + R * .22, Y - R * .15, 13e-6 * s); c.stroke(); c.fillStyle = T.ink; circ(X + R * .26, Y - R * .18, 3e-6 * s); c.fill(); } });
+def({ id: 'mite', name: 'Dust mite', one: 'a dust mite', many: 'dust mites', realm: 3, size: 3.0e-4, w: 3.0e-4, h: 2.6e-4, measure: 'body length', tint: '#8a6a45',
+  note: 'The house dust mite is about 0.3 mm long. Eight legs: mites are arachnids, relatives of spiders, not insects.',
+  draw(X, Y, s, o) { const L = o.size * s, rx = L * .42, ry = L * .3; ink(.9, 1); c.lineJoin = 'round';
+    for (let side of [-1, 1]) for (let k = 0; k < 4; k++) { const ax = X + (k < 2 ? .28 - k * .14 : -.1 - (k - 2) * .14) * L, ay = Y + side * ry * .8; const d = k < 2 ? 1 : -1; c.beginPath(); c.moveTo(ax, ay); c.lineTo(ax + d * L * .1, ay + side * L * .1); c.lineTo(ax + d * L * .16, ay + side * L * .2); c.lineTo(ax + d * L * .2, ay + side * L * .23); c.stroke(); }
+    c.beginPath(); c.ellipse(X - L * .02, Y, rx, ry, 0, 0, TAU); c.fillStyle = T.paper; c.globalAlpha = 1; c.fill(); wash(o.tint, .25); c.fill(); stipple(X - L * .02, Y, ry * 1.1, .5); ink(1); c.stroke();
+    c.beginPath(); c.ellipse(X + L * .44, Y, L * .07, L * .06, 0, 0, TAU); c.stroke(); ink(.6, .8); c.beginPath(); for (let k = 0; k < 14; k++) { const a = k / 14 * TAU; c.moveTo(X + Math.cos(a) * rx, Y + Math.sin(a) * ry); c.lineTo(X + Math.cos(a) * rx * 1.25, Y + Math.sin(a) * ry * 1.35); } c.stroke(); } });
+def({ id: 'sand', name: 'Grain of sand', one: 'a grain of sand', many: 'grains of sand', realm: 3, size: 5.0e-4, vol: true, measure: 'diameter', tint: '#8a6a45',
+  note: 'Geologists call a grain sand if it is between 0.0625 and 2 mm; this is a medium grain, 0.5 mm.',
+  draw(X, Y, s, o) { const R = o.size * s / 2; const pts = blobPts(X, Y, R, R * .86, 77, .22, 11, .4); const path = () => { c.beginPath(); smooth(pts); }; path(); c.globalAlpha = 1; wash(o.tint, .28); c.fill();
+    c.save(); path(); c.clip(); stipple(X, Y, R * 1.05, 1); c.restore(); ink(1); path(); c.stroke(); ink(.4, .8); c.beginPath(); c.moveTo(pts[2][0], pts[2][1]); c.lineTo(X + R * .1, Y - R * .05); c.lineTo(pts[7][0], pts[7][1]); c.moveTo(X + R * .1, Y - R * .05); c.lineTo(pts[10][0], pts[10][1]); c.stroke(); } });
+def({ id: 'ant', name: 'Ant', one: 'an ant', many: 'ants', realm: 3, size: 5.0e-3, w: 5.0e-3, h: 2.4e-3, measure: 'length', tint: '#5a3a2a',
+  note: 'A black garden ant worker (Lasius niger), about 5 mm from mandibles to gaster.',
+  draw(X, Y, s, o) { const L = o.size * s; c.save(); c.translate(X, Y + L * .02); c.scale(L, L); const lw = 1 / L; c.lineJoin = 'round'; c.lineCap = 'round';
+    c.strokeStyle = T.ink; c.lineWidth = lw * 1.2; [[.03, -1], [.11, 1], [.19, 1]].forEach(([ax, d], i) => { const kx = ax + d * .1 + (i ? 0 : -.05), fx = ax + d * .17 + (i ? 0 : -.1); c.beginPath(); c.moveTo(ax, .03); c.lineTo(kx, -.02); c.lineTo(fx, .2); c.lineTo(fx + d * .03, .22); c.stroke(); });
+    const parts = [() => c.ellipse(-.3, .02, .2, .14, -.12, 0, TAU), () => c.ellipse(-.07, -.01, .025, .055, .1, 0, TAU), () => { c.moveTo(-.04, .02); c.bezierCurveTo(-.02, -.06, .08, -.09, .14, -.06); c.bezierCurveTo(.2, -.04, .24, -.03, .25, .01); c.bezierCurveTo(.2, .05, .02, .05, -.04, .02); }, () => c.ellipse(.33, -.03, .095, .08, .15, 0, TAU)];
+    for (const p of parts) { c.beginPath(); p(); c.globalAlpha = 1; c.fillStyle = T.paper; c.fill(); wash(o.tint, .38); c.fill(); c.lineWidth = lw; c.strokeStyle = T.ink; c.stroke(); }
+    c.save(); c.beginPath(); c.ellipse(-.3, .02, .2, .14, -.12, 0, TAU); c.clip(); c.lineWidth = lw * .7; c.globalAlpha = .4; c.beginPath(); for (let k = 0; k < 5; k++) { c.moveTo(-.5 + k * .08, -.2); c.quadraticCurveTo(-.46 + k * .08, .02, -.5 + k * .08, .2); } c.stroke(); c.restore();
+    c.globalAlpha = 1; c.lineWidth = lw; c.beginPath(); c.moveTo(.38, -.09); c.lineTo(.33, -.26); c.lineTo(.5, -.31); c.stroke(); c.beginPath(); c.moveTo(.41, 0); c.quadraticCurveTo(.48, .02, .46, .05); c.stroke();
+    c.fillStyle = T.ink; c.beginPath(); c.ellipse(.35, -.05, .022, .03, 0, 0, TAU); c.fill(); c.restore(); } });
+def({ id: 'card', name: 'Credit card', one: 'a credit card', many: 'credit cards', realm: 3, size: 0.0856, w: 0.0856, h: 0.05398, measure: 'width', tint: '#2B4C86',
+  note: 'ISO/IEC 7810 ID-1, the format of nearly every bank card and ID card: 85.60 × 53.98 mm with 3.18 mm corners.',
+  draw(X, Y, s, o) { const w = o.w * s, h = o.h * s, x0 = X - w / 2, y0 = Y - h / 2; const path = () => { c.beginPath(); c.roundRect(x0, y0, w, h, 3.18e-3 * s); };
+    c.globalAlpha = 1; wash(o.tint, .16); path(); c.fill(); hatch(path, x0, y0, x0 + w, y0 + h, -0.6, 2.2e-3 * s, .08); ink(1); path(); c.stroke();
+    const cx = x0 + 10.2e-3 * s, cy = y0 + 19.2e-3 * s, cw = 11.4e-3 * s, ch = 9e-3 * s; c.beginPath(); c.roundRect(cx, cy, cw, ch, 1.2e-3 * s); wash('#8a6a45', .4); c.fill(); ink(.9); c.stroke(); c.beginPath(); c.moveTo(cx, cy + ch / 3); c.lineTo(cx + cw, cy + ch / 3); c.moveTo(cx, cy + ch * 2 / 3); c.lineTo(cx + cw, cy + ch * 2 / 3); c.moveTo(cx + cw / 2, cy); c.lineTo(cx + cw / 2, cy + ch); c.stroke();
+    if (h > 90) { c.globalAlpha = .75; c.fillStyle = T.ink; c.font = `${3.6e-3 * s}px ${MONO}`; c.fillText('4000 1234 5678 9010', x0 + 7e-3 * s, y0 + 38e-3 * s); } } });
+const HUMAN = [[0.028, 0.15], [0.07, 0.162], [0.105, 0.178], [0.1, 0.26], [0.088, 0.35], [0.082, 0.41], [0.1, 0.5], [0.094, 0.62], [0.068, 0.74], [0.074, 0.83], [0.046, 0.955], [0.075, 0.995], [0.012, 0.998], [0.02, 0.94], [0.03, 0.82], [0.026, 0.74], [0.02, 0.6], [0.001, 0.53]];
+const ARM = [[0.108, 0.18], [0.132, 0.21], [0.137, 0.3], [0.142, 0.365], [0.148, 0.45], [0.145, 0.5], [0.152, 0.555], [0.136, 0.585], [0.124, 0.55], [0.122, 0.48], [0.117, 0.37], [0.11, 0.285], [0.1, 0.22]];
+def({ id: 'human', name: 'Adult human', one: 'an adult human', many: 'people', realm: 4, size: 1.7, w: 0.52, h: 1.7, dim: 'h', measure: 'standing height', tint: '#8a6a45',
+  note: 'Average adult height worldwide is roughly 1.6–1.75 m depending on sex and country; 1.7 m is used here.',
+  draw(X, Y, s, o) { const Hh = o.size * s, top = Y - Hh / 2; const P = (x, y, m) => [X + m * x * Hh, top + y * Hh];
+    const body = [...HUMAN.map(([x, y]) => P(x, y, 1)), ...HUMAN.slice().reverse().map(([x, y]) => P(x, y, -1))];
+    const draw = pts => { c.beginPath(); smooth(pts); c.globalAlpha = 1; c.fillStyle = T.paper; c.fill(); wash(o.tint, .22); c.fill(); ink(1, 1); c.stroke(); };
+    draw(ARM.map(([x, y]) => P(x, y, 1))); draw(ARM.map(([x, y]) => P(x, y, -1))); draw(body);
+    c.beginPath(); c.ellipse(X, top + .066 * Hh, .05 * Hh, .066 * Hh, 0, 0, TAU); c.fillStyle = T.paper; c.fill(); wash(o.tint, .22); c.fill(); ink(1); c.stroke();
+    hatch(() => { c.beginPath(); smooth(body); }, X, top, X + .16 * Hh, top + Hh, 1.2, Math.max(2.2, Hh * .012), .18); } });
+const WHALE = [[1, 0], [.97, -.035], [.9, -.056], [.8, -.066], [.6, -.066], [.4, -.058], [.27, -.05], [.25, -.063], [.235, -.05], [.15, -.03], [.07, -.012], [.03, -.03], [.0, -.06], [.012, -.02], [.03, 0], [.012, .02], [0, .06], [.03, .03], [.07, .012], [.15, .03], [.35, .06], [.6, .07], [.8, .062], [.92, .042], [.98, .02]];
+def({ id: 'whale', name: 'Blue whale', one: 'a blue whale', many: 'blue whales', realm: 4, size: 30, w: 30, h: 4.2, measure: 'length', tint: '#2B4C86',
+  note: 'The largest animal known to have lived. Adults usually measure 24–30 m and can weigh over 150 tonnes.',
+  draw(X, Y, s, o) { const L = o.size * s, x0 = X - L / 2; const P = ([x, y]) => [x0 + x * L, Y + y * L]; const pts = WHALE.map(P); const path = () => { c.beginPath(); smooth(pts); };
+    c.globalAlpha = 1; wash(o.tint, .22); path(); c.fill(); hatch(path, x0, Y - .07 * L, x0 + L, Y + .01 * L, 0, Math.max(2, L * .004), .22); ink(1); path(); c.stroke();
+    ink(.5, .8); c.beginPath(); for (let k = 0; k < 7; k++) { const yy = .03 + k * .006; c.moveTo(x0 + .95 * L, Y + (yy - .005) * L); c.quadraticCurveTo(x0 + .78 * L, Y + (yy + .02) * L, x0 + .56 * L, Y + (yy + .018) * L); } c.stroke();
+    ink(1); c.beginPath(); smooth([P([.74, .05]), P([.7, .085]), P([.64, .118]), P([.665, .08])]); c.stroke(); c.fillStyle = T.ink; circ(x0 + .855 * L, Y - .012 * L, Math.max(1, L * .003)); c.fill(); } });
+def({ id: 'jet', name: 'Boeing 747', one: 'a Boeing 747', many: 'Boeing 747s', realm: 4, size: 70.6, w: 70.6, h: 19.4, measure: 'length', tint: '#5B6474',
+  note: 'The 747-400 is 70.6 m long with a 64.4 m wingspan, and stands 19.4 m tall at the tail.',
+  draw(X, Y, s, o) { const L = o.size * s, x0 = X - L / 2, gy = Y + o.h * s / 2, cy = gy - .1 * L; const P = ([x, y]) => [x0 + x * L, cy + y * L];
+    const fus = [[0, -.03], [.08, -.046], [.6, -.046], [.68, -.058], [.74, -.078], [.82, -.085], [.9, -.078], [.955, -.058], [.985, -.03], [1, -.002], [.99, .022], [.96, .038], [.9, .046], [.2, .046], [.1, .04], [.03, .018], [0, .002]].map(P);
+    const fin = [[.2, -.045], [.075, -.175], [.025, -.175], [.035, -.04]].map(P);
+    c.globalAlpha = 1; for (const shape of [fin, fus]) { c.beginPath(); shape.forEach((p, i) => i ? c.lineTo(...p) : c.moveTo(...p)); c.closePath(); c.fillStyle = T.paper; c.fill(); wash(o.tint, .18); c.fill(); ink(1); c.stroke(); }
+    hatch(() => { c.beginPath(); fus.forEach((p, i) => i ? c.lineTo(...p) : c.moveTo(...p)); }, x0, cy + .01 * L, x0 + L, cy + .05 * L, 0, Math.max(2, L * .005), .2);
+    for (const ex of [.45, .6]) { const [ex0, ey0] = P([ex, .055]); c.beginPath(); c.roundRect(ex0, ey0, .075 * L, .03 * L, .012 * L); c.fillStyle = T.paper; c.fill(); wash(o.tint, .25); c.fill(); ink(1); c.stroke(); ink(1); c.beginPath(); c.moveTo(ex0 + .03 * L, ey0); c.lineTo(ex0 + .045 * L, ey0 - .012 * L); c.stroke(); }
+    ink(1); c.beginPath(); c.moveTo(...P([.35, .03])); c.lineTo(...P([.62, .02])); c.lineTo(...P([.64, .03])); c.lineTo(...P([.35, .042])); c.closePath(); c.stroke(); c.beginPath(); c.moveTo(...P([.01, -.012])); c.lineTo(...P([.13, -.018])); c.stroke();
+    for (const wx of [.5, .88]) { const [wx0] = P([wx, 0]); ink(1); c.beginPath(); c.moveTo(wx0, cy + .046 * L); c.lineTo(wx0, gy - .012 * L); c.stroke(); circ(wx0, gy - .012 * L, .011 * L); c.stroke(); }
+    if (L > 300) { c.fillStyle = T.ink; c.globalAlpha = .6; for (let x = .12; x < .93; x += .012) { const [px, py] = P([x, -.018]); c.fillRect(px, py, L * .004, L * .005); } for (let x = .74; x < .9; x += .014) { const [px, py] = P([x, -.066]); c.fillRect(px, py, L * .004, L * .005); } } } });
+def({ id: 'pitch', name: 'Football pitch', one: 'a football pitch', many: 'football pitches', realm: 4, size: 105, w: 105, h: 68, measure: 'length (plan view)', tint: '#5d7a54',
+  note: 'A standard pitch seen from above, 105 × 68 m, with regulation markings: 9.15 m centre circle, 16.5 m penalty area, 11 m penalty spot.',
+  draw(X, Y, s, o) { const w = o.w * s, h = o.h * s, x0 = X - w / 2, y0 = Y - h / 2, m = v => v * s; c.globalAlpha = 1;
+    for (let k = 0; k < 14; k++) { wash(o.tint, k % 2 ? .16 : .26); c.fillRect(x0 + k * w / 14, y0, w / 14 + .5, h); }
+    ink(1, 1); c.strokeRect(x0, y0, w, h); c.beginPath(); c.moveTo(X, y0); c.lineTo(X, y0 + h); c.stroke(); circ(X, Y, m(9.15)); c.stroke();
+    for (const d of [1, -1]) { const gx = d > 0 ? x0 : x0 + w; c.strokeRect(d > 0 ? gx : gx - m(16.5), Y - m(20.16), m(16.5), m(40.32)); c.strokeRect(d > 0 ? gx : gx - m(5.5), Y - m(9.16), m(5.5), m(18.32)); c.fillStyle = T.ink; circ(gx + d * m(11), Y, Math.max(1, m(.3))); c.fill();
+      c.beginPath(); c.arc(gx + d * m(11), Y, m(9.15), d > 0 ? -0.9273 : Math.PI - 0.9273, d > 0 ? 0.9273 : Math.PI + 0.9273); c.stroke(); c.strokeRect(d > 0 ? gx - m(2) : gx, Y - m(3.66), m(2), m(7.32)); } } });
+const EIFW = h => 62.5 * Math.exp(-h / 78) + 2.2;
+def({ id: 'eiffel', name: 'Eiffel Tower', one: 'the Eiffel Tower', many: 'Eiffel Towers', realm: 4, size: 330, w: 125, h: 330, dim: 'h', measure: 'height to the antenna tip', tint: '#5a3a2a',
+  note: '330 m to the tip of its antennas since 2022; the base is a 125 m square. The first and second platforms sit at 57 m and 115 m.',
+  draw(X, Y, s, o) { const gy = Y + o.h * s / 2, px = h => [EIFW(h) * s, gy - h * s];
+    const outline = () => { c.beginPath(); c.moveTo(X - EIFW(0) * s, gy); for (let h = 0; h <= 300; h += 6) { const [w, y] = px(h); c.lineTo(X - w, y); } for (let h = 300; h >= 0; h -= 6) { const [w, y] = px(h); c.lineTo(X + w, y); } c.closePath(); };
+    const arch = () => { c.moveTo(X - 38 * s, gy); c.quadraticCurveTo(X, gy - 62 * s, X + 38 * s, gy); c.closePath(); };
+    c.save(); outline(); arch(); c.clip('evenodd'); wash(o.tint, .14); c.fillRect(X - 70 * s, gy - 330 * s, 140 * s, 330 * s); c.restore();
+    const lat = () => { outline(); arch(); }; c.save(); lat(); c.clip('evenodd'); const g = Math.max(2.2, 7 * s); ink(.4, .7); c.beginPath(); for (let d = -400; d < 400; d += 7) { c.moveTo(X + (d - 70) * s, gy); c.lineTo(X + (d + 260) * s, gy - 330 * s); c.moveTo(X - (d - 70) * s, gy); c.lineTo(X - (d + 260) * s, gy - 330 * s); } if (g > 2.2) c.stroke(); c.restore();
+    ink(1); lat(); c.stroke(); ink(1); c.beginPath(); c.moveTo(X, gy - 300 * s); c.lineTo(X, gy - 330 * s); c.stroke();
+    for (const [hh, ex] of [[57, 6], [115, 4], [276, 3]]) { const w = EIFW(hh) * s + ex * s; c.fillStyle = T.paper; c.globalAlpha = 1; c.fillRect(X - w, gy - hh * s - 3 * s, 2 * w, 5 * s); ink(1); c.strokeRect(X - w, gy - hh * s - 3 * s, 2 * w, 5 * s); } } });
+const BURJ = [[0, 42], [150, 38], [240, 33], [330, 28], [400, 22], [460, 17], [520, 12], [570, 8.5], [610, 5.5], [680, 3], [760, 1.4], [828, 0.4]];
+def({ id: 'burj', name: 'Burj Khalifa', one: 'the Burj Khalifa', many: 'Burj Khalifas', realm: 4, size: 828, w: 90, h: 828, dim: 'h', measure: 'height', tint: '#5B6474',
+  note: 'Burj Khalifa in Dubai: 828 m, the tallest building in the world since 2010. Its setbacks spiral upward in 27 terraces.',
+  draw(X, Y, s, o) { const gy = Y + o.h * s / 2; const path = () => { c.beginPath(); c.moveTo(X - BURJ[0][1] * s, gy); for (let i = 0; i < BURJ.length; i++) { const [h, w] = BURJ[i], nh = i + 1 < BURJ.length ? BURJ[i + 1][0] : h; c.lineTo(X - w * s, gy - nh * s); if (i + 1 < BURJ.length) c.lineTo(X - BURJ[i + 1][1] * s, gy - nh * s); } for (let i = BURJ.length - 1; i >= 0; i--) { const [h, w] = BURJ[i], nh = i + 1 < BURJ.length ? BURJ[i + 1][0] : h; if (i + 1 < BURJ.length) c.lineTo(X + BURJ[i + 1][1] * s, gy - nh * s); c.lineTo(X + w * s, gy - nh * s); c.lineTo(X + w * s, gy - h * s); } c.closePath(); };
+    c.globalAlpha = 1; wash(o.tint, .18); path(); c.fill(); hatch(path, X - 45 * s, gy - 828 * s, X + 45 * s, gy, Math.PI / 2, Math.max(2, 3 * s), .3); ink(1); path(); c.stroke(); } });
+const EVER = [[-12, 0], [-12, 3.6], [-9.5, 4.5], [-7.5, 5.3], [-5.8, 6.3], [-4.2, 7.3], [-3.3, 7.861], [-2.5, 7.3], [-1.5, 7.9], [-.6, 8.5], [0, 8.849], [.6, 8.4], [1.2, 8.1], [2, 8.516], [2.9, 7.8], [4.3, 6.8], [6, 5.8], [8, 5.2], [10, 4.6], [12, 3.6], [12, 0]];
+def({ id: 'everest', name: 'Mount Everest', one: 'Mount Everest', many: 'Everests', realm: 5, size: 8849, w: 24000, h: 8849, dim: 'h', measure: 'height above sea level', tint: '#5B6474',
+  note: '8,849 m above sea level (2020 survey), seen here from the south with Nuptse to the left and Lhotse to the right. Heights are to scale; the ridge is schematic.',
+  draw(X, Y, s, o) { const gy = Y + o.h * s / 2; const pts = EVER.map(([x, h]) => [X + x * 1000 * s, gy - h * 1000 * s]); const path = () => { c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(...p) : c.moveTo(...p)); c.closePath(); };
+    c.globalAlpha = 1; wash(o.tint, .12); path(); c.fill();
+    hatch(() => { path(); c.rect(X - 13000 * s, gy - 6000 * s, 26000 * s, 6000 * s); }, X - 12000 * s, gy - 6000 * s, X + 12000 * s, gy, 1.05, Math.max(2.4, 160 * s), .35);
+    c.save(); path(); c.clip(); c.beginPath(); c.rect(X - 13000 * s, gy - 6000 * s, 26000 * s, 6000 * s); c.clip(); c.restore();
+    hatch(path, X - 12000 * s, gy - 6000 * s, X + 12000 * s, gy, 0, Math.max(2.4, 260 * s), .18); ink(1); path(); c.stroke();
+    c.setLineDash([4, 4]); ink(.6); c.beginPath(); c.moveTo(X - 12500 * s, gy); c.lineTo(X + 12500 * s, gy); c.stroke(); c.setLineDash([]); if (s * 8849 > 120) note('sea level', X - 12400 * s, gy - 6); } });
+const MARIA = [[-.35, -.35, .28, .22], [.12, -.3, .14, .12], [.28, -.08, .16, .14], [.55, -.18, .1, .09], [-.5, .05, .22, .35], [-.2, .28, .15, .1], [.15, .3, .1, .08]];
+def({ id: 'moon', name: 'The Moon', one: 'the Moon', many: 'Moons', realm: 5, size: 3.4748e6, vol: true, measure: 'mean diameter', tint: '#5B6474',
+  note: '3,474.8 km across, about 27% of Earth’s diameter. The dark patches are maria, ancient lava plains, as seen from Earth.',
+  draw(X, Y, s, o) { const R = o.size * s / 2; c.globalAlpha = 1; wash(o.tint, .15); circ(X, Y, R); c.fill(); c.save(); circ(X, Y, R); c.clip(); MARIA.forEach(([x, y, rx, ry], i) => { c.beginPath(); smooth(blobPts(X + x * R, Y + y * R, rx * R, ry * R, 40 + i, .3, 14)); wash(o.tint, .35); c.fill(); }); c.restore();
+    sphere(X, Y, R, null, .8); ink(.5); circ(X - .12 * R, Y + .62 * R, .05 * R); c.stroke(); } });
+def({ id: 'earth', name: 'Earth', one: 'Earth', many: 'Earths', realm: 5, size: 1.2742e7, vol: true, measure: 'mean diameter', tint: '#2B4C86',
+  note: 'Mean diameter 12,742 km. Continents are drawn in orthographic projection, centred on Africa and Europe, with a 30° graticule.',
+  draw(X, Y, s, o) { const R = o.size * s / 2, l0 = 18, p0 = 18; c.globalAlpha = 1; wash(o.tint, .2); circ(X, Y, R); c.fill();
+    if (R > 6) { c.save(); circ(X, Y, R); c.clip();
+      for (const poly of CONT) { c.beginPath(); poly.forEach(([lo, la], i) => { let [x, y, z] = ortho(lo, la, l0, p0); if (z < 0) { const n = Math.hypot(x, y) || 1; x /= n; y /= n; } i ? c.lineTo(X + x * R, Y - y * R) : c.moveTo(X + x * R, Y - y * R); }); c.closePath(); c.fillStyle = T.paper; c.fill(); wash('#5d7a54', .3); c.fill(); ink(.9, .9); c.stroke(); }
+      ink(.22, .7); c.beginPath(); for (let lo = -180; lo < 180; lo += 30) { let pen = false; for (let la = -90; la <= 90; la += 3) { const [x, y, z] = ortho(lo, la, l0, p0); if (z > 0) { pen ? c.lineTo(X + x * R, Y - y * R) : c.moveTo(X + x * R, Y - y * R); pen = true; } else pen = false; } }
+      for (let la = -60; la <= 60; la += 30) { let pen = false; for (let lo = -180; lo <= 180; lo += 3) { const [x, y, z] = ortho(lo, la, l0, p0); if (z > 0) { pen ? c.lineTo(X + x * R, Y - y * R) : c.moveTo(X + x * R, Y - y * R); pen = true; } else pen = false; } } c.stroke(); c.restore(); }
+    sphere(X, Y, R, null, .7); } });
+def({ id: 'jupiter', name: 'Jupiter', one: 'Jupiter', many: 'Jupiters', realm: 5, size: 1.3982e8, h: 1.3371e8, vol: true, measure: 'equatorial diameter', tint: '#8a6a45',
+  note: '139,820 km at the equator but 133,708 km pole to pole: its fast rotation flattens it. The Great Red Spot, about 16,000 km wide, is larger than Earth.',
+  draw(X, Y, s, o) { const R = o.size * s / 2, Rp = o.h * s / 2; const path = () => { c.beginPath(); c.ellipse(X, Y, R, Rp, 0, 0, TAU); }; c.globalAlpha = 1; wash(o.tint, .14); path(); c.fill();
+    c.save(); path(); c.clip(); const bands = [[-.62, -.5], [-.38, -.24], [-.12, -.03], [.08, .2], [.3, .42], [.56, .66]]; for (const [a, b] of bands) { const bp = () => { c.beginPath(); c.rect(X - R, Y + a * Rp, 2 * R, (b - a) * Rp); }; wash(o.tint, .3); bp(); c.fill(); hatch(bp, X - R, Y + a * Rp, X + R, Y + b * Rp, 0, Math.max(2, R * .02), .25); }
+    c.beginPath(); c.ellipse(X + .3 * R, Y + .37 * Rp, .117 * R, .065 * R, 0, 0, TAU); wash('#9C3D2E', .5); c.fill(); ink(.9); c.stroke(); c.restore();
+    c.save(); path(); c.clip(); c.translate(X, Y); c.scale(1, Rp / R); stipple(0, 0, R, .7); c.restore(); ink(1); path(); c.stroke(); } });
+def({ id: 'earthmoon', name: 'Earth–Moon distance', one: 'the Earth–Moon distance', many: 'Earth–Moon distances', realm: 5, size: 3.844e8, w: 3.93e8, h: 1.3e7, measure: 'mean centre-to-centre distance', tint: '#2B4C86',
+  note: 'The Moon orbits at an average 384,400 km, about 30 Earth diameters. Every other planet in the Solar System would fit in the gap between them.',
+  draw(X, Y, s, o) { const x0 = X - o.w * s / 2, ex = x0 + 6.371e6 * s, mx = ex + o.size * s; c.setLineDash([2, 5]); ink(.6); c.beginPath(); c.moveTo(ex, Y); c.lineTo(mx, Y); c.stroke(); c.setLineDash([]);
+    const re = Math.max(1.5, 6.371e6 * s), rm = Math.max(1, 1.737e6 * s); c.fillStyle = T.paper; circ(ex, Y, re); c.fill(); sphere(ex, Y, re, '#2B4C86', .7); c.fillStyle = T.paper; circ(mx, Y, rm); c.fill(); sphere(mx, Y, rm, '#5B6474', .7);
+    if (o.size * s > 200) { note('Earth', ex, Y - re - 10, 'center'); note('Moon', mx, Y - rm - 10, 'center'); } } });
+def({ id: 'sun', name: 'The Sun', one: 'the Sun', many: 'Suns', realm: 5, size: 1.3927e9, vol: true, measure: 'diameter', tint: '#b07a2a',
+  note: '1,392,700 km across, 109 times Earth’s diameter. The edge looks darker because we see cooler, higher gas there (limb darkening).',
+  draw(X, Y, s, o) { const R = o.size * s / 2; const g = c.createRadialGradient(X, Y, 0, X, Y, R); g.addColorStop(0, hexA(o.tint, .12 * T.wash)); g.addColorStop(1, hexA(o.tint, .38 * T.wash)); c.globalAlpha = 1; c.fillStyle = g; circ(X, Y, R); c.fill();
+    stipple(X, Y, R, .9, LIMB); ink(1); circ(X, Y, R); c.stroke(); c.fillStyle = T.ink; [[.3, -.2, .025], [.34, -.16, .015], [-.25, .35, .02]].forEach(([x, y, r]) => { circ(X + x * R, Y + y * R, r * R); c.fill(); }); } });
+def({ id: 'orbit', name: 'Earth’s orbit', one: 'Earth’s orbit', many: 'Earth orbits', realm: 6, size: 2 * AU, measure: 'diameter, 2 AU', tint: '#b07a2a',
+  note: 'Earth’s orbit is 2 AU, about 300 million km, across. At this scale the Sun is barely a dot and Earth is invisible; it is shown as a marker. Venus and Mars orbits are dashed.',
+  draw(X, Y, s, o) { const R = AU * s; c.setLineDash([2, 4]); ink(.45); circ(X, Y, .723 * R); c.stroke(); circ(X, Y, 1.524 * R); c.stroke(); c.setLineDash([]); ink(1); circ(X, Y, R); c.stroke();
+    c.fillStyle = T.ink; circ(X, Y, Math.max(1.5, 6.96e8 * s)); c.fill(); const a = -0.7; c.globalAlpha = 1; c.fillStyle = T.paper; circ(X + Math.cos(a) * R, Y + Math.sin(a) * R, 3.5); c.fill(); c.strokeStyle = T.ink; c.stroke(); if (R > 80) note('Earth', X + Math.cos(a) * R + 8, Y + Math.sin(a) * R - 6); } });
+def({ id: 'betel', name: 'Betelgeuse', one: 'Betelgeuse', many: 'Betelgeuses', realm: 6, size: 1.06e12, w: 1.4e12, h: 1.4e12, vol: true, measure: 'diameter (≈ 760 × the Sun)', tint: '#9C3D2E',
+  note: 'A red supergiant in Orion. Its size is uncertain, roughly 700–1,000 times the Sun’s diameter (dashed rings); about 1.06 billion km is shown. Placed at the Sun, it would reach past the orbit of Mars.',
+  draw(X, Y, s, o) { const R = o.size * s / 2; c.setLineDash([3, 5]); ink(.5); circ(X, Y, R * 1000 / 760); c.stroke(); circ(X, Y, R * 700 / 760); c.stroke(); c.setLineDash([]);
+    const g = c.createRadialGradient(X, Y, 0, X, Y, R); g.addColorStop(0, hexA(o.tint, .14 * T.wash)); g.addColorStop(1, hexA(o.tint, .42 * T.wash)); c.globalAlpha = 1; c.fillStyle = g; circ(X, Y, R); c.fill();
+    c.save(); circ(X, Y, R); c.clip(); for (let k = 0; k < 9; k++) { c.beginPath(); smooth(blobPts(X + (hash(k, 1) - .5) * R * 1.2, Y + (hash(k, 2) - .5) * R * 1.2, R * (.2 + .2 * hash(k, 3)), R * (.18 + .2 * hash(k, 4)), 60 + k, .3, 12)); wash(o.tint, .18); c.fill(); } c.restore();
+    stipple(X, Y, R, .8, LIMB); ink(1); circ(X, Y, R); c.stroke(); } });
+const PLANETS = [['Mercury', .387], ['Venus', .723], ['Earth', 1], ['Mars', 1.524], ['Jupiter', 5.203], ['Saturn', 9.537], ['Uranus', 19.19], ['Neptune', 30.07]];
+def({ id: 'solar', name: 'The Solar System', one: 'the Solar System', many: 'Solar Systems', realm: 6, size: 2 * 30.07 * AU, measure: 'diameter of Neptune’s orbit', tint: '#b07a2a',
+  note: 'The eight planets out to Neptune, 60 AU across. Orbits are drawn as circles at their true average distances; the planets are markers. The asteroid belt lies between Mars and Jupiter.',
+  draw(X, Y, s, o) { const au = AU * s; c.fillStyle = T.ink; c.globalAlpha = .35; const r = rng(3); for (let i = 0; i < 700; i++) { const rr = (2.2 + r() * 1.1) * au, a = r() * TAU; c.fillRect(X + Math.cos(a) * rr, Y + Math.sin(a) * rr, 1, 1); }
+    PLANETS.forEach(([n, a], i) => { const rr = a * au; if (rr < 2) return; ink(i === 2 ? .9 : .6, 1); circ(X, Y, rr); c.stroke(); const th = -0.5 + i * 2.2; const px = X + Math.cos(th) * rr, py = Y + Math.sin(th) * rr; c.globalAlpha = 1; c.fillStyle = T.paper; circ(px, py, 3); c.fill(); ink(1); c.stroke(); if (rr > 40) note(n, px + 7, py - 5); });
+    c.fillStyle = T.ink; circ(X, Y, 2); c.fill(); } });
+def({ id: 'proxima', name: 'Distance to Proxima Centauri', one: 'the distance to the nearest star', many: 'Proxima distances', realm: 6, size: 4.011e16, w: 4.4e16, h: 3.4e16, measure: '4.24 light-years', tint: '#9C3D2E',
+  note: 'Proxima Centauri, the nearest star, is 4.24 light-years away; its light takes over four years to reach us. The halo around the Sun is the estimated extent of the Oort cloud of comets.',
+  draw(X, Y, s, o) { const sx = X - o.w * s / 2 + 1.6 * LY * s * 0.25, px = sx + o.size * s; const r = rng(8); c.fillStyle = T.ink; c.globalAlpha = .28; for (let i = 0; i < 900; i++) { const rr = Math.pow(r(), .6) * 1.6 * LY * s, a = r() * TAU; c.fillRect(sx + Math.cos(a) * rr, Y + Math.sin(a) * rr, 1, 1); }
+    c.globalAlpha = 1; c.setLineDash([2, 5]); ink(.6); c.beginPath(); c.moveTo(sx, Y); c.lineTo(px, Y); c.stroke(); c.setLineDash([]); c.fillStyle = T.ink; circ(sx, Y, 2.5); c.fill(); circ(px, Y, 2.5); c.fill(); circ(px + .18 * LY * s, Y - .08 * LY * s, 2); c.fill();
+    if (o.size * s > 160) { note('Sun', sx, Y - 12, 'center'); note('Proxima', px, Y - 12, 'center'); note('α Cen A/B', px + .18 * LY * s + 6, Y - .08 * LY * s + 14); note('Oort cloud (estimated)', sx, Y + 1.6 * LY * s + 16, 'center'); } } });
+function spiral(X, Y, D, tilt, rot, a = 1) { const cr = Math.cos(rot), sr = Math.sin(rot), d = clamp(D * 0.0022, 0.8, 1.6); c.fillStyle = T.ink; const al = [0.5, 0.55, 0.6, 0.35, 0.18];
+  for (const [x, y, t] of MW) { const lx = x, ly = y * tilt, px = X + (lx * cr - ly * sr) * D, py = Y + (lx * sr + ly * cr) * D; if (px < -2 || px > W + 2 || py < -2 || py > H + 2) continue; c.globalAlpha = al[t] * a; c.fillRect(px - d / 2, py - d / 2, d, d); } c.globalAlpha = 1; }
+def({ id: 'mw', name: 'The Milky Way', one: 'the Milky Way', many: 'Milky Ways', realm: 7, size: 100000 * LY, measure: 'stellar disk diameter', tint: '#2B4C86',
+  note: 'A barred spiral of 100–400 billion stars. Its stellar disk is about 100,000 light-years across, and the Sun sits some 26,000 light-years from the centre.',
+  draw(X, Y, s, o) { const D = o.size * s; spiral(X, Y, D, 1, 0); const sx = X - .26 * D, sy = Y + .02 * D; c.globalAlpha = 1; ink(1); circ(sx, sy, 4); c.stroke(); c.fillStyle = T.ink; circ(sx, sy, 1); c.fill(); if (D > 160) note('Sun', sx - 8, sy - 8, 'right'); } });
+def({ id: 'm31', name: 'Andromeda Galaxy', one: 'the Andromeda Galaxy', many: 'Andromeda galaxies', realm: 7, size: 152000 * LY, h: 50000 * LY, measure: 'disk diameter', tint: '#2B4C86',
+  note: 'Our nearest large neighbour, about 150,000 light-years across (estimates range up to 220,000), tilted 77° to our line of sight. It lies 2.5 million light-years away.',
+  draw(X, Y, s, o) { const D = o.size * s; spiral(X, Y, D, .24, -.5); c.fillStyle = T.ink; c.globalAlpha = .6; circ(X + .08 * D, Y + .05 * D, Math.max(1, D * .012)); c.fill(); circ(X - .2 * D, Y - .18 * D, Math.max(1, D * .016)); c.fill(); c.globalAlpha = 1; } });
+def({ id: 'lg', name: 'The Local Group', one: 'the Local Group', many: 'Local Groups', realm: 7, size: 1e7 * LY, measure: 'approximate diameter', tint: '#2B4C86',
+  note: 'The Milky Way, Andromeda, Triangulum and dozens of dwarf galaxies, bound together within about 10 million light-years. Galaxies are drawn larger than true size so they remain visible.',
+  draw(X, Y, s, o) { const R = o.size * s / 2, sep = 2.54e6 * LY * s; c.setLineDash([3, 6]); ink(.5); c.beginPath(); smooth(blobPts(X, Y, R, R * .9, 5, .12, 18)); c.stroke(); c.setLineDash([]);
+    const mw = [X - sep * .45, Y + sep * .1], m31 = [X + sep * .55, Y - sep * .05], m33 = [m31[0] + .8e6 * LY * s * .7, m31[1] + .8e6 * LY * s * .6];
+    const r = rng(17); c.fillStyle = T.ink; for (let i = 0; i < 60; i++) { const host = i % 3 ? (i % 2 ? mw : m31) : [X, Y]; const rr = (i % 3 ? .15 : .7) * R * Math.sqrt(r()), a = r() * TAU; c.globalAlpha = .5; circ(host[0] + Math.cos(a) * rr, host[1] + Math.sin(a) * rr, 1.2); c.fill(); }
+    c.globalAlpha = 1; spiral(mw[0], mw[1], Math.max(8, 1e5 * LY * s * 3), 1, 0, .9); spiral(m31[0], m31[1], Math.max(12, 1.52e5 * LY * s * 3), .24, -.5, .9); spiral(m33[0], m33[1], Math.max(6, 6e4 * LY * s * 3), .7, .4, .7);
+    if (R > 120) { note('Milky Way', mw[0], mw[1] + 22, 'center'); note('Andromeda', m31[0], m31[1] + 22, 'center'); note('Triangulum', m33[0], m33[1] + 16, 'center'); } } });
+def({ id: 'lani', name: 'Laniakea Supercluster', one: 'the Laniakea Supercluster', many: 'Laniakeas', realm: 7, size: 5.2e8 * LY, measure: 'approximate diameter', tint: '#2B4C86',
+  note: 'Our home supercluster, about 520 million light-years across and holding some 100,000 galaxies. The lines trace how galaxies flow toward its gravitational centre, the Great Attractor.',
+  draw(X, Y, s, o) { const R = o.size * s / 2; ink(.4, .8); for (const L of LANI) { c.beginPath(); L.forEach(([x, y], i) => i ? c.lineTo(X + x * R, Y + y * R) : c.moveTo(X + x * R, Y + y * R)); c.stroke(); }
+    c.fillStyle = T.ink; c.globalAlpha = .6; for (const L of LANI) for (let i = 0; i < L.length; i += 4) { c.fillRect(X + L[i][0] * R, Y + L[i][1] * R, 1.3, 1.3); } c.globalAlpha = 1;
+    c.setLineDash([3, 6]); ink(.5); c.beginPath(); smooth(blobPts(X, Y, R * 1.05, R * .85, 9, .2, 16)); c.stroke(); c.setLineDash([]); const mw = [X - .42 * R, Y + .18 * R]; ink(1); circ(mw[0], mw[1], 4); c.stroke(); if (R > 100) note('Milky Way', mw[0] - 8, mw[1] - 8, 'right'); } });
+def({ id: 'universe', name: 'Observable universe', one: 'the observable universe', many: 'observable universes', realm: 7, size: 8.8e26, vol: true, measure: 'diameter, 93 billion light-years', tint: '#6b5aa8',
+  note: 'Everything whose light has had time to reach us: 93 billion light-years across, although the universe is 13.8 billion years old, because space kept expanding while the light travelled. We are at its centre by definition.',
+  draw(X, Y, s, o) { const R = o.size * s / 2, d = clamp(R * .0035, .8, 1.5); c.fillStyle = T.ink; c.globalAlpha = .5; for (const [x, y] of WEB) { const px = X + x * R, py = Y + y * R; if (px < -2 || px > W + 2 || py < -2 || py > H + 2) continue; c.fillRect(px, py, d, d); }
+    c.globalAlpha = 1; ink(1); circ(X, Y, R); c.stroke(); ink(.4); circ(X, Y, R * 1.02); c.stroke(); c.fillStyle = T.ink; circ(X, Y, 1.8); c.fill(); if (R > 100) note('cosmic microwave background', X, Y - R * 1.02 - 8, 'center'); } });
+
+// ---------- limits & scales: lengths that matter but are not objects (drawn dashed, listed in italics) ----------
+const YUK = (() => { const r = rng(21), p = []; for (let i = 0; i < 1400; i++) { const rr = Math.min(1.25, -Math.log(r() + 1e-9) * 0.42), a = r() * TAU; p.push([Math.cos(a) * rr, Math.sin(a) * rr]); } return p; })();
+const TRK = (() => { const r = rng(33), t = []; for (let i = 0; i < 16; i++) t.push([i / 16 * TAU + (r() - .5) * .35, (r() - .5) * 3.2, .45 + r() * .55]); return t; })();
+def({ id: 'gut', limit: true, pre: '~ ', name: 'Grand unification scale', one: 'the grand unification scale', many: 'grand-unification lengths', realm: 0, size: 2e-32, w: 1e-31, h: 5e-32, measure: 'theorised, at ~10¹⁶ GeV', tint: '#6b5aa8',
+  note: 'Many theories predict that here the strong, weak and electromagnetic forces merge into one. Nothing has been observed at this scale; it comes from extending how the strengths of the forces change with energy. The three converging curves show that trend schematically.',
+  draw(X, Y, s, o) { const d = o.size * s, hw = o.w * s / 2, hh = o.h * s / 2; const off = [-.78, .12, .86], nm = ['strong', 'weak', 'electromagnetic'];
+    off.forEach((f, k) => { ink(.75, 1); c.beginPath(); for (let i = 0; i <= 40; i++) { const t = i / 40, x = X - hw + t * hw, y = Y + f * hh * Math.pow(1 - t, 1.25); i ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); if (hw > 140) note(nm[k], X - hw - 6, Y + f * hh + 4, 'right'); });
+    c.setLineDash([2, 4]); ink(.6); c.beginPath(); c.moveTo(X, Y); c.lineTo(X + hw * .7, Y); c.stroke(); circ(X, Y, d / 2); c.stroke(); c.setLineDash([]);
+    c.fillStyle = T.ink; circ(X, Y, 2); c.fill(); if (hw > 140) note('one force?', X + hw * .7 + 6, Y + 4); } });
+def({ id: 'lhc', limit: true, pre: '~ ', name: 'Resolution of the LHC', one: 'the finest detail the LHC resolves', many: 'LHC resolutions', realm: 0, size: 1e-20, w: 7e-20, h: 7e-20, measure: 'about ħc ÷ collision energy', tint: '#6b5aa8',
+  note: 'A collider is a microscope: seeing smaller takes more energy. At 13.6 TeV the Large Hadron Collider probes distances around 10⁻²⁰ m and still finds quarks and electrons to be points. Reaching the Planck length would take about a million billion times more energy.',
+  draw(X, Y, s, o) { const R = o.w * s / 2, d = o.size * s;
+    for (const [a0, k, L] of TRK) { ink(.55, .8); c.beginPath(); let x = X, y = Y, a = a0; c.moveTo(x, y); for (let i = 0; i < 40; i++) { a += k * L / 40; x += Math.cos(a) * R * L / 40; y += Math.sin(a) * R * L / 40; c.lineTo(x, y); } c.stroke(); }
+    c.globalAlpha = 1; c.fillStyle = T.paper; circ(X, Y, d / 2); c.fill(); c.setLineDash([2, 3]); ink(.9); c.stroke(); c.setLineDash([]); c.fillStyle = T.ink; circ(X, Y, 1.5); c.fill();
+    if (R > 150) note('collision tracks, schematic; dashed ring = resolution', X, Y - R - 8, 'center'); } });
+def({ id: 'ligo', limit: true, pre: '~ ', name: 'LIGO’s sensitivity', one: 'the smallest shift LIGO can sense', many: 'LIGO shifts', realm: 0, size: 1e-19, w: 2.8e-19, h: 1.6e-19, measure: 'change in a 4 km arm’s length', tint: '#6b5aa8',
+  note: 'LIGO detects gravitational waves by timing laser light along two 4 km arms, and can register a change in length of about 10⁻¹⁹ m, a ten-thousandth of a proton. This is a motion, not an object: each mirror is a 40 kg block of glass, and the laser averages its position over the whole face.',
+  draw(X, Y, s, o) { const d = o.size * s, hh = o.h * s / 2, xa = X - d / 2, xb = X + d / 2, th = d * .9;
+    hatch(() => { c.beginPath(); c.rect(xa - th, Y - hh, th, hh * 2); }, xa - th, Y - hh, xa, Y + hh, .8, Math.max(d / 12, 2.5), .35, .7);
+    ink(1, 1.3); c.beginPath(); c.moveTo(xa, Y - hh); c.lineTo(xa, Y + hh); c.stroke(); c.setLineDash([3, 4]); ink(.8); c.beginPath(); c.moveTo(xb, Y - hh); c.lineTo(xb, Y + hh); c.stroke(); c.setLineDash([]);
+    dimH(xa, xb, Y, '', T.ink, .8); if (d > 70) { note('mirror at rest', xa - 4, Y - hh - 8, 'right'); note('as a wave passes', xb + 4, Y - hh - 8); } } });
+def({ id: 'electron', limit: true, pre: '< ', name: 'Electron', one: 'the electron’s size limit', many: 'electron size limits', realm: 0, size: 1e-18, w: 1.4e-18, h: 1.4e-18, measure: 'upper limit; no size has ever been detected', tint: '#6b5aa8',
+  note: 'Every experiment says the electron is a point with no size at all. Collisions show no structure down to about 10⁻¹⁸ m, and its magnetism matches the point-particle prediction to about one part in a trillion. The “cloud” in an atom is something else: the spread of places the electron is likely to be found, some 100 million times wider.',
+  draw(X, Y, s, o) { const R = o.size * s / 2; c.globalAlpha = 1; wash('#6b5aa8', .08); circ(X, Y, R); c.fill(); c.setLineDash([2, 4]); ink(.8); circ(X, Y, R); c.stroke(); c.setLineDash([]);
+    c.fillStyle = T.ink; circ(X, Y, 1.8); c.fill(); if (R > 60) note('no structure found anywhere inside this ring', X, Y - R - 10, 'center'); } });
+def({ id: 'weak', limit: true, pre: '~ ', name: 'Reach of the weak force', one: 'the reach of the weak force', many: 'weak-force ranges', realm: 0, size: 2.45e-18, w: 5.6e-18, h: 5.6e-18, measure: 'range, ħ ÷ m_W c', tint: '#6b5aa8',
+  note: 'The weak force drives radioactive decay and lets the Sun fuse hydrogen. Its carriers, the W and Z bosons, are 86 and 97 times heavier than a proton, so the force fades out within about 2.5 × 10⁻¹⁸ m, roughly a thousandth of a proton.',
+  draw(X, Y, s, o) { const R = o.size * s, d = clamp(R * .012, .8, 1.4); c.fillStyle = T.ink; c.globalAlpha = .5; for (const [x, y] of YUK) c.fillRect(X + x * R - d / 2, Y + y * R - d / 2, d, d);
+    c.globalAlpha = 1; c.setLineDash([3, 5]); ink(.7); circ(X, Y, R); c.stroke(); c.setLineDash([]); c.fillStyle = T.ink; circ(X, Y, 1.8); c.fill();
+    if (R > 40) { dimH(X, X + R, Y + R * .18, '', T.ink, .7); } if (R > 120) note('W and Z bosons fade out beyond this', X, Y - R - 10, 'center'); } });
+def({ id: 'compton', limit: true, name: 'Electron’s Compton wavelength', one: 'the electron’s Compton wavelength', many: 'Compton wavelengths', realm: 0, size: 2.426e-12, w: 4.4e-12, h: 1.6e-12, measure: 'h ÷ mₑc', tint: '#6b5aa8',
+  note: 'Not the electron’s size, but the scale below which it cannot be pinned down: squeezing it into a smaller region takes enough energy to create new electron–positron pairs. It is also the wavelength of a photon carrying an electron’s mass-energy.',
+  draw(X, Y, s, o) { const L = o.size * s, A = L * .3; ink(.85, 1.1); c.beginPath(); for (let i = 0; i <= 240; i++) { const u = (i / 240 - .5) * 4.2, y = Y - A * Math.cos(TAU * u) * Math.exp(-((u / 1.25) ** 2)); i ? c.lineTo(X + u * L, y) : c.moveTo(X + u * L, y); } c.stroke();
+    if (L > 30) dimH(X, X + L, Y - A - 14, '', T.A); if (L > 90) note('one wavelength', X + L / 2, Y - A - 24, 'center'); } });
+
+// ---------- lengths set by fundamental constants ----------
+function bhDraw(X, Y, s, o) { const r = o.size * s / 2; c.globalAlpha = 1; c.fillStyle = T.dark ? '#000' : T.ink; circ(X, Y, r); c.fill(); ink(.9, 1); circ(X, Y, r); c.stroke();
+  c.setLineDash([2, 4]); ink(.6); circ(X, Y, r * 1.5); c.stroke(); c.setLineDash([]); if (r > 50) note('photon sphere, where light can orbit', X, Y - r * 1.5 - 8, 'center'); }
+function waveDraw(X, Y, L, A, periods, col) { ink(.85, 1.1); c.beginPath(); for (let i = 0; i <= 240; i++) { const u = i / 240 * periods, y = Y - A * Math.sin(TAU * u); i ? c.lineTo(X + u * L, y) : c.moveTo(X + u * L, y); } c.stroke(); }
+def({ id: 'relec', limit: true, name: 'Classical electron radius', one: 'the classical electron radius', many: 'classical electron radii', realm: 0, size: 2.8179403e-15, w: 7.4e-15, h: 7.4e-15, measure: 'a radius set by constants, not a size', tint: '#6b5aa8',
+  formula: 'rₑ = e² / 4πε₀mₑc² = α² a₀',
+  note: 'The radius at which an electron’s electric energy would equal its whole mass-energy. It is not its real size (under 10⁻¹⁸ m), but it sets how strongly electrons scatter light. Multiply it by 1/α ≈ 137 and you reach the electron’s reduced Compton wavelength; multiply by 137 again and you reach the Bohr radius of the atom.',
+  draw(X, Y, s, o) { const R = o.size * s; c.globalAlpha = 1; wash('#6b5aa8', .07); circ(X, Y, R); c.fill(); c.setLineDash([3, 4]); ink(.75); circ(X, Y, R); c.stroke(); c.setLineDash([]); c.fillStyle = T.ink; circ(X, Y, 1.8); c.fill();
+    if (R > 30) dimH(X, X + R, Y, '', T.A); if (R > 80) note('rₑ: where its field energy equals mₑc²', X, Y - R - 10, 'center'); } });
+def({ id: 'lyman', limit: true, name: 'Lyman limit', one: 'the Lyman limit', many: 'Lyman limits', realm: 1, size: 9.11267e-8, w: 1.6e-7, h: 7e-8, measure: 'wavelength, 1 ÷ R∞', tint: '#7a4fc0',
+  formula: 'λ = 1/R∞,  R∞ = mₑe⁴ / 8ε₀²h³c',
+  note: 'The Rydberg constant, 10,973,731.568 157 per metre, is one of the most precisely measured numbers in physics. Its inverse, 91.13 nm, is the shortest light hydrogen gives off when it captures a free electron; the lines of the Lyman series, drawn to scale beneath the wave, crowd toward it. Real hydrogen’s limit is 91.18 nm, because the proton recoils.',
+  draw(X, Y, s, o) { const L = o.size * s, x0 = X - L * .75, A = L * .1, wy = Y - L * .1; waveDraw(x0, wy, L, A, 1.5); if (L > 40) dimH(x0, x0 + L, wy - A - 12, '', T.A);
+    const sy = Y + L * .14, sh = L * .12; c.globalAlpha = 1; wash('#7a4fc0', .12); c.fillRect(x0, sy, L * 1.5, sh); ink(.4, .8); c.strokeRect(x0, sy, L * 1.5, sh);
+    for (let n = 2; n <= 40; n++) { const x = x0 + L / (1 - 1 / (n * n)); ink(n === 2 ? 1 : .65, n === 2 ? 1.4 : .8); c.beginPath(); c.moveTo(x, sy); c.lineTo(x, sy + sh); c.stroke(); }
+    ink(1, 1.2); c.beginPath(); c.moveTo(x0 + L, sy - 4); c.lineTo(x0 + L, sy + sh + 4); c.stroke();
+    if (L > 160) { note('Lyman α, 121.6 nm', x0 + L * 4 / 3, sy + sh + 16, 'center'); note('series limit', x0 + L, sy - 8, 'center'); } } });
+def({ id: 'earthbh', limit: true, name: 'Earth as a black hole', one: 'Earth’s black-hole size', many: 'Earth black holes', realm: 3, size: 0.01774, w: 0.03, h: 0.03, measure: 'event-horizon diameter', tint: '#2B4C86',
+  formula: 'r = 2GM/c² = 8.87 mm', draw: bhDraw,
+  note: 'Earth’s Schwarzschild radius is 8.87 mm. Crushed into a ball 1.8 cm across, about the size of a marble, all six trillion trillion kilograms of it would become a black hole.' });
+def({ id: 'h21', limit: true, name: 'Hydrogen 21 cm line', one: 'the hydrogen 21 cm wavelength', many: '21 cm wavelengths', realm: 4, size: 0.211061, w: 0.36, h: 0.15, measure: 'wavelength of hydrogen’s spin-flip', tint: '#7d6f55',
+  formula: 'f = 1,420,405,751.768 Hz,  λ = c/f',
+  note: 'When the electron in a hydrogen atom flips its spin, the atom emits radio waves 21.1 cm long. Radio astronomers use them to map the spiral arms of the Milky Way, and the transition was engraved on the Pioneer plaques and Voyager records as a unit of length and time any civilisation could recognise.',
+  draw(X, Y, s, o) { const L = o.size * s, x0 = X - L * .75, A = L * .16; waveDraw(x0, Y, L, A, 1.5); if (L > 40) dimH(x0 + L * .25, x0 + L * 1.25, Y - A - 14, '', T.A); if (L > 140) note('one wavelength, 21.1 cm', X, Y + A + 22, 'center'); } });
+def({ id: 'sunbh', limit: true, name: 'The Sun as a black hole', one: 'the Sun’s black-hole size', many: 'Sun black holes', realm: 5, size: 5906, w: 9500, h: 9500, measure: 'event-horizon diameter', tint: '#b07a2a',
+  formula: 'r = 2GM/c² = 2.95 km', draw: bhDraw,
+  note: 'Squeeze the Sun’s mass into a ball 5.9 km across and not even light could escape. The Sun will never do this: it is not heavy enough, and will end as a white dwarf about the size of Earth.' });
+def({ id: 'lightsec', limit: true, name: 'Light-second', one: 'a light-second', many: 'light-seconds', realm: 5, size: 299792458, w: 3.1e8, h: 4e7, measure: 'exactly 299,792,458 m', tint: '#2B4C86',
+  formula: 'c = 299,792,458 m/s (exact)',
+  note: 'Since 1983 the metre has been defined by the speed of light, as the distance light travels in 1/299,792,458 of a second, so c is exact by definition. One light-second is 23.5 Earths side by side, about three quarters of the way to the Moon.',
+  draw(X, Y, s, o) { const L = o.size * s, d = 1.2742e7 * s, x0 = X - L / 2; c.globalAlpha = 1;
+    for (let i = 0; i < 24; i++) { const cx = x0 + d * (i + .5); c.save(); if (i === 23) { c.beginPath(); c.rect(x0 + 23 * d, Y - d, .53 * d, 2 * d); c.clip(); } wash('#2B4C86', .3); circ(cx, Y, d / 2); c.fill(); ink(.7, .8); c.stroke(); c.restore(); }
+    dimH(x0, x0 + L, Y - d / 2 - 14, '', T.A); if (L > 300) note('23.5 Earths side by side: the distance light travels in one second', X, Y + d / 2 + 22, 'center'); } });
+def({ id: 'hubble', limit: true, pre: '~ ', name: 'Hubble radius', one: 'the Hubble radius', many: 'Hubble radii', realm: 7, size: 1.32e26, w: 3e26, h: 3e26, measure: 'radius, c ÷ H₀ with H₀ ≈ 70 km/s/Mpc', tint: '#6b5aa8',
+  formula: 'R = c/H₀',
+  note: 'The distance at which the expansion of space carries galaxies away at the speed of light: about 14 billion light-years. H₀ itself is disputed, with measurements from 67 to 73 km/s per megaparsec, the “Hubble tension”. We still see galaxies beyond it, because light they sent long ago has been catching up.',
+  draw(X, Y, s, o) { const R = o.size * s; c.setLineDash([4, 5]); ink(.7); circ(X, Y, R); c.stroke(); c.setLineDash([]); c.fillStyle = T.ink; circ(X, Y, 1.8); c.fill(); if (R > 30) dimH(X, X + R, Y, '', T.A); if (R > 100) note('beyond here, space carries galaxies away faster than light', X, Y - R - 10, 'center'); } });
+// formulas for existing entries
+Object.assign(O.find(o => o.id === 'planck'), { formula: 'ℓP = √(ħG / c³)' });
+Object.assign(O.find(o => o.id === 'compton'), { formula: 'λC = h / mₑc' });
+Object.assign(O.find(o => o.id === 'hatom'), { formula: 'a₀ = 4πε₀ħ² / mₑe² = rₑ / α²' });
+Object.assign(O.find(o => o.id === 'weak'), { formula: 'range ≈ ħ / (W mass × c)' });
+Object.assign(O.find(o => o.id === 'lhc'), { formula: 'd ≈ ħc / E,  ħc = 197.3 MeV·fm' });
+Object.assign(O.find(o => o.id === 'gut'), { formula: 'd ≈ ħc / (10¹⁶ GeV)' });
+Object.assign(O.find(o => o.id === 'light'), { formula: 'λ = c/f:  550 nm ↔ 545 THz' });
+Object.assign(O.find(o => o.id === 'earthmoon'), { formula: 'd / c = 1.28 light-seconds' });
+Object.assign(O.find(o => o.id === 'orbit'), { formula: '1 AU = 149,597,870,700 m (exact)' });
+Object.assign(O.find(o => o.id === 'proxima'), { formula: '1 ly = c × 365.25 days = 9.4607 × 10¹⁵ m' });
+
+O.forEach((o, i) => { o.idx = i; o.ext = Math.max(o.w, o.strand ? 0 : o.h); });
+const BY = Object.fromEntries(O.map(o => [o.id, o]));
+
+// ======================= ATLAS OF MASS =======================
+// The drawings above are shared with the Atlas of Scale; here they become medallion icons on a logarithmic balance beam.
+const LIB = BY, L10 = Math.log10;
+const EV = 1.78266e-36, DA = 1.66054e-27, MSUN = 1.989e30, MEARTH = 5.972e24, WATER = 2.99e-26;
+const MREALMS = ['Particles', 'Atoms & molecules', 'Viruses & cells', 'Specks & small things', 'Everyday', 'Big things', 'Worlds', 'Stars & black holes', 'Galaxies & beyond'];
+const M = [];
+function mdef(o) { M.push(o); }
+// an Atlas of Scale drawing fitted into a medallion of radius R
+const lib = (id, k = 1) => (X, Y, R) => { const L = LIB[id], ext = Math.max(L.w, L.h); L.draw(X, Y, R * 1.5 * k / ext, L, { mode: 'compare', span: R, plotH: H }); };
+
+// ---------- new engravings ----------
+const I = {
+  neutrino(X, Y, R) { c.setLineDash([2, 4]); ink(.55, 1); c.beginPath(); c.moveTo(X - R * .95, Y + R * .38); c.lineTo(X + R * .95, Y - R * .38); c.stroke(); c.setLineDash([]); c.globalAlpha = 1; c.fillStyle = T.paper; circ(X, Y, 3.2); c.fill(); ink(.9, 1); c.stroke(); },
+  electron(X, Y, R) { const a0 = R * .3, d = clamp(R * .014, .7, 1.2); c.fillStyle = T.ink; c.globalAlpha = .42; for (const [x, y] of HCLOUD) c.fillRect(X + x * a0 - d / 2, Y + y * a0 - d / 2, d, d); c.globalAlpha = 1; circ(X, Y, 2.4); c.fill(); },
+  higgs(X, Y, R) { for (const a0 of [-.45, Math.PI - .45]) { ink(.8, 1); c.beginPath(); for (let i = 0; i <= 80; i++) { const t = i / 80, L = R * (.12 + t * .8), w = Math.sin(t * 16 * Math.PI) * R * .05, x = X + Math.cos(a0) * L - Math.sin(a0) * w, y = Y + Math.sin(a0) * L + Math.cos(a0) * w; i ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); }
+    c.setLineDash([2, 3]); ink(.45); circ(X, Y, R * .12); c.stroke(); c.setLineDash([]); c.globalAlpha = 1; c.fillStyle = T.ink; circ(X, Y, 2.6); c.fill(); if (R > 44) note('H → γγ', X, Y + R * .72, 'center'); },
+  top(X, Y, R) { [-.3, 1.8, 3.9].forEach((a0, j) => { ink(.55, .8); c.beginPath(); for (let k = -5; k <= 5; k++) { const a = a0 + k * .045, L = R * (.62 + .22 * hash(j, k)); c.moveTo(X + Math.cos(a) * R * .14, Y + Math.sin(a) * R * .14); c.lineTo(X + Math.cos(a) * L, Y + Math.sin(a) * L); } c.stroke(); });
+    c.globalAlpha = 1; c.fillStyle = T.ink; circ(X, Y, 3); c.fill(); },
+  planck(X, Y, R) { for (let k = 4; k >= 1; k--) { c.setLineDash(k === 1 ? [] : [2, 3]); ink(.15 + .18 * (4 - k), .8); circ(X, Y, R * .16 * k + R * .08); c.stroke(); } c.setLineDash([]); c.globalAlpha = 1; c.fillStyle = T.dark ? '#000' : T.ink; circ(X, Y, R * .2); c.fill(); ink(1, 1); c.stroke(); },
+  rice(X, Y, R) { const rx = R * .78, ry = R * .22; c.save(); c.translate(X, Y); c.rotate(-.45); c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0, TAU); c.globalAlpha = 1; wash('#b09a6a', .3); c.fill(); ink(1, 1); c.stroke();
+    ink(.35, .7); for (const f of [-.5, 0, .5]) { c.beginPath(); c.moveTo(-rx * .8 * Math.sqrt(1 - f * f), f * ry * .8); c.quadraticCurveTo(0, f * ry * 1.05, rx * .8 * Math.sqrt(1 - f * f), f * ry * .8); c.stroke(); } c.restore(); },
+  bee(X, Y, R) { const u = R / 58; c.save(); c.translate(X - 4 * u, Y + 6 * u); c.globalAlpha = 1;
+    for (const [dx, rot, sc] of [[-2, -.55, 1], [8, -.25, .8]]) { c.beginPath(); c.ellipse(dx * u, -22 * u, 22 * u * sc, 9 * u * sc, rot, 0, TAU); c.fillStyle = hexA(T.paper, .75); c.fill(); ink(.7, .8); c.stroke(); }
+    c.beginPath(); c.ellipse(20 * u, 3 * u, 24 * u, 14 * u, .12, 0, TAU); c.globalAlpha = 1; wash('#c08a2a', .5); c.fill();
+    c.save(); c.clip(); c.fillStyle = T.ink; c.globalAlpha = .7; for (const sx of [12, 22, 32]) c.fillRect(sx * u, -14 * u, 5 * u, 34 * u); c.restore(); ink(1, 1); c.beginPath(); c.ellipse(20 * u, 3 * u, 24 * u, 14 * u, .12, 0, TAU); c.stroke();
+    circ(-6 * u, 0, 12 * u); c.globalAlpha = 1; wash('#8a6a3a', .55); c.fill(); stipple(-6 * u, 0, 12 * u, 1.4); ink(1, 1); circ(-6 * u, 0, 12 * u); c.stroke();
+    circ(-22 * u, 2 * u, 8 * u); c.globalAlpha = 1; wash('#5a3a2a', .6); c.fill(); ink(1, 1); c.stroke();
+    ink(.8, .9); c.beginPath(); c.moveTo(-26 * u, -4 * u); c.quadraticCurveTo(-34 * u, -16 * u, -40 * u, -14 * u); c.moveTo(-24 * u, -5 * u); c.quadraticCurveTo(-28 * u, -18 * u, -34 * u, -20 * u);
+    for (const lx of [-12, -5, 2]) { c.moveTo(lx * u, 10 * u); c.lineTo((lx - 6) * u, 22 * u); c.lineTo((lx - 9) * u, 26 * u); } c.stroke(); c.restore(); },
+  paperclip(X, Y, R) { const u = R / 50; c.save(); c.translate(X, Y); c.rotate(-.4); c.scale(u, u); c.beginPath();
+    c.moveTo(-22, 14); c.lineTo(30, 14); c.arc(30, 2, 12, Math.PI / 2, -Math.PI / 2, true); c.lineTo(-32, -10); c.arc(-32, -1, 9, -Math.PI / 2, Math.PI / 2, true); c.lineTo(22, 8); c.arc(22, 1, 7, Math.PI / 2, -Math.PI / 2, true); c.lineTo(-14, -6);
+    c.restore(); c.globalAlpha = 1; c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = T.ink; c.lineWidth = Math.max(1.6, 3.2 * u); c.stroke(); c.strokeStyle = T.paper; c.lineWidth = Math.max(.6, 1.1 * u); c.stroke(); c.lineCap = 'butt'; },
+  battery(X, Y, R) { const u = R / 50, x0 = X - 38 * u, x1 = X + 32 * u, h = 14 * u; c.globalAlpha = 1; c.beginPath(); c.roundRect(x0, Y - h, x1 - x0, h * 2, 3 * u); wash('#5B6474', .35); c.fill(); ink(1, 1); c.stroke();
+    c.save(); c.beginPath(); c.rect(x1 - 18 * u, Y - h, 18 * u, h * 2); c.clip(); wash('#b07a2a', .45); c.fillRect(x1 - 18 * u, Y - h, 18 * u, h * 2); c.restore(); ink(1, 1); c.beginPath(); c.moveTo(x1 - 18 * u, Y - h); c.lineTo(x1 - 18 * u, Y + h); c.stroke();
+    c.beginPath(); c.rect(x1, Y - 5 * u, 5 * u, 10 * u); c.stroke(); ink(.35, .7); c.beginPath(); c.moveTo(x0 + 4 * u, Y - h * .55); c.lineTo(x1 - 22 * u, Y - h * .55); c.stroke();
+    c.globalAlpha = 1; c.fillStyle = T.ink; c.font = `${Math.max(8, 12 * u)}px ${MONO}`; c.textAlign = 'center'; c.fillText('+', x1 - 9 * u, Y + 4 * u); c.fillText('AA', X - 14 * u, Y + 4 * u); },
+  litre(X, Y, R) { const s = R * .95, o = s * .32, x = X - s / 2 - o / 3, y = Y - s / 2 + o / 2, lv = .12;
+    c.globalAlpha = 1; wash('#2B4C86', .3); c.fillRect(x, y + s * lv, s, s * (1 - lv)); c.beginPath(); c.moveTo(x + s, y + s * lv); c.lineTo(x + s + o, y + s * lv - o); c.lineTo(x + s + o, y + s - o); c.lineTo(x + s, y + s); c.closePath(); wash('#2B4C86', .42); c.fill();
+    c.beginPath(); c.moveTo(x, y + s * lv); c.lineTo(x + o, y + s * lv - o); c.lineTo(x + s + o, y + s * lv - o); c.lineTo(x + s, y + s * lv); c.closePath(); wash('#2B4C86', .18); c.fill();
+    hatch(() => { c.beginPath(); c.rect(x, y + s * lv, s, s * (1 - lv)); }, x, y + s * lv, x + s, y + s, 0, Math.max(3, s / 16), .22, .6);
+    ink(1, 1); c.beginPath(); c.rect(x, y, s, s); c.moveTo(x, y); c.lineTo(x + o, y - o); c.lineTo(x + s + o, y - o); c.lineTo(x + s, y); c.moveTo(x + s + o, y - o); c.lineTo(x + s + o, y + s - o); c.lineTo(x + s, y + s); c.stroke();
+    c.setLineDash([2, 3]); ink(.4); c.beginPath(); c.moveTo(x, y + s); c.lineTo(x + o, y + s - o); c.lineTo(x + s + o, y + s - o); c.moveTo(x + o, y + s - o); c.lineTo(x + o, y - o); c.stroke(); c.setLineDash([]);
+    if (R > 44) note('10 cm', x + s / 2, y + s + 14, 'center'); },
+  car(X, Y, R) { const u = R / 54; c.save(); c.translate(X, Y + 6 * u); c.scale(u, u); c.beginPath();
+    [[-50, 8], [-51, -3], [-44, -8], [-24, -11], [-12, -23], [15, -23], [30, -11], [47, -8], [52, -1], [51, 8]].forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath();
+    c.restore(); c.globalAlpha = 1; c.lineJoin = 'round'; wash('#9C3D2E', .35); c.fill(); ink(1, 1); c.stroke();
+    c.save(); c.translate(X, Y + 6 * u); c.scale(u, u); c.beginPath(); [[-10, -20], [13, -20], [24, -11], [-19, -11]].forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.moveTo(3, -20); c.lineTo(3, -11); c.restore(); c.fillStyle = T.paper; c.fill(); ink(.8, .9); c.stroke();
+    for (const wx of [-31, 32]) { c.globalAlpha = 1; c.fillStyle = T.paper; circ(X + wx * u, Y + 14 * u, 9.5 * u); c.fill(); ink(1, 1); c.stroke(); circ(X + wx * u, Y + 14 * u, 4 * u); c.stroke(); }
+    ink(.4, 1); c.beginPath(); c.moveTo(X - R * .95, Y + 23.5 * u); c.lineTo(X + R * .95, Y + 23.5 * u); c.stroke(); },
+  // an Art Deco tower: setbacks stepping in, a mast on top
+  empire(X, Y, R) { const yb = Y + R * .82, tiers = [[.62, .16], [.46, .2], [.3, .62], [.2, .14], [.12, .1]]; let y = yb; c.globalAlpha = 1;
+    for (const [w, h] of tiers) { const ww = w * R, hh = h * R; c.beginPath(); c.rect(X - ww / 2, y - hh, ww, hh); c.fillStyle = T.paper; c.fill(); wash('#8a8578', .35); c.fill(); ink(1, 1); c.stroke();
+      ink(.35, .6); c.beginPath(); for (let x = X - ww / 2 + 3; x < X + ww / 2 - 1; x += 3.2) { c.moveTo(x, y - hh + 2); c.lineTo(x, y - 2); } c.stroke(); y -= hh; }
+    ink(1, 1.2); c.beginPath(); c.moveTo(X, y); c.lineTo(X, y - R * .36); c.stroke(); c.globalAlpha = 1; c.fillStyle = T.ink; circ(X, y - R * .36, 1.4); c.fill(); },
+  pyramid(X, Y, R) { const b = R * 1.7, h = b * .637, x0 = X - b / 2, yb = Y + h / 2;
+    c.globalAlpha = 1; c.beginPath(); c.moveTo(x0, yb); c.lineTo(X, yb - h); c.lineTo(x0 + b, yb); c.closePath(); wash('#b09a6a', .35); c.fill();
+    hatch(() => { c.beginPath(); c.moveTo(X, yb); c.lineTo(X, yb - h); c.lineTo(x0 + b, yb); c.closePath(); }, X, yb - h, x0 + b, yb, -1, 3, .35, .6);
+    ink(.35, .6); c.beginPath(); for (let k = 1; k < 16; k++) { const yy = yb - h * k / 16, hw = b / 2 * (1 - k / 16); c.moveTo(X - hw, yy); c.lineTo(X + hw, yy); } c.stroke();
+    ink(1, 1); c.beginPath(); c.moveTo(x0, yb); c.lineTo(X, yb - h); c.lineTo(x0 + b, yb); c.closePath(); c.stroke(); ink(.5, 1); c.beginPath(); c.moveTo(X - R, yb); c.lineTo(X + R, yb); c.stroke(); },
+  humanity(X, Y, R) { const L = LIB.human, hh = R * .4, s = hh / L.h; for (let row = -1; row <= 1; row++) { const n = row ? 5 : 6; for (let i = 0; i < n; i++) { const x = X + (i - (n - 1) / 2) * hh * .36, y = Y - R * .08 + row * hh * 1.02; c.save(); L.draw(x, y, s, L, { mode: 'compare', span: hh / 2, plotH: H }); c.restore(); } }
+    if (R > 44) note('× 8.1 billion', X, Y + R * .88, 'center'); },
+  comet(X, Y, R) { c.globalAlpha = 1; const g = c.createRadialGradient(X, Y, 0, X, Y, R * .9); g.addColorStop(0, hexA(T.ink, .16)); g.addColorStop(1, hexA(T.ink, 0)); c.fillStyle = g; circ(X, Y, R * .9); c.fill();
+    ink(.35, .7); c.beginPath(); for (let k = -4; k <= 4; k++) { c.moveTo(X + R * .15, Y - R * .05); c.quadraticCurveTo(X + R * .5, Y - R * .3 + k * 2, X + R * 1.1, Y - R * .75 + k * R * .06); } c.stroke();
+    const P = [...blobPts(X - R * .12, Y + R * .03, R * .22, R * .17, 3, .18, 16, .4)], Q = blobPts(X + R * .14, Y - R * .06, R * .16, R * .13, 5, .2, 16, .2);
+    for (const pts of [P, Q]) { c.beginPath(); smooth(pts); c.fillStyle = T.paper; c.fill(); wash('#5B6474', .45); c.fill(); ink(1, 1); c.stroke(); }
+    c.save(); c.beginPath(); smooth(P); smooth(Q); c.clip(); stipple(X, Y, R * .34, 1.2); c.restore(); },
+  atmosphere(X, Y, R) { const Rc = R * 4, cy = Y + R * 4.25, th = Rc * 100 / 6371; c.globalAlpha = 1;
+    circ(X, cy, Rc + th * 1.6); const g = c.createRadialGradient(X, cy, Rc, X, cy, Rc + th * 1.6); g.addColorStop(0, hexA('#6f9ad8', .9 * T.wash)); g.addColorStop(1, hexA('#6f9ad8', 0)); c.fillStyle = g; c.fill();
+    circ(X, cy, Rc); wash('#2B4C86', .45); c.fill(); c.save(); circ(X, cy, Rc); c.clip(); stipple(X, cy - Rc * .2, Rc, .15); c.restore(); ink(1, 1); circ(X, cy, Rc); c.stroke();
+    if (R > 44) { note('the air, to scale', X, cy - Rc - th * 2 - 10, 'center'); } },
+  ocean(X, Y, R) { const L = LIB.earth, D = R * 1.45, s = D / L.size, ex = X - R * .14; L.draw(ex, Y, s, L, { mode: 'compare', span: D / 2, plotH: H });
+    const wr = D / 2 * 1370 / 12742, wx = ex + D / 2 + wr + R * .08; c.globalAlpha = 1; circ(wx, Y + D * .18, wr); wash('#2B4C86', .9); c.fill(); ink(1, 1); c.stroke(); if (R > 44) note('all ocean water', wx, Y + D * .18 + wr + 12, 'center'); },
+  ceres(X, Y, R) { sphere(X, Y, R * .68, '#8a8578', .9, 1); c.globalAlpha = 1; c.fillStyle = T.dark ? T.ink : T.paper; circ(X + R * .12, Y - R * .08, Math.max(1.5, R * .04)); c.fill(); ink(.45, .8); for (const [dx, dy, r] of [[-.3, .2, .12], [.25, .3, .08], [-.1, -.35, .09]]) { circ(X + dx * R, Y + dy * R, r * R); c.stroke(); } },
+  proxima(X, Y, R) { sphere(X, Y, R * .6, '#b0453a', .8, 1); ink(.4, .8); circ(X, Y, R * .72); c.stroke(); },
+  neutron(X, Y, R) { const r = R * .18, tilt = .35; c.save(); c.translate(X, Y); c.rotate(tilt);
+    ink(.5, .8); for (const L of [.42, .66, .92]) for (const sd of [-1, 1]) { c.beginPath(); for (let i = 0; i <= 40; i++) { const t = .06 + i / 40 * (Math.PI - .12), rr = L * R * Math.sin(t) ** 2; const x = sd * rr * Math.sin(t), y = -rr * Math.cos(t); i ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); }
+    c.globalAlpha = .35; c.fillStyle = T.ink; for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(0, sd * r); c.lineTo(-R * .12, sd * R); c.lineTo(R * .12, sd * R); c.closePath(); c.fill(); }
+    c.restore(); sphere(X, Y, r, '#6b5aa8', 1.4, 1); },
+  dalton(X, Y, R) { const r = R * .15; for (let i = 0; i < 12; i++) { const a = i * 2.39996, rr = r * 1.05 * Math.sqrt(i + .3), x = X + Math.cos(a) * rr, y = Y + Math.sin(a) * rr; c.globalAlpha = 1; c.fillStyle = T.paper; circ(x, y, r); c.fill(); if (i % 2) { wash('#9C3D2E', .45); c.fill(); } ink(.8, .9); c.stroke(); }
+    if (R > 44) note('¹²C ÷ 12', X, Y + R * .7, 'center'); },
+  joule(X, Y, R) { c.globalAlpha = 1; c.fillStyle = T.ink; c.textAlign = 'center'; c.font = `italic ${Math.round(R * .42)}px ${SERIF}`; c.fillText('E = mc²', X, Y + R * .1); c.font = `${Math.max(9, Math.round(R * .16))}px ${MONO}`; c.fillStyle = T.muted; c.fillText('1 J ÷ c²', X, Y + R * .42); },
+  mole(X, Y, R) { lib('water', .72)(X, Y - R * .14, R); c.globalAlpha = 1; c.fillStyle = T.ink; c.textAlign = 'center'; c.font = `italic ${Math.max(10, Math.round(R * .2))}px ${SERIF}`; c.fillText('× 6.022 × 10²³', X, Y + R * .62); },
+  chandra(X, Y, R) { c.setLineDash([3, 4]); ink(.6); circ(X, Y, R * .62); c.stroke(); c.setLineDash([]); ink(.55, .9); c.beginPath(); for (let k = 0; k < 8; k++) { const a = k * TAU / 8; c.moveTo(X + Math.cos(a) * R * .58, Y + Math.sin(a) * R * .58); c.lineTo(X + Math.cos(a) * R * .42, Y + Math.sin(a) * R * .42); } c.stroke(); sphere(X, Y, R * .26, '#9DB6E4', 1.2, 1); },
+  blackhole(bright) { return (X, Y, R) => { const rs = R * .34, r = rng(bright ? 3 : 4); c.globalAlpha = 1; c.fillStyle = T.ink;
+    for (let i = 0; i < 1600; i++) { const a = r() * TAU, rr = rs * (1.25 + Math.abs(gauss(r)) * .28), w = bright ? .45 + .55 * Math.max(0, Math.sin(a)) : .75; if (r() > w) continue; c.globalAlpha = .55; c.fillRect(X + Math.cos(a) * rr, Y + Math.sin(a) * rr, 1.1, 1.1); }
+    c.globalAlpha = 1; c.fillStyle = T.dark ? '#000' : T.ink; circ(X, Y, rs); c.fill(); ink(.5, .8); circ(X, Y, rs * 1.25); c.stroke(); }; },
+};
+
+// ---------- the catalogue: masses in kg ----------
+mdef({ id: 'neutrino', limit: true, pre: '< ', unit: 'eV', realm: 0, mass: .45 * EV, name: 'Neutrino', short: 'Neutrino (limit)', one: 'the neutrino mass limit', many: 'neutrino mass limits', measure: 'upper limit, from the KATRIN experiment', draw: I.neutrino,
+  note: 'Neutrinos must have mass, because they change type as they travel, but it is too small to have been measured. KATRIN caps it at 0.45 eV (2025), and oscillations show at least one kind weighs at least about 0.05 eV. Hundreds of trillions from the Sun pass through you every second.' });
+mdef({ id: 'electron', unit: 'eV', realm: 0, mass: 9.109e-31, name: 'Electron', one: 'an electron', many: 'electrons', measure: 'rest mass', draw: I.electron,
+  note: 'The lightest particle with electric charge, 1/1,836 of a proton. All the electrons in your body together weigh about 17 grams.' });
+mdef({ id: 'proton', unit: 'eV', realm: 0, mass: 1.6726e-27, name: 'Proton', one: 'a proton', many: 'protons', measure: 'rest mass', draw: lib('proton'),
+  note: 'Only about 1% of a proton’s mass comes from its three quarks. The rest is the energy of the gluon field binding them, counted as mass through E = mc², so most of your own mass is bound-up energy.' });
+mdef({ id: 'water', unit: 'Da', realm: 1, mass: WATER, name: 'Water molecule', one: 'a water molecule', many: 'water molecules', measure: '18.015 daltons', draw: lib('water'),
+  note: 'One oxygen and two hydrogens. A single raindrop-sized drop of water, 0.05 mL, holds about 1.7 × 10²¹ of them.' });
+mdef({ id: 'higgs', unit: 'eV', realm: 0, mass: 125.1e9 * EV, name: 'Higgs boson', one: 'a Higgs boson', many: 'Higgs bosons', measure: 'rest mass', draw: I.higgs,
+  note: 'Found at CERN in 2012, here shown decaying into two photons. Its field gives the electron and quarks their masses (but not most of yours; see Proton). It weighs as much as about 133 protons, or one caesium atom.' });
+mdef({ id: 'top', unit: 'eV', realm: 0, mass: 172.6e9 * EV, name: 'Top quark', one: 'a top quark', many: 'top quarks', measure: 'rest mass', draw: I.top,
+  note: 'The heaviest known elementary particle, nearly as heavy as a gold atom, yet as far as anyone can tell a point. It decays in about 5 × 10⁻²⁵ s, before it can even bind to other quarks, into the jets shown here.' });
+mdef({ id: 'uranium', unit: 'Da', realm: 1, mass: 238.05 * DA, name: 'Uranium-238 atom', short: 'Uranium atom', one: 'a uranium-238 atom', many: 'uranium atoms', measure: '238.05 daltons', draw: lib('uranium'),
+  note: 'The heaviest atom found in quantity in nature: 92 protons and 146 neutrons, drawn here as its nucleus. The 92 electrons add only 0.02% to the mass.' });
+mdef({ id: 'hemo', unit: 'Da', realm: 1, mass: 64500 * DA, name: 'Hemoglobin', one: 'a hemoglobin molecule', many: 'hemoglobin molecules', measure: '64,500 daltons', draw: lib('hemo'),
+  note: 'The oxygen-carrying protein: four chains, each holding an iron atom in a haem group. Each red blood cell carries about 270 million of them.' });
+mdef({ id: 'ribo', unit: 'Da', realm: 1, mass: 2.5e6 * DA, name: 'Ribosome', one: 'a ribosome', many: 'ribosomes', measure: 'bacterial (70S) ribosome', draw: lib('ribo'),
+  note: 'A bacterial ribosome, about 2.5 million daltons and two-thirds RNA. Human ribosomes are larger, about 4.3 million daltons.' });
+mdef({ id: 'virus', pre: '~ ', realm: 2, mass: 1e-18, name: 'Coronavirus', one: 'a coronavirus', many: 'coronavirus particles', measure: 'one SARS-CoV-2 particle', draw: lib('virus'),
+  note: 'A single SARS-CoV-2 particle weighs roughly a femtogram. All the virus in an infected person at the peak of infection is estimated at only 1 to 100 micrograms.' });
+mdef({ id: 'ecoli', pre: '~ ', realm: 2, mass: 1e-15, name: 'E. coli bacterium', short: 'E. coli', one: 'an E. coli bacterium', many: 'E. coli bacteria', measure: 'wet mass', draw: lib('ecoli'),
+  note: 'About a picogram, 70% water. Doubling every 20 minutes with unlimited food, one cell’s descendants would outweigh the Earth in under two days; food runs out long before.' });
+mdef({ id: 'rbc', pre: '~ ', realm: 2, mass: 1e-13, name: 'Red blood cell', one: 'a red blood cell', many: 'red blood cells', measure: 'about 90 femtolitres at 1.1 g/mL', draw: lib('rbc'),
+  note: 'About 100 picograms, roughly a third of it hemoglobin. You have some 25 trillion of them, together about 2.5 kg.' });
+mdef({ id: 'egg', pre: '~ ', realm: 2, mass: 1e-9, name: 'Human egg cell', short: 'Egg cell', one: 'a human egg cell', many: 'human egg cells', measure: 'estimated from its 120 µm diameter', draw: lib('egg'),
+  note: 'The largest cell in the human body, yet only about a microgram. It is estimated here from its volume, taking the density of water.' });
+mdef({ id: 'planck', limit: true, realm: 3, mass: 2.176e-8, name: 'Planck mass', one: 'the Planck mass', many: 'Planck masses', measure: 'a scale, not an object', draw: I.planck,
+  note: 'Not a smallest or largest mass, but where quantum theory and gravity collide: a particle this heavy would be as small as its own black-hole horizon. At 22 micrograms it is easy to weigh, yet about ten billion billion times a proton.' });
+mdef({ id: 'sand', realm: 3, mass: 1.73e-7, name: 'Grain of sand', short: 'Sand grain', one: 'a grain of sand', many: 'grains of sand', measure: 'quartz grain 0.5 mm across', draw: lib('sand'),
+  note: 'A medium quartz grain 0.5 mm across, at 2.65 g/cm³: about 0.17 mg, so some six million make a kilogram.' });
+mdef({ id: 'rice', realm: 3, mass: 2.5e-5, name: 'Grain of rice', short: 'Rice grain', one: 'a grain of rice', many: 'grains of rice', measure: 'long-grain, uncooked', draw: I.rice,
+  note: 'A grain of long-grain rice weighs 20 to 30 mg; about 40,000 grains make a kilogram.' });
+mdef({ id: 'bee', realm: 3, mass: 1e-4, name: 'Honeybee', one: 'a honeybee', many: 'honeybees', measure: 'worker bee', draw: I.bee,
+  note: 'A worker honeybee weighs about a tenth of a gram, and can fly carrying most of its own weight in nectar.' });
+mdef({ id: 'paperclip', realm: 3, mass: 1e-3, name: 'Paperclip', one: 'a paperclip', many: 'paperclips', measure: 'standard steel clip', draw: I.paperclip,
+  note: 'A standard steel paperclip weighs about a gram, the same as a millilitre of water.' });
+mdef({ id: 'card', realm: 3, mass: 5e-3, name: 'Credit card', one: 'a credit card', many: 'credit cards', measure: 'plastic ID-1 card', draw: lib('card'),
+  note: 'A plastic ID-1 card weighs about 5 grams.' });
+mdef({ id: 'battery', realm: 3, mass: 2.3e-2, name: 'AA battery', one: 'an AA battery', many: 'AA batteries', measure: 'alkaline cell', draw: I.battery,
+  note: 'An alkaline AA cell weighs about 23 grams.' });
+mdef({ id: 'litre', realm: 4, mass: 1, name: 'Litre of water', one: 'a litre of water', many: 'litres of water', measure: '10 cm cube', draw: I.litre,
+  note: 'The kilogram began in 1795 as the mass of a litre of water. Since 2019 it has been defined by fixing the value of Planck’s constant.' });
+mdef({ id: 'human', realm: 4, mass: 62, name: 'Adult human', short: 'You', one: 'an adult human', many: 'people', measure: 'worldwide adult average', draw: lib('human'),
+  note: 'The worldwide adult average is about 62 kg (a 2005 estimate), roughly 60% of it water.' });
+mdef({ id: 'car', realm: 4, mass: 1500, name: 'Car', one: 'a car', many: 'cars', measure: 'mid-size', draw: I.car,
+  note: 'A typical mid-size car weighs about 1.5 tonnes.' });
+mdef({ id: 'whale', pre: '~ ', realm: 5, mass: 1.5e5, name: 'Blue whale', one: 'a blue whale', many: 'blue whales', measure: 'large adult', draw: lib('whale', 1.25),
+  note: 'Large adults reach 150 tonnes or more, the heaviest animal known to have lived. Its heart alone weighs about 180 kg.' });
+mdef({ id: 'jet', realm: 5, mass: 4.48e5, name: 'Boeing 747', one: 'a Boeing 747', many: 'Boeing 747s', measure: 'maximum take-off, 747-8', draw: lib('jet'),
+  note: 'Fully loaded, a 747-8 can weigh 448 tonnes at take-off; empty, about 220 tonnes.' });
+mdef({ id: 'eiffel', realm: 5, mass: 1.01e7, name: 'Eiffel Tower', one: 'the Eiffel Tower', many: 'Eiffel Towers', measure: 'total mass', draw: lib('eiffel'),
+  note: 'About 10,100 tonnes in all, 7,300 of it wrought iron. Melted into a slab the size of its 125 m base, the iron would be only about 6 cm thick.' });
+mdef({ id: 'empire', pre: '~ ', realm: 5, mass: 3.31e8, name: 'Empire State Building', short: 'Empire State', one: 'the Empire State Building', many: 'Empire State Buildings', measure: 'estimated total, about 365,000 short tons', draw: I.empire,
+  note: 'About 331,000 tonnes of steel, limestone, granite and brick, 443 m to the tip of its mast. On this logarithmic beam it sits almost exactly halfway between the lightest thing here, a neutrino, and all the matter in the observable universe: a neutrino is as much lighter than the building as the building is lighter than everything.' });
+mdef({ id: 'pyramid', pre: '~ ', realm: 5, mass: 5.9e9, name: 'Great Pyramid of Giza', short: 'Great Pyramid', one: 'the Great Pyramid', many: 'Great Pyramids', measure: 'estimated total', draw: I.pyramid,
+  note: 'Some 2.3 million limestone and granite blocks, about 6 million tonnes, piled 146 m high.' });
+mdef({ id: 'humanity', pre: '~ ', realm: 5, mass: 8.1e9 * 62, name: 'Everyone alive', one: 'all 8 billion people', many: 'humanities', measure: '8.1 billion people × 62 kg', draw: I.humanity,
+  note: 'All of us together weigh about 500 million tonnes. On a logarithmic scale that is almost exactly halfway between a single electron and all the matter in the observable universe.' });
+mdef({ id: 'comet', realm: 6, mass: 2.2e14, name: 'Halley’s Comet', short: 'Halley’s Comet', one: 'Halley’s Comet', many: 'Halley’s Comets', measure: 'nucleus', draw: I.comet,
+  note: 'A peanut-shaped nucleus about 15 km long and less dense than water: 2.2 × 10¹⁴ kg of ice and dust.' });
+mdef({ id: 'atmosphere', realm: 6, mass: 5.15e18, name: 'Earth’s atmosphere', short: 'All the air', one: 'Earth’s atmosphere', many: 'atmospheres', measure: 'total mass', draw: I.atmosphere,
+  note: 'All the air on Earth, a millionth of the planet’s mass, yet it presses about ten tonnes onto every square metre of ground. Drawn here as a glowing edge, it is almost all within 100 km of the surface.' });
+mdef({ id: 'ceres', realm: 6, mass: 9.38e20, name: 'Ceres', one: 'Ceres', many: 'Cereses', measure: 'dwarf planet', draw: I.ceres,
+  note: 'The largest body in the asteroid belt, 940 km across, and a dwarf planet. It holds about a third of the whole belt’s mass.' });
+mdef({ id: 'ocean', realm: 6, mass: 1.4e21, name: 'Earth’s oceans', short: 'All the oceans', one: 'all Earth’s oceans', many: 'oceans', measure: 'total mass of seawater', draw: I.ocean,
+  note: 'Gathered into one ball, all the water in Earth’s oceans would be about 1,370 km across, drawn to scale beside Earth. It is heavier than Ceres.' });
+mdef({ id: 'moon', realm: 6, mass: 7.342e22, name: 'The Moon', short: 'Moon', one: 'the Moon', many: 'Moons', measure: 'total mass', draw: lib('moon'),
+  note: 'About 1/81 of Earth’s mass.' });
+mdef({ id: 'earth', unit: 'kg', realm: 6, mass: MEARTH, name: 'Earth', one: 'Earth', many: 'Earths', measure: 'total mass', draw: lib('earth'),
+  note: 'Six trillion trillion kilograms: 81 Moons, and a 333,000th of the Sun.' });
+mdef({ id: 'jupiter', realm: 6, mass: 1.898e27, name: 'Jupiter', one: 'Jupiter', many: 'Jupiters', measure: 'total mass', draw: lib('jupiter'),
+  note: '318 Earths, and two and a half times all the other planets put together.' });
+mdef({ id: 'proxima', realm: 7, mass: .1221 * MSUN, name: 'Proxima Centauri', short: 'Proxima Cen.', one: 'Proxima Centauri', many: 'Proxima Centauris', measure: 'red dwarf star', draw: I.proxima,
+  note: 'The nearest star is a red dwarf with about 12% of the Sun’s mass, some 130 Jupiters. It will shine for trillions of years.' });
+mdef({ id: 'sun', realm: 7, mass: MSUN, name: 'The Sun', short: 'Sun', one: 'the Sun', many: 'Suns', measure: 'total mass', draw: lib('sun'),
+  note: '333,000 Earths and 99.86% of the Solar System’s mass. It turns about 4 million tonnes of itself into sunlight every second.' });
+mdef({ id: 'neutron', pre: '~ ', realm: 7, mass: 1.4 * MSUN, name: 'Neutron star', one: 'a neutron star', many: 'neutron stars', measure: 'typical mass', draw: I.neutron,
+  note: 'The collapsed core of a massive star: about 1.4 Suns in a ball roughly 20 km across. A teaspoon of it would weigh around two billion tonnes.' });
+mdef({ id: 'betel', pre: '~ ', realm: 7, mass: 18 * MSUN, name: 'Betelgeuse', one: 'Betelgeuse', many: 'Betelgeuses', measure: 'estimates range from 16 to 20 Suns', draw: lib('betel'),
+  note: 'A red supergiant of roughly 16 to 20 solar masses. It is shedding mass in a strong wind and will end as a supernova, leaving a neutron star or black hole.' });
+mdef({ id: 'sgra', realm: 7, mass: 4.3e6 * MSUN, name: 'Sagittarius A*', one: 'Sagittarius A*', many: 'Sagittarius A*s', measure: 'black hole at the Milky Way’s centre', draw: I.blackhole(false),
+  note: 'The black hole at the centre of our galaxy, weighed by timing the stars that orbit it: 4.3 million Suns. Imaged by the Event Horizon Telescope in 2022.' });
+mdef({ id: 'm87', realm: 7, mass: 6.5e9 * MSUN, name: 'M87*', one: 'M87*', many: 'M87*s', measure: 'black hole in galaxy M87', draw: I.blackhole(true),
+  note: 'The first black hole ever imaged (2019): 6.5 billion Suns, in a galaxy 55 million light-years away. The ring is brighter on one side because the glowing gas there moves toward us.' });
+mdef({ id: 'mw', pre: '~ ', realm: 8, mass: 1.2e12 * MSUN, name: 'The Milky Way', short: 'Milky Way', one: 'the Milky Way', many: 'Milky Ways', measure: 'total, including dark matter', draw: lib('mw'),
+  note: 'Roughly 1 to 1.5 trillion Suns in total, most of it dark matter. The stars themselves add up to only about 60 billion Suns.' });
+mdef({ id: 'lani', pre: '~ ', realm: 8, mass: 1e17 * MSUN, name: 'Laniakea Supercluster', short: 'Laniakea', one: 'the Laniakea Supercluster', many: 'Laniakeas', measure: 'approximate', draw: lib('lani'),
+  note: 'About 10¹⁷ Suns spread through some 100,000 galaxies, most of it dark matter.' });
+mdef({ id: 'universe', pre: '~ ', unit: 'kg', realm: 8, mass: 1.5e53, name: 'Observable universe', short: 'Observable universe', one: 'the observable universe', many: 'observable universes', measure: 'ordinary matter only', draw: lib('universe'),
+  note: 'All the atoms in the observable universe: about 1.5 × 10⁵³ kg, or 10⁸⁰ protons’ worth. Dark matter adds about five times as much again.' });
+
+// ---------- masses set by fundamental constants ----------
+mdef({ id: 'dalton', limit: true, unit: 'Da', realm: 1, mass: 1.66053906892e-27, name: 'Dalton', one: 'one dalton', many: 'daltons', measure: 'one twelfth of a carbon-12 atom', draw: I.dalton, formula: '1 Da = m(¹²C) / 12 = 1.660 539 068 92 × 10⁻²⁷ kg',
+  note: 'The unit molecules are weighed in. A proton is 1.007 Da and a neutron 1.009, yet carbon-12, six of each plus six electrons, comes to exactly 12: binding the nucleus together releases energy, and that energy carries away mass.' });
+mdef({ id: 'joule', limit: true, realm: 2, mass: 1.11265e-17, name: 'Mass of one joule', short: 'One joule', one: 'the mass of one joule', many: 'joules’ worth of mass', measure: '1 J ÷ c²', draw: I.joule, formula: 'm = E / c²',
+  note: 'Energy has mass. One joule, about the energy to lift an apple one metre, weighs 1.1 × 10⁻¹⁷ kg, as much as ten coronavirus particles. A charged phone is heavier than a flat one by roughly half a nanogram.' });
+mdef({ id: 'mole', realm: 3, mass: 0.018015, name: 'A mole of water', short: 'Mole of water', one: 'a mole of water', many: 'moles of water', measure: '6.022 140 76 × 10²³ molecules', draw: I.mole, formula: '6.022 140 76 × 10²³ per mole (exact)',
+  note: 'Avogadro’s number of water molecules weighs 18.015 grams, a little more than a tablespoon. Since 2019 the number is exact by definition; it is the bridge between the scale of molecules and the scale of kitchens.' });
+mdef({ id: 'chandra', limit: true, pre: '~ ', realm: 7, mass: 1.44 * MSUN, name: 'Chandrasekhar limit', one: 'the Chandrasekhar limit', many: 'Chandrasekhar limits', measure: 'the heaviest a white dwarf can be', draw: I.chandra, formula: 'M ≈ 3.1 (ħc/G)³ᐟ² / (2mₚ)²',
+  note: 'Above about 1.44 Suns, electron pressure can no longer hold a white dwarf up and it collapses. The limit follows from ħ, c, G and the proton mass alone, which is why neutron stars start at around this mass. Subrahmanyan Chandrasekhar worked it out in 1930, aged 19.' });
+const FORM = { electron: 'mₑ = 9.109 383 7139 × 10⁻³¹ kg', proton: 'mₚ = 1836.152 673 426 mₑ', planck: 'mP = √(ħc / G)', water: '18.015 Da', litre: '1 kg is fixed by h = 6.626 070 15 × 10⁻³⁴ J·s',
+  earth: 'M⊕ = g R² / G', sun: 'M☉ = 4π² (1 AU)³ / G (1 yr)²', higgs: 'E = mc² = 125.1 GeV', top: 'E = mc² = 172.6 GeV', neutrino: 'mc² < 0.45 eV' };
+for (const o of M) if (FORM[o.id]) o.formula = FORM[o.id];
+M.sort((a, b) => a.mass - b.mass); M.forEach((o, i) => { o.idx = i; o.e = L10(o.mass); });
+const EX = extremes(M, o => o.e, 'lightest', 'heaviest');
+const MB = Object.fromEntries(M.map(o => [o.id, o]));
+const KEYM = new Set(['neutrino', 'electron', 'proton', 'top', 'water', 'virus', 'rbc', 'planck', 'sand', 'paperclip', 'litre', 'human', 'whale', 'eiffel', 'empire', 'humanity', 'atmosphere', 'moon', 'earth', 'sun', 'sgra', 'mw', 'universe']);
+
+// ---------- formatting ----------
+function fmtEV(m) { const ev = m / EV; for (const [v, n] of [[1e12, 'TeV'], [1e9, 'GeV'], [1e6, 'MeV'], [1e3, 'keV']]) if (ev >= v * .999) return `${nice(ev / v)} ${n}/c²`; return `${nice(ev)} eV/c²`; }
+function fmtDa(m) { const d = m / DA; if (d >= 1e6) return `${nice(d / 1e6)} MDa`; if (d >= 1e3) return `${nice(d / 1e3)} kDa`; return `${nice(d)} Da`; }
+function sciKg(m) { const e = Math.floor(L10(m) + 1e-9), mt = +(m / Math.pow(10, e)).toFixed(2); return mt === 1 ? `10${sup(e)} kg` : `${mt} × 10${sup(e)} kg`; }
+const SI = [[1e9, 'Mt'], [1e6, 'kt'], [1e3, 't'], [1, 'kg'], [1e-3, 'g'], [1e-6, 'mg'], [1e-9, 'µg'], [1e-12, 'ng'], [1e-15, 'pg'], [1e-18, 'fg'], [1e-21, 'ag']];
+function fmtSI(m) { for (const [v, n] of SI) if (m >= v * .999) return `${nice(m / v)} ${n}`; return sciKg(m); }
+const fmtKg = m => m >= 1e12 ? sciKg(m) : fmtSI(m);
+function fmtMass(m, unit) {
+  if (unit === 'eV') return fmtEV(m); if (unit === 'Da') return fmtDa(m); if (unit === 'kg') return sciKg(m);
+  if (m >= 1e28) { const s = m / MSUN; return `${s >= 1e6 ? fmtRatio(s) : nice(s)} Sun${Math.abs(s - 1) < .01 ? '' : 's'}`; }
+  if (m >= 1e22) { const e = m / MEARTH; return `${nice(e)} Earth${Math.abs(e - 1) < .01 ? '' : 's'}`; }
+  if (m >= 1e12 || m < 1e-21) return sciKg(m);
+  return fmtSI(m);
+}
+const massText = o => (o.pre || '') + fmtMass(o.mass, o.unit);
+function waterEquiv(m, short) {
+  if (m < WATER * .9) return short ? `≈ 1/${fmtRatio(WATER / m)} of a water molecule` : `about 1/${fmtRatio(WATER / m)} of one water molecule`;
+  if (m < 3e-22) { const n = m / WATER; return `${short ? '≈ ' : ''}${fmtRatio(n)} water molecule${n >= 1.5 ? 's' : ''}`; }
+  const sd = Math.cbrt(m / 1000), side = sd >= 1e9 && sd < 1.5e11 ? `${nice(sd / 1e9)} million km` : fmtLen(sd); return short ? `≈ a water cube ${side} wide` : `a cube of water ${side} on each side`;
+}
+function knock(text, x, y, align, font, col, pad = 3) { c.font = font; c.textAlign = align; const w = c.measureText(text).width, l = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  c.globalAlpha = 1; c.fillStyle = T.paper; c.fillRect(l - pad, y - 12, w + pad * 2, 16); c.fillStyle = col; c.fillText(text, x, y); }
+
+// ---------- state & view window ----------
+const OVH = 40, FE0 = -37.5, FE1 = 54.5, MINSPAN = 2;
+const rv = { e0: -12, e1: 16, t0: -12, t1: 16 };
+function setRV(e0, span, instant) { RVA = null; span = clamp(span, MINSPAN, FE1 - FE0); e0 = clamp(e0, FE0, FE1 - span); rv.t0 = e0; rv.t1 = e0 + span; if (instant || reduced) { rv.e0 = rv.t0; rv.e1 = rv.t1; } dirty = true; }
+function follow(o) { const sp = rv.t1 - rv.t0; if (o.e >= rv.t0 + sp * .12 && o.e <= rv.t1 - sp * .12) return; setRV(o.e - sp / 2, sp); }
+let mode = 'explore', sel = MB.human, A = MB.electron, B = MB.proton, slot = 'A', hover = null, hits = [];
+const colOf = o => mode === 'compare' ? (o === A ? T.A : T.B) : T.A;
+const AX = () => ({ x0: 40, x1: W - 40, yA: H - OVH - (gravity ? 80 : 62) });
+
+function medallion(o, x, y, R, col) {
+  c.save(); c.globalAlpha = 1; circ(x, y, R); c.fillStyle = T.paper; c.fill(); c.clip(); o.draw(x, y, R * .86); c.restore();
+  c.globalAlpha = 1; c.strokeStyle = col || T.ink; c.lineWidth = col ? 1.7 : 1; c.setLineDash(o.limit ? [3, 3] : []); circ(x, y, R); c.stroke(); c.setLineDash([]);
+  c.lineWidth = .6; c.globalAlpha = col ? 1 : .55; circ(x, y, R - 3.5); c.stroke(); c.globalAlpha = 1;
+}
+
+// ---------- explore: the logarithmic beam ----------
+// beam labels: medallion pictures, or words fanned out at an angle above their ticks (the Atlas of Scale's ruler style)
+let beamMode = 'pics'; try { beamMode = localStorage.getItem('mass.beamMode') === 'words' ? 'words' : 'pics'; } catch (e) {}
+const RTH = 55 * Math.PI / 180;
+function bead(o, x, yA) { const h = o === hover || o === sel; c.globalAlpha = 1; c.fillStyle = T.paper; circ(x, yA - 12, 3); c.fill(); c.strokeStyle = o === sel ? T.A : T.ink; c.lineWidth = 1; c.globalAlpha = h ? 1 : .6; c.stroke(); c.beginPath(); c.moveTo(x, yA - 9); c.lineTo(x, yA); c.stroke();
+  hits.push({ o, box: [x - 6, yA - 20, x + 6, yA + 2] }); }
+function beamWords(X, x0, x1, yA, inR) {
+  const fs = W < 700 ? 11.5 : 13, st = Math.sin(RTH), lo = x0 + 4, hi = x1 - (W < 700 ? 70 : 120) - (inR(EX.hi.e) ? 40 : 0), fN = o => `${o.limit ? 'italic ' : ''}${fs}px ${SERIF}`, fM = `${fs - 2.5}px ${MONO}`;
+  const all = M.filter(o => inR(o.e)); let d = Math.ceil((fs + 5) / st), list = all;
+  const cap = Math.max(2, Math.floor((hi - lo) / d));
+  if (list.length > cap) { // too narrow for every name: keep the benchmarks, then thin those evenly
+    const key = list.filter(o => KEYM.has(o.id) || o === sel || isMarked(o)), keep = new Set([sel].filter(o => list.includes(o))), rest = key.filter(o => o !== sel), n = cap - keep.size;
+    if (key.length <= cap) key.forEach(o => keep.add(o)); else for (let i = 0; i < n; i++) keep.add(rest[Math.round(i * (rest.length - 1) / Math.max(1, n - 1))]);
+    list = list.filter(o => keep.has(o)); }
+  d = Math.min(d, (hi - lo) / list.length);
+  const cl = [], start = k => clamp(k.sum / k.items.length - (k.items.length - 1) * d / 2, lo, hi - (k.items.length - 1) * d);
+  for (const o of list) { cl.push({ items: [o], sum: X(o.e) });
+    while (cl.length > 1) { const b = cl[cl.length - 1], a = cl[cl.length - 2]; if (start(a) + a.items.length * d > start(b)) { a.items.push(...b.items); a.sum += b.sum; cl.pop(); } else break; } }
+  for (const o of all) if (!list.includes(o)) bead(o, X(o.e), yA);
+  c.textBaseline = 'middle'; c.textAlign = 'left'; const tips = [];
+  for (const k of cl) { let p = start(k);
+    for (const o of k.items) { const tx = X(o.e), h = o === sel, hv = o === hover, mc = markCol(o), col = h ? T.A : mc || T.ink;
+      c.globalAlpha = h || hv || mc ? 1 : .45; c.strokeStyle = col; c.lineWidth = h ? 1.3 : mc ? 1.4 : .8;
+      c.beginPath(); c.moveTo(tx, yA - 2); c.lineTo(tx, yA - 12); c.lineTo(p, yA - 30); c.lineTo(p, yA - 36); c.stroke();
+      c.globalAlpha = 1; c.fillStyle = col; c.fillRect(Math.round(tx) - (h || mc ? 1 : .5), yA - (mc ? 11 : 8), h || mc ? 2 : 1, mc ? 11 : 8);
+      const t = o.short || o.name, m = massText(o), ax = p + 1.5, ay = yA - 41;
+      c.save(); c.translate(ax, ay); c.rotate(-RTH);
+      c.font = mc ? `bold ${fN(o)}` : fN(o); const wn = c.measureText(t).width; c.globalAlpha = h || hv || mc ? 1 : .85; c.fillStyle = col; c.fillText(t, 0, 0);
+      c.font = fM; const wm = c.measureText(m).width; c.fillStyle = T.muted; c.fillText(m, wn + 8, 1);
+      c.restore(); if (mc) tips.push([o, ax, ay, wn + wm + 8]);
+      hits.push({ o, rot: { ax, ay, w: wn + 8 + wm, fs } }); p += d; } }
+  c.textBaseline = 'alphabetic'; for (const t of tips) marksAtTip(...t); c.globalAlpha = 1;
+}
+// ---------- what gravity does to a lump of this much matter: a band under the beam, the counterpart of the Atlas of Scale's light spectrum ----------
+let gravity = true; try { gravity = localStorage.getItem('mass.gravity') !== '0'; } catch (e) {}
+const MJ = 1.898e27, GR_Y = 48;
+const GBANDS = [
+  ['held up by its own strength', 'lumps', -12, 20, '#8a7a5c', 'Lumps · below ~10²⁰ kg: rock and ice are stiff enough to keep any shape'],
+  ['pulled round by its own gravity', 'worlds', 20, L10(13 * MJ), '#3f6fb0', 'Round worlds · ~10²⁰ kg to 13 Jupiters: moons, dwarf planets, planets'],
+  ['brown dwarfs', 'BD', L10(13 * MJ), L10(.075 * MSUN), '#8a4f7a', 'Brown dwarfs · 13 to 80 Jupiters: deuterium fuses, ordinary hydrogen does not'],
+  ['stars', '★', L10(.075 * MSUN), L10(150 * MSUN), null, 'Stars · 0.075 to ~150 Suns: hydrogen fuses; heavier stars burn hotter, bluer and shorter'],
+  ['clusters & galaxies', 'many', L10(150 * MSUN), 44, '#6b5aa8', 'Clusters & galaxies · above ~150 Suns no single star holds together; mass gathers as many stars']];
+// star colour by mass, red dwarfs to blue O stars (approximate main-sequence colours at the MK class boundaries)
+const SCOL = [[.075, '#d9502a'], [.45, '#ee8a2c'], [.8, '#f2c23a'], [1.04, '#e8dc98'], [1.4, '#cfd6c8'], [2.1, '#a9bff0'], [16, '#7d9cf0'], [150, '#4a6ee0']];
+const GBOOK = [[L10(2.176e-8), 'Planck mass, 21.8 µg: a black hole this heavy would be as small as its own quantum wavelength'], [L10(4 * MJ), 'Biggest a cold ball gets, about 4 Jupiters: past this, adding mass squeezes it smaller'],
+  [L10(1.44 * MSUN), 'Chandrasekhar limit, 1.44 Suns: the heaviest a white dwarf can be'], [L10(2.3 * MSUN), 'Heaviest neutron star, ~2.3 Suns: any heavier dead core becomes a black hole']];
+let GSPEC = [], gHover = null;
+function drawGravity(X, x0, x1, yb) { const h = 11; c.save(); c.beginPath(); c.rect(x0, yb - 2, x1 - x0, h + 4); c.clip();
+  for (const [name, short, e0, e1, col, tip] of GBANDS) { const a = X(e0), b = X(e1); if (b < x0 || a > x1) continue;
+    if (col) { let g = hexA(col, .3 * T.wash); if (e0 < -11 || e1 > 43) { const gr = c.createLinearGradient(e0 < -11 ? X(-12) : X(44), 0, e0 < -11 ? X(-9) : X(40), 0); gr.addColorStop(0, hexA(col, 0)); gr.addColorStop(1, g); g = gr; } c.fillStyle = g; }
+    else { const gr = c.createLinearGradient(a, 0, b, 0); for (const [m, cc] of SCOL) gr.addColorStop(clamp((L10(m * MSUN) - e0) / (e1 - e0), 0, 1), hexA(cc, T.dark ? .8 : .7)); c.fillStyle = gr; }
+    c.globalAlpha = 1; c.fillRect(a, yb, b - a, h);
+    ink(.45, .8); c.beginPath(); c.moveTo(Math.round(a) + .5, yb); c.lineTo(Math.round(a) + .5, yb + h); c.stroke();
+    c.font = `italic 10.5px ${SERIF}`; c.textBaseline = 'middle'; c.textAlign = 'center'; const vis = [Math.max(a, x0), Math.min(b, x1)];
+    const t = c.measureText(name).width + 10 < vis[1] - vis[0] ? name : c.measureText(short).width + 6 < vis[1] - vis[0] ? short : '';
+    if (t) { c.globalAlpha = .9; c.fillStyle = T.ink; c.fillText(t, (vis[0] + vis[1]) / 2, yb + h / 2 + .5); }
+    GSPEC.push({ a, b, t: tip }); }
+  ink(.45, .8); c.beginPath(); c.moveTo(X(-9), yb + .5); c.lineTo(X(40), yb + .5); c.moveTo(X(-9), yb + h - .5); c.lineTo(X(40), yb + h - .5); c.stroke();
+  c.textBaseline = 'alphabetic'; c.restore();
+  for (const [e, t] of GBOOK) { const x = X(e); if (x < x0 - 1 || x > x1 + 1) continue; ink(.9, 1.2); c.beginPath(); c.moveTo(x, yb - 3); c.lineTo(x, yb + h + 3); c.stroke(); c.fillStyle = T.ink; circ(x, yb - 3, 1.8); c.fill(); GSPEC.unshift({ a: x - 4, b: x + 4, t }); }
+  if (gHover) { const f = `500 10.5px ${MONO}`; c.font = f; const w = c.measureText(gHover.t).width; knock(gHover.t, clamp(gHover.x, 16 + w / 2, W - 16 - w / 2), yb - 6, 'center', f, T.ink); }
+  c.globalAlpha = 1;
+}
+function gravHit(x, y) { if (!gravity || mode !== 'explore') return null; const yb = AX().yA + GR_Y; if (y < yb - 5 || y > yb + 15) return null; return GSPEC.find(g => x >= g.a && x <= g.b) || null; }
+
+function renderExplore() {
+  hits = []; const { x0, x1, yA } = AX(), E0 = rv.e0, E1 = rv.e1, span = E1 - E0, ppd = (x1 - x0) / span, X = e => x0 + (e - E0) / span * (x1 - x0), inR = e => e >= E0 - 1e-9 && e <= E1 + 1e-9;
+  // the beam: a double rule with decade and 2–9 ticks
+  ink(.9, 1.3); c.beginPath(); c.moveTo(x0, yA + .5); c.lineTo(x1, yA + .5); c.stroke(); ink(.35, .8); c.beginPath(); c.moveTo(x0, yA + 4.5); c.lineTo(x1, yA + 4.5); c.stroke();
+  ink(.75, 1); c.beginPath(); for (let e = Math.ceil(E0); e <= E1; e++) { const px = Math.round(X(e)) + .5, h = ppd > 30 || e % 5 === 0 ? 8 : 4; c.moveTo(px, yA - h); c.lineTo(px, yA + 4.5); } c.stroke();
+  if (ppd > 28) { ink(.35, 1); c.beginPath(); for (let e = Math.floor(E0); e <= E1; e++) for (let k = 2; k <= 9; k++) { const ee = e + L10(k); if (!inR(ee)) continue; const px = Math.round(X(ee)) + .5; c.moveTo(px, yA - (k === 5 ? 4 : 2.5)); c.lineTo(px, yA); } c.stroke(); }
+  // the window's two ends and its middle are always labelled, in ink; decade labels make way for them
+  const Em = (E0 + E1) / 2; ink(1, 2); c.beginPath(); for (const px of [x0, x1]) { c.moveTo(px, yA - 10); c.lineTo(px, yA + 8); } c.stroke(); 
+  // and the middle of the whole atlas, when it is in view: a hollow marker on the beam, with the view centre's diamond inside it when they coincide
+  if (inR(EX.mid)) diamondO(X(EX.mid), yA + 2.5, 7.5, T.M1); diamond(X(Em), yA + 2.5, 5, T.M2);
+  const pins = pinLabels([[fmtKg(Math.pow(10, E0)), x0 - 3, 'left', T.M2], [fmtKg(Math.pow(10, E1)), x1 + 3, 'right', T.M2], 
+    ...(inR(EX.mid) ? [[`middle of the atlas ${fmtKg(Math.pow(10, EX.mid))}`, X(EX.mid), 'center', T.M1]] : []), [`view centre ${fmtKg(Math.pow(10, Em))}`, X(Em), 'center', T.M2]], yA + 22, `700 11px ${MONO}`);
+  const step = [1, 2, 5, 10].find(st => st * ppd >= 70) || 10;
+  for (let e = Math.ceil(E0 / step) * step; e <= E1; e += step) { const px = X(e); c.globalAlpha = 1; c.font = `11px ${MONO}`; c.fillStyle = T.muted; c.textAlign = 'center'; const t = `10${sup(e)} kg`; if (clearOf(pins, px, c.measureText(t).width)) c.fillText(t, px, yA + 22);
+    if (e >= -21 && e <= 11) { c.font = `italic 12.5px ${SERIF}`; c.fillStyle = T.ink; c.fillText(fmtSI(Math.pow(10, e)), px, yA + 38); } }
+  if (beamMode === 'words') beamWords(X, x0, x1, yA, inR); else {
+  // medallions in tiers above the beam; what does not fit becomes a bead on the beam
+  let D = clamp(Math.min(W / 8.4, (yA - 150) / 2.2), 60, 124), nT = clamp(Math.floor((yA - 60 - 130 - D) / (D + 44)) + 1, 1, 5);
+  // one more row of slightly smaller medallions holds far more of them, so take it whenever they stay a decent size
+  const D2 = (yA - 190 - 44 * nT) / (nT + 1); if (nT < 5 && D2 >= Math.max(60, D * .72)) { D = D2; nT++; }
+  const R = D / 2, gapY = D + 44, tierY = k => yA - 60 - R - k * gapY;
+  const tier = tierLayout(M, D, nT, ppd, R, o => KEYM.has(o.id), [sel]), placed = [], beads = [];
+  for (const o of M) { const tx = X(o.e); if (tx < -D || tx > W + D) continue; const k = tier.get(o);
+    if (k == null) { if (inR(o.e)) beads.push([o, tx]); continue; } placed.push([o, tx + edgeShift(o.e, ppd, R), tierY(k), tx, 1]); }
+  const ghosts = slideAll(placed, ([o, x, y, tx]) => [o, tx, x, y], (p, [x, y, sc]) => { p[1] = x; p[2] = y; p[4] = sc; }, o => X(o.e));
+  for (const [o, x, y, sc] of ghosts) if (R * sc > 8) medallion(o, x, y, R * sc);
+  for (const [o, x, y, tx, sc] of placed) { const col = o === sel ? T.A : null; c.globalAlpha = 1; c.strokeStyle = col || T.ink; c.lineWidth = col ? 1.3 : .8; c.globalAlpha = (col ? 1 : .45) * sc; c.setLineDash(col ? [] : [1, 3]); c.beginPath(); c.moveTo(x, y + R * sc + 36 * sc); c.lineTo(tx, yA - 2); c.stroke(); c.setLineDash([]); } c.globalAlpha = 1;
+  for (const [o, x] of beads) { const h = o === hover || o === sel; c.globalAlpha = 1; c.fillStyle = T.paper; circ(x, yA - 12, 3); c.fill(); c.strokeStyle = o === sel ? T.A : T.ink; c.lineWidth = 1; c.globalAlpha = h ? 1 : .6; c.stroke(); c.beginPath(); c.moveTo(x, yA - 9); c.lineTo(x, yA); c.stroke();
+    hits.push({ o, box: [x - 6, yA - 20, x + 6, yA + 2] }); }
+  for (const [o, x, y, tx, sc] of placed) { const col = o === sel ? T.A : o === hover ? T.ink : null, mc = markCol(o); if (R * sc < 8) continue; haloFor(o, x, y, R * sc); medallion(o, x, y, R * sc, col); if (sc < .9) continue;
+    knock(o.short || o.name, x, y + R + 17, 'center', `${o.limit ? 'italic ' : ''}${mc && o !== sel ? 'bold ' : ''}13px ${SERIF}`, o === sel ? T.A : mc || T.ink); knock(massText(o), x, y + R + 31, 'center', `11px ${MONO}`, T.muted);
+    c.globalAlpha = 1; c.fillStyle = o === sel ? T.A : mc || T.ink; c.fillRect(Math.round(tx) - (o === sel || mc ? 1 : .5), yA - (mc ? 11 : 8), o === sel || mc ? 2 : 1, mc ? 11 : 8); hits.push({ o, box: [x - R, y - R, x + R, y + R + 34] }); }
+  placeMarks(placed.filter(p => p[4] >= .9).map(([o, x, y]) => [o, x, y - R + 4]));   // over the medallions, so a neighbour never hides them
+  const hb = beads.find(([o]) => o === hover); if (hb) knock(`${hb[0].short || hb[0].name} · ${massText(hb[0])}`, clamp(hb[1], 90, W - 90), yA - 26, 'center', `500 11px ${MONO}`, T.ink); }
+  GSPEC = []; if (gravity) drawGravity(X, x0, x1, yA + GR_Y);
+  // selected: a playhead marker on the beam
+  if (inR(sel.e)) { const x = X(sel.e); c.globalAlpha = 1; c.fillStyle = T.A; c.beginPath(); c.moveTo(x, yA + 7); c.lineTo(x - 5, yA + 13); c.lineTo(x + 5, yA + 13); c.closePath(); c.fill(); }
+  // heading
+  c.globalAlpha = 1; c.textAlign = 'left'; c.font = `500 10.5px ${MONO}`; c.fillStyle = T.muted; c.letterSpacing = '2px'; c.fillText('MASS ON A LOGARITHMIC BEAM', 28, 38); c.letterSpacing = '0px';
+  c.font = `26px ${SERIF}`; c.fillStyle = T.ink; c.fillText(`10${sup(Math.round(E0))} – 10${sup(Math.round(E1))} kg`, 26, 72);
+  c.font = `11.5px ${MONO}`; c.fillStyle = T.muted; c.fillText('each long tick is ten times heavier', 28, 94);
+}
+
+// ---------- compare: a pair of scales ----------
+function capBlock(o, x, y, side) { const nar = W < 600, lines = [[o.short && nar ? o.short : o.name, `${nar ? 13.5 : 15}px ${SERIF}`, colOf(o)], [massText(o), `${nar ? 10.5 : 11.5}px ${MONO}`, T.muted], [waterEquiv(o.mass, true), `italic ${nar ? 11.5 : 12.5}px ${SERIF}`, T.muted]];
+  let w = 0; for (const [t, f] of lines) { c.font = f; w = Math.max(w, c.measureText(t).width); }
+  // on narrow screens the two captions anchor to opposite edges so they never meet in the middle
+  const al = nar ? (side < 0 ? 'left' : 'right') : 'center'; x = nar ? (side < 0 ? 16 : W - 16) : clamp(x, 20 + w / 2, W - 20 - w / 2); lines.forEach(([t, f, col], i) => knock(t, x, y + [0, 16, 31][i], al, f, col)); }
+function renderCompare() {
+  hits = []; const small = A.mass <= B.mass ? A : B, big = small === A ? B : A, r = big.mass / small.mass;
+  const cx = W / 2, top = 130, bottom = H - OVH - 26, beamY = top + 36, half = Math.min(W * .32, 330);
+  const Db = clamp(Math.min(half * .85, (bottom - beamY - 150) * .55), 64, 190), panW = Math.max(Db * 1.3, 96), panY = bottom - 84;
+  // stand
+  ink(1, 1.2); c.beginPath(); c.moveTo(cx - 3, beamY + 6); c.lineTo(cx - 5, panY + 30); c.moveTo(cx + 3, beamY + 6); c.lineTo(cx + 5, panY + 30); c.stroke();
+  const bw = Math.min(70, half * .32); c.beginPath(); c.moveTo(cx - bw, panY + 42); c.lineTo(cx - bw * .6, panY + 30); c.lineTo(cx + bw * .6, panY + 30); c.lineTo(cx + bw, panY + 42); c.closePath(); c.globalAlpha = 1; c.fillStyle = T.paper; c.fill(); ink(1, 1); c.stroke();
+  hatch(() => { c.beginPath(); c.moveTo(cx - bw, panY + 42); c.lineTo(cx - bw * .6, panY + 30); c.lineTo(cx + bw * .6, panY + 30); c.lineTo(cx + bw, panY + 42); c.closePath(); }, cx - bw, panY + 30, cx + bw, panY + 42, .8, 3, .35, .6);
+  // beam, level because the two sides balance
+  ink(1, 2.2); c.beginPath(); c.moveTo(cx - half, beamY); c.lineTo(cx + half, beamY); c.stroke(); ink(.5, 1); c.beginPath(); for (let k = -8; k <= 8; k++) { if (!k) continue; const x = cx + k * half / 8.5; c.moveTo(x, beamY - 3); c.lineTo(x, beamY + 3); } c.stroke();
+  ink(.8, 1); c.beginPath(); c.arc(cx, beamY, 30, -Math.PI * .72, -Math.PI * .28); c.stroke(); c.beginPath(); for (let k = -3; k <= 3; k++) { const a = -Math.PI / 2 + k * .12; c.moveTo(cx + Math.cos(a) * 30, beamY + Math.sin(a) * 30); c.lineTo(cx + Math.cos(a) * 26, beamY + Math.sin(a) * 26); } c.stroke();
+  ink(1, 1.4); c.beginPath(); c.moveTo(cx, beamY); c.lineTo(cx, beamY - 34); c.stroke(); c.globalAlpha = 1; c.fillStyle = T.paper; circ(cx, beamY, 6); c.fill(); ink(1, 1.2); c.stroke();
+  // pans
+  for (const sd of [-1, 1]) { const ex = cx + sd * half; c.globalAlpha = 1; c.fillStyle = T.paper; circ(ex, beamY, 3.5); c.fill(); ink(1, 1); c.stroke();
+    c.setLineDash([4, 2]); ink(.7, 1); c.beginPath(); c.moveTo(ex, beamY + 3); c.lineTo(ex - panW / 2, panY); c.moveTo(ex, beamY + 3); c.lineTo(ex + panW / 2, panY); c.stroke(); c.setLineDash([]);
+    ink(1, 1.2); c.beginPath(); c.moveTo(ex - panW / 2, panY); c.quadraticCurveTo(ex, panY + 26, ex + panW / 2, panY); c.lineTo(ex - panW / 2, panY); c.stroke(); }
+  // heavier on the left, the pile of lighter ones on the right
+  const lx = cx - half, rx = cx + half; medallion(big, lx, panY - Db / 2 - 2, Db / 2, colOf(big)); hits.push({ o: big, box: [lx - Db / 2, panY - Db - 2, lx + Db / 2, panY] });
+  const many = r > 12.5, n = many ? 6 : Math.max(1, Math.round(r)), k = Math.ceil((Math.sqrt(8 * n + 1) - 1) / 2), ds = Math.min(Db * .9, panW * .98 / k);
+  let left = n, row = 0, topY = panY; for (let m = k; left > 0; m--, row++) { const cnt = Math.min(m, left); for (let i = 0; i < cnt; i++) { const x = rx + (i - (cnt - 1) / 2) * ds, y = panY - 2 - ds / 2 - row * ds * .86; medallion(small, x, y, ds / 2 - 1.5, colOf(small)); topY = Math.min(topY, y - ds / 2); } left -= cnt; }
+  hits.push({ o: small, box: [rx - panW / 2, topY, rx + panW / 2, panY] });
+  if (many) knock(`× ${fmtRatio(r)}`, rx, topY - 12, 'center', `italic 22px ${DISPLAY}`, colOf(small));
+  capBlock(big, lx, panY + 40, -1); capBlock(small, rx, panY + 40, 1);
+  // headline
+  c.globalAlpha = 1; c.textAlign = 'left'; c.font = `500 10.5px ${MONO}`; c.fillStyle = T.muted; c.letterSpacing = '2px'; c.fillText('IN THE BALANCE', 28, 38); c.letterSpacing = '0px';
+  c.font = `30px ${DISPLAY}`; c.fillStyle = T.ink; c.fillText(r < 1.05 ? '1 : 1' : `1 : ${fmtRatio(r)}`, 26, 72); c.font = `11.5px ${MONO}`; c.fillStyle = T.muted; c.fillText('by mass', 28, 94);
+}
+
+// ---------- overview strip: the whole range, with the visible window ----------
+const zX = e => 40 + (e - FE0) / (FE1 - FE0) * (W - 80), zE = x => FE0 + (x - 40) / (W - 80) * (FE1 - FE0), ZB = () => H - 14;
+function overview() { const yb = ZB(), x0 = 40, x1 = W - 40; c.globalAlpha = 1; c.strokeStyle = T.rule; c.lineWidth = 1; c.beginPath(); c.moveTo(12, H - OVH + .5); c.lineTo(W - 12, H - OVH + .5); c.stroke();
+  c.beginPath(); c.moveTo(x0, yb + .5); c.lineTo(x1, yb + .5); c.stroke();
+  c.font = `9.5px ${MONO}`; c.fillStyle = T.muted; c.textAlign = 'center'; for (let e = -30; e <= 50; e += (W < 700 ? 20 : 10)) c.fillText(`10${sup(e)}`, zX(e), yb - 9);
+  c.globalAlpha = .8; for (const o of M) c.fillRect(Math.round(zX(o.e)), yb - 1, 1, 3); c.globalAlpha = 1;
+  if (mode === 'explore') { const a = zX(rv.e0), b = zX(rv.e1); c.fillStyle = hexA(T.ink, .1); c.fillRect(a, yb - 5, b - a, 10); c.strokeStyle = hexA(T.ink, .6); c.strokeRect(a + .5, yb - 4.5, Math.max(1, b - a - 1), 9); c.fillStyle = T.ink; c.fillRect(a, yb - 6, 2.5, 12); c.fillRect(b - 2.5, yb - 6, 2.5, 12); }
+  for (const [o, col] of mode === 'explore' ? [[sel, T.A]] : [[A, T.A], [B, T.B]]) { c.fillStyle = col; c.fillRect(Math.round(zX(o.e)) - 1, yb - 5, 2, 10); }
+}
+
+function render() { if (!W) return; c.setTransform(DPR, 0, 0, DPR, 0, 0); c.globalAlpha = 1; c.fillStyle = T.paper; c.fillRect(0, 0, W, H); VX = viewExtremes(M, o => o.e, rv.t0, rv.t1, EX.lt, EX.ht); fadeMarks(M); if (mode === 'explore') renderExplore(); else renderCompare(); overview(); }
+function tick() {
+  if (viewEase()) {} else if (Math.abs(rv.t0 - rv.e0) + Math.abs(rv.t1 - rv.e1) > 1e-4) { rv.e0 += (rv.t0 - rv.e0) * .22; rv.e1 += (rv.t1 - rv.e1) * .22; if (Math.abs(rv.t0 - rv.e0) + Math.abs(rv.t1 - rv.e1) < 1e-3) { rv.e0 = rv.t0; rv.e1 = rv.t1; } dirty = true; }
+  if (dirty) { dirty = false; render(); } requestAnimationFrame(tick);
+}
+
+// ---------- panel ----------
+function showDetail(o) {
+  $('#dRealm').textContent = MREALMS[o.realm] + (o.limit ? ' · a limit, not an object' : ''); $('#dName').textContent = o.name; $('#dSize').textContent = massText(o);
+  const s = sciKg(o.mass); $('#dSci').textContent = s === fmtMass(o.mass, o.unit) ? '' : s; $('#dMeasure').textContent = o.measure; $('#dFormula').textContent = o.formula || ''; $('#dFormula').hidden = !o.formula;
+  $('#dEquiv').textContent = `Same mass as ${waterEquiv(o.mass)}`; $('#dNote').textContent = o.note;
+  $('#prev').disabled = o.idx === 0; $('#next').disabled = o.idx === M.length - 1;
+  document.querySelectorAll('.cat li button').forEach(b => b.setAttribute('aria-current', mode === 'explore' && b.dataset.id === o.id ? 'true' : 'false'));
+}
+// move: pan the scale if it has gone off the edge (stepping). A click leaves the view alone; F or a double-click centres it
+function select(o, move = true) { sel = o; showDetail(o); if (move) follow(o); dirty = true; }
+function verdict() {
+  const small = A.mass <= B.mass ? A : B, big = small === A ? B : A, r = big.mass / small.mass, cap = t => t[0].toUpperCase() + t.slice(1);
+  let v; if (r < 1.1) v = `${cap(big.one)} and ${small.one} weigh about the same.`; else if (r < 2) v = `${cap(big.one)} is ${r.toFixed(1)} times as heavy as ${small.one}.`;
+  else if (big.limit || small.limit) v = `${cap(big.one)} is ${fmtRatio(r)} times ${small.one}.`; else v = `It would take ${fmtRatio(r)} ${small.many} to balance ${big.one}.`;
+  $('#verdict').textContent = v;
+  $('#verdictSub').innerHTML = [`${sciKg(big.mass)} ÷ ${sciKg(small.mass)} = ${fmtRatio(r)}`, `${L10(r).toFixed(1)} powers of ten apart`].map(l => `<div>${l}</div>`).join('');
+  $('#selA').value = A.id; $('#selB').value = B.id; $('#slotA').classList.toggle('active', slot === 'A'); $('#slotB').classList.toggle('active', slot === 'B');
+  document.querySelectorAll('.cat li button').forEach(b => { const m = b.querySelector('.m'), isA = b.dataset.id === A.id, isB = b.dataset.id === B.id; m.textContent = mode === 'compare' ? (isA ? 'A' : isB ? 'B' : '') : ''; m.style.background = mode === 'compare' && (isA || isB) ? (isA ? 'var(--accent)' : 'var(--accent-b)') : 'transparent'; b.setAttribute('aria-current', mode === 'compare' && (isA || isB) ? 'true' : 'false'); });
+  dirty = true;
+}
+function setMode(m) { mode = m; $('#toggles').style.display = m === 'explore' ? '' : 'none'; $('#mExplore').setAttribute('aria-pressed', m === 'explore'); $('#mCompare').setAttribute('aria-pressed', m === 'compare'); $('#detail').hidden = m !== 'explore'; $('#compare').hidden = m !== 'compare';
+  $('#hint').textContent = m === 'explore' ? 'scroll to zoom · drag to pan · ← → step · F or double-click to centre · R reset' : 'pick A and B from the list or the menus'; if (m === 'compare') verdict(); else { showDetail(sel); verdict(); } dirty = true; }
+function pick(o) { if (mode === 'explore') { select(o, false); return; } if (slot === 'A') { A = o; slot = 'B'; } else { B = o; slot = 'A'; } verdict(); }
+function buildPanel() {
+  const cat = $('#cat'); let html = ''; const opts = [];
+  MREALMS.forEach((r, ri) => { const items = M.filter(o => o.realm === ri); html += `<h3>${r}</h3><ul>` + items.map(o => `<li${o.limit ? ' class="lim"' : ''}><button data-id="${o.id}"><span class="m"></span><span>${o.name}</span><span class="v">${massText(o)}</span></button></li>`).join('') + '</ul>'; opts.push(`<optgroup label="${r}">` + items.map(o => `<option value="${o.id}">${o.name}</option>`).join('') + '</optgroup>'); });
+  cat.innerHTML = html; $('#selA').innerHTML = opts.join(''); $('#selB').innerHTML = opts.join('');
+  cat.addEventListener('click', e => { const b = e.target.closest('button[data-id]'); if (b) pick(MB[b.dataset.id]); });
+  $('#selA').onchange = e => { A = MB[e.target.value]; slot = 'B'; verdict(); }; $('#selB').onchange = e => { B = MB[e.target.value]; slot = 'A'; verdict(); };
+  $('#selA').onfocus = () => { slot = 'A'; verdict(); }; $('#selB').onfocus = () => { slot = 'B'; verdict(); };
+  $('#swap').onclick = () => { [A, B] = [B, A]; verdict(); };
+  const P = [['electron', 'proton', 'Electron and proton'], ['proton', 'higgs', 'Proton and Higgs boson'], ['top', 'uranium', 'Top quark and uranium atom'], ['rbc', 'human', 'A blood cell and you'], ['paperclip', 'litre', 'Paperclip and a litre of water'], ['human', 'whale', 'You and a blue whale'], ['human', 'humanity', 'You and everyone'], ['atmosphere', 'ocean', 'The air and the oceans'], ['earth', 'sun', 'Earth and the Sun'], ['sun', 'sgra', 'Sun and our galaxy’s black hole'], ['mw', 'universe', 'Our galaxy and everything']];
+  $('#presets').innerHTML = P.map(([a, b, t]) => `<button data-a="${a}" data-b="${b}">${t}</button>`).join('');
+  $('#presets').onclick = e => { const b = e.target.closest('button'); if (!b) return; A = MB[b.dataset.a]; B = MB[b.dataset.b]; slot = 'A'; verdict(); };
+  renderConsts($('#consts'), 'The numbers these masses are built from. Exact ones are fixed by definition in the SI; measured ones carry uncertainty.', [
+    ['c', 'speed of light in vacuum', '299 792 458 m/s', true, ['joule', 'planck', 'chandra']],
+    ['h', 'Planck constant, which now defines the kilogram', '6.626 070 15 × 10⁻³⁴ J·s', true, ['litre', 'planck', 'chandra']],
+    ['G', 'Newtonian constant of gravitation', '6.674 30(15) × 10⁻¹¹ m³ kg⁻¹ s⁻²', false, ['planck', 'chandra', 'earth', 'sun']],
+    ['mₑ', 'electron mass', '9.109 383 7139(28) × 10⁻³¹ kg', false, ['electron']],
+    ['mₚ', 'proton mass', '1.672 621 925 95(52) × 10⁻²⁷ kg', false, ['proton', 'chandra']],
+    ['μ', 'proton-to-electron mass ratio', '1836.152 673 426(32)', false, ['proton', 'electron']],
+    ['Da', 'dalton, or atomic mass unit', '1.660 539 068 92(52) × 10⁻²⁷ kg', false, ['dalton', 'water', 'hemo', 'ribo']],
+    ['N<sub>A</sub>', 'Avogadro constant', '6.022 140 76 × 10²³ mol⁻¹', true, ['mole']]], MB, pick);
+  $('#mExplore').onclick = () => setMode('explore'); $('#mCompare').onclick = () => setMode('compare');
+  $('#prev').onclick = () => select(M[Math.max(0, sel.idx - 1)]); $('#next').onclick = () => select(M[Math.min(M.length - 1, sel.idx + 1)]);
+  $('#toCompare').onclick = () => { A = sel; B = M[Math.min(M.length - 1, sel.idx + 1)]; if (B === A) B = M[sel.idx - 1]; slot = 'B'; setMode('compare'); };
+}
+
+// ---------- input ----------
+let drag = null, ptr = null; const pointers = new Map();
+function hitAt(x, y) { const ct = Math.cos(RTH), st = Math.sin(RTH);
+  for (let i = hits.length - 1; i >= 0; i--) { const h = hits[i];
+    if (h.rot) { const L = h.rot, sx = x - L.ax, sy = y - L.ay, lx = sx * ct - sy * st, ly = sx * st + sy * ct; if (lx >= -6 && lx <= L.w + 4 && Math.abs(ly) <= L.fs / 2 + 4) return h.o; continue; }
+    const [a, b, cc, d] = h.box; if (x >= a && x <= cc && y >= b && y <= d) return h.o; }
+  return null; }
+function zone(x, y) { if (mode !== 'explore' || y < H - 24) return null; const a = zX(rv.t0), b = zX(rv.t1); if (Math.abs(x - a) < 7) return 'zl'; if (Math.abs(x - b) < 7) return 'zr'; return x > a && x < b ? 'zm' : 'zjump'; }
+const ppdNow = () => (W - 80) / (rv.t1 - rv.t0);
+function zoomAt(f, ec) { const sp = rv.t1 - rv.t0, ns = clamp(sp * f, MINSPAN, FE1 - FE0); ec = ec ?? (rv.t0 + rv.t1) / 2; setRV(ec - (ec - rv.t0) * ns / sp, ns); }
+cv.addEventListener('wheel', e => { e.preventDefault(); if (mode !== 'explore') return; const r = cv.getBoundingClientRect(), x = e.clientX - r.left, k = e.deltaMode === 1 ? 16 : 1, dy = e.deltaY * k, dx = e.deltaX * k;
+  if (Math.abs(dx) > Math.abs(dy) || e.shiftKey) setRV(rv.t0 + (dx || dy) / ppdNow(), rv.t1 - rv.t0); else zoomAt(Math.exp(dy * .0016)); }, { passive: false });
+cv.addEventListener('dblclick', e => { const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, o = hitAt(x, y);
+  if (o && mode === 'explore') { if (o !== sel) select(o, false); centreOn(o.e); } else if (y > H - OVH) setRV(FE0, FE1 - FE0); });
+cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; pointers.set(e.pointerId, [x, y]);
+  drag = { x, y, moved: false, zone: zone(x, y), t0: rv.t0, t1: rv.t1, d0: null };
+  if (drag.zone === 'zjump') { const sp = rv.t1 - rv.t0; setRV(zE(x) - sp / 2, sp); drag.zone = 'zm'; drag.t0 = rv.t0; drag.t1 = rv.t1; }
+  if (pointers.size === 2) { const [p, q] = [...pointers.values()]; drag.d0 = Math.hypot(p[0] - q[0], p[1] - q[1]); drag.t0 = rv.t0; drag.t1 = rv.t1; drag.cx = (p[0] + q[0]) / 2; } });
+cv.addEventListener('pointermove', e => { const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; ptr = [x, y]; if (pointers.has(e.pointerId)) pointers.set(e.pointerId, [x, y]);
+  if (!drag) { const h = hitAt(x, y), z = zone(x, y), gh = gravHit(x, y), gt = gh ? { t: gh.t, x } : null; if (h !== hover) { hover = h; dirty = true; } if ((gt?.t) !== (gHover?.t) || (gt && gHover && Math.abs(gt.x - gHover.x) > 2)) { gHover = gt; dirty = true; } cv.classList.toggle('hover', !!h); cv.style.cursor = z === 'zl' || z === 'zr' ? 'ew-resize' : z ? 'grab' : ''; return; }
+  if (Math.abs(x - drag.x) + Math.abs(y - drag.y) > 4) drag.moved = true;
+  if (mode !== 'explore') return;
+  if (pointers.size === 2 && drag.d0) { const [p, q] = [...pointers.values()], d = Math.hypot(p[0] - q[0], p[1] - q[1]), sp = drag.t1 - drag.t0, ns = clamp(sp * drag.d0 / d, MINSPAN, FE1 - FE0), ec = drag.t0 + (drag.cx - 40) / (W - 80) * sp; setRV(ec - (ec - drag.t0) * ns / sp, ns, true); return; }
+  if (drag.zone) { const de = (x - drag.x) / (W - 80) * (FE1 - FE0);
+    if (drag.zone === 'zm') setRV(drag.t0 + de, drag.t1 - drag.t0, true);
+    else if (drag.zone === 'zl') { const e0 = clamp(drag.t0 + de, FE0, drag.t1 - MINSPAN); setRV(e0, drag.t1 - e0, true); }
+    else { const e1 = clamp(drag.t1 + de, drag.t0 + MINSPAN, FE1); setRV(drag.t0, e1 - drag.t0, true); } return; }
+  if (drag.moved) setRV(drag.t0 - (x - drag.x) / ((W - 80) / (drag.t1 - drag.t0)), drag.t1 - drag.t0, true); });
+function endPointer(e) { pointers.delete(e.pointerId); if (!drag) return; if (!drag.moved && !drag.zone) { const h = hitAt(drag.x, drag.y); if (h) pick(h); } if (pointers.size === 0) drag = null; }
+cv.addEventListener('pointerup', endPointer); cv.addEventListener('pointercancel', endPointer);
+cv.addEventListener('pointerleave', () => { ptr = null; if (hover || gHover) { hover = null; gHover = null; dirty = true; } });
+function setGravity(on) { gravity = on; $('#gToggle').setAttribute('aria-pressed', on); try { localStorage.setItem('mass.gravity', on ? '1' : '0'); } catch (e) {} dirty = true; }
+$('#gToggle').onclick = () => setGravity(!gravity);
+function setBeamMode(m) { beamMode = m; document.querySelectorAll('#rSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m)); try { localStorage.setItem('mass.beamMode', m); } catch (e) {} dirty = true; }
+$('#rSeg').onclick = e => { const b = e.target.closest('button[data-m]'); if (b) setBeamMode(b.dataset.m); };
+// R: back to the whole range. F: centre the beam on the selection
+const resetView = () => setRVEased(FE0, FE1 - FE0);
+$('#resetBtn').onclick = resetView;
+document.addEventListener('keydown', e => { if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (mode === 'explore' && (e.key === 'r' || e.key === 'R')) resetView(); else if (mode === 'explore' && (e.key === 'f' || e.key === 'F')) centreOn(sel.e);
+  else if (mode === 'explore' && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { select(M[clamp(sel.idx + (e.key === 'ArrowRight' ? 1 : -1), 0, M.length - 1)]); e.preventDefault(); }
+  else if ((e.key === 'l' || e.key === 'L') && mode === 'explore') setBeamMode(beamMode === 'pics' ? 'words' : 'pics'); else if ((e.key === 'g' || e.key === 'G') && mode === 'explore') setGravity(!gravity); });
+cv.addEventListener('keydown', e => { if (mode !== 'explore') return; if (e.key === '+' || e.key === '=') zoomAt(.7, sel.e); else if (e.key === '-') zoomAt(1 / .7); else if (e.key === '0') setRV(FE0, FE1 - FE0); });
+
+// ---------- boot ----------
+function resize() { const r = cv.getBoundingClientRect(); DPR = Math.min(2, window.devicePixelRatio || 1); W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR); dirty = true; }
+new ResizeObserver(resize).observe($('#stage'));
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readTheme);
+new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+readTheme(); buildPanel(); setBeamMode(beamMode); setGravity(gravity); resize(); setRV(sel.e - 14, 28, true); select(sel); verdict(); setMode('explore');
+document.fonts && document.fonts.ready.then(() => { dirty = true; });
+requestAnimationFrame(tick);
+
+})();
+</script>

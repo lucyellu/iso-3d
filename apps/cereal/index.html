@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#fbf5e8" />
+    <title>Milk & Letters — A cozy word game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Milk and Letters home">
+          <span class="brand-mark" aria-hidden="true">◒</span>
+          <span>milk & letters</span>
+        </a>
+        <div class="topbar-right">
+          <span class="tiny-label">daily bowl</span>
+          <span class="date-pill">sep 10, 2026</span>
+          <button class="icon-button" id="soundToggle" aria-label="Toggle sound" title="Toggle sound">◖</button>
+        </div>
+      </header>
+
+      <main class="game-layout">
+        <aside class="sidebar">
+          <div class="eyebrow">a little word game</div>
+          <h1>Make a word.<br /><em>Take a sip.</em></h1>
+          <p class="intro">Collect the floating letters and spoon together your best word before the milk gets cold.</p>
+
+          <div class="score-card">
+            <div class="score-card-top">
+              <span>today's score</span>
+              <span class="streak-dot"><i></i> 4 day streak</span>
+            </div>
+            <strong id="score">128</strong>
+            <div class="score-progress"><span id="scoreProgress"></span></div>
+            <div class="score-goal"><span>next pour</span><span id="scoreGoal">200 pts</span></div>
+          </div>
+
+          <div class="how-to">
+            <div class="how-to-title"><span class="step-number">01</span> how to play</div>
+            <div class="how-row"><span class="how-icon">✦</span><p>Tap letters bobbing in the milk.</p></div>
+            <div class="how-row"><span class="how-icon">⌁</span><p>Build a word in the spoon.</p></div>
+            <div class="how-row"><span class="how-icon">↗</span><p>Serve it for points.</p></div>
+          </div>
+
+          <div class="sidebar-footer">
+            <span>best word</span>
+            <span class="best-word" id="bestWord">OATMEAL <b>+42</b></span>
+          </div>
+        </aside>
+
+        <section class="play-area" aria-label="Milk and Letters game">
+          <div class="play-toolbar">
+            <div class="round-meta"><span class="live-dot"></span> round 08 <span class="slash">/</span> 3d milk sim</div>
+            <div class="toolbar-actions">
+              <button class="text-button" id="shuffleButton"><span>⤨</span> shuffle</button>
+              <button class="text-button" id="newGameButton"><span>＋</span> new bowl</button>
+            </div>
+          </div>
+
+          <div class="bowl-stage" id="bowlStage">
+            <div class="ambient ambient-one"></div>
+            <div class="ambient ambient-two"></div>
+            <div id="gameCanvas" role="img" aria-label="A 3D bowl of milk with floating cereal letters"></div>
+            <div class="stage-caption"><span class="swirl-icon">≈</span> letters are warm & wobbly</div>
+          </div>
+
+          <div class="word-dock">
+            <div class="dock-label"><span class="dock-spoon">⌁</span> your spoon</div>
+            <div class="word-slots" id="wordSlots" aria-live="polite"><span class="empty-prompt">tap letters above to start a word</span></div>
+            <button class="serve-button" id="serveButton" disabled><span>serve word</span><b>↗</b></button>
+          </div>
+          <div class="game-status" id="gameStatus">A three-letter word is a good place to start.</div>
+        </section>
+      </main>
+
+      <footer class="footer"><span>made for slow mornings</span><span class="footer-line"></span><span>milk & letters 01</span></footer>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js"
+        }
+      }
+    </script>
+    <script type="module" src="three-game.js"></script>
+  </body>
+</html>
