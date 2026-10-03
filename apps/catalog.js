@@ -11,7 +11,7 @@
 // hue      — icon colour when there's no icon image: a pair of CSS colours
 // note     — a one-line heads-up shown under the button (slow first load, needs an account, ...)
 window.CATALOG = {
-  featured: ['stockwave', 'starbreaker', 'world-sense', 'glow'],
+  featured: ['myspot', 'starbreaker', 'world-sense', 'glow'],
   apps: [
     // ── Games ───────────────────────────────────────────────
     { id: 'stockwave', name: 'Stockwave', subtitle: 'Paper trading, fast-forwarded', kind: 'game',
@@ -42,6 +42,11 @@ window.CATALOG = {
       made: 'Paperbox Studio', year: 2023 },
 
     // ── Apps ────────────────────────────────────────────────
+    { id: 'myspot', name: 'My Spot', subtitle: 'A player for a very big music library', kind: 'app',
+      access: 'open', url: 'https://myspot-web.netlify.app/', devices: ['desktop'],
+      media: { poster: 'myspot.jpg', video: 'myspot.mp4' }, hue: ['#4a5a1f', '#c8e04a'],
+      body: 'A YouTube-style player for thousands of AI-made songs, with synced lyrics, channels and playlists, and a side panel for making cover art and visuals to play along with each track.',
+      made: 'Python, FastAPI, JavaScript', year: 2026 },
     { id: 'world-sense', name: 'Earth’s Sensorium', subtitle: 'How the planet perceives itself', kind: 'app',
       access: 'open', url: 'https://world-sense-eight.vercel.app/', devices: ['desktop', 'phone'],
       media: { poster: 'world-sense.jpg', video: 'world-sense.mp4' }, icon: 'icons/world-sense.png', hue: ['#2c4a3e', '#c9b27a'],
