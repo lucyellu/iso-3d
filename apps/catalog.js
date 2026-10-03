@@ -14,6 +14,11 @@ window.CATALOG = {
   featured: ['myspot', 'starbreaker', 'world-sense', 'glow'],
   apps: [
     // ── Games ───────────────────────────────────────────────
+    { id: 'jelly-baby', name: 'Jelly Baby', subtitle: 'A very small world with excellent bounce', kind: 'game',
+      access: 'open', url: 'https://jelly.scottsun.io', devices: ['desktop', 'phone'],
+      media: { poster: 'jelly-toss.jpg' }, hue: ['#c2457a', '#ffb3c9'],
+      body: 'Wander a 7 cm jelly around a warm wooden tabletop. Try the swing and the trampoline, pull it by the crown and let go, and watch the wobble travel through it.',
+      made: 'Three.js, TypeScript · with Scott Sun', year: 2026 },
     { id: 'stockwave', name: 'Stockwave', subtitle: 'Paper trading, fast-forwarded', kind: 'game',
       access: 'open', url: 'https://www.playstockwave.com/', devices: ['desktop', 'phone'],
       media: { poster: 'stockwave.jpg', video: 'stockwave.mp4' }, icon: 'icons/stockwave.png', hue: ['#1f6b5c', '#58c49a'],
@@ -113,6 +118,10 @@ window.CATALOG = {
     { id: 'archive-studio', name: 'Archive Deck Studio', subtitle: 'Archive cards from a prompt', kind: 'toy', access: 'play', url: 'archive-studio/', devices: ['desktop'],
       media: { poster: 'archive-studio.jpg', video: 'archive-studio.mp4' }, hue: ['#3a3326', '#cbb88a'],
       body: 'Type a prompt and get an archive-style deck of cards in procedural ink on an infinite canvas, ready to export.', made: 'Tailwind, JSZip', year: 2026 },
+    { id: 'noteforge', name: 'NoteForge Piano', subtitle: 'Audio to piano roll, sheet and chords', kind: 'app', access: 'play', url: 'noteforge/', devices: ['desktop'],
+      media: { poster: 'noteforge.jpg' }, hue: ['#0a2a4a', '#4aa8ff'],
+      note: 'Runs entirely in your browser; your audio is never uploaded.',
+      body: 'Drop in a song and watch it turn into a falling-note piano roll, sheet music and chords, with playback, WAV and MIDI export.', made: 'Plain JavaScript, Web Audio', year: 2026 },
     { id: 'js-piano', name: 'JS Piano', subtitle: 'A playable piano', kind: 'toy', access: 'play', url: 'js-piano/', devices: ['desktop'],
       media: { poster: 'js-piano.jpg', video: 'js-piano.mp4' }, hue: ['#1a1a1a', '#f0ece2'],
       body: 'Play with the mouse or your keyboard.', made: 'Plain JavaScript', year: 2026 },
