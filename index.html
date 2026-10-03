@@ -97,6 +97,10 @@
   .pip.big .pip-body { flex: 1; aspect-ratio: auto; height: auto; }
   .pip.big .pip-bar { cursor: default; }
   .pip[data-kind="form"] .pip-body { aspect-ratio: auto; background: none; }
+  /* the app store: a tall window over the water while the camera rides along with the motorboat */
+  .pip[data-kind="store"] { width: min(760px, 52vw); right: 28px; bottom: 28px; }
+  .pip[data-kind="store"] .pip-body { aspect-ratio: auto; height: min(78vh, 760px); background: #2a3d3a; }
+  .pip[data-kind="store"] #pipBig { display: none; }
   .pip[data-kind="form"] #pipBig, .pip[data-kind="form"] #pipOut { display: none; }
   .pip-form { display: grid; gap: 12px; padding: 6px 16px 16px; }
   .pip-form label { display: grid; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(239,233,220,.7); }
@@ -159,6 +163,8 @@
     .hint { display: none; }
     .angle { top: 28vh; bottom: auto; }
     .pip { right: 16px; bottom: 76px; }
+    .pip[data-kind="store"] { left: 10px; right: 10px; width: auto; bottom: 10px; }
+    .pip[data-kind="store"] .pip-body { height: 58vh; }
     .pip.big { left: 8px !important; top: 8px !important; right: 8px; bottom: 8px; }
   }
 </style>
@@ -219,7 +225,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 // ─────────────────────────────────────────────────────────────
 // Each chapter has a camera view: yaw/pitch away from the true isometric angle (radians; the loop
 // reshapes to keep closing within about ±0.5 yaw and -0.3..0.7 pitch), zoom (1 = whole loop) and
-// focus ('loop', 'lookout', 'fisher' or 'rider').
+// focus ('loop', 'lookout', 'fisher', 'rider' or 'motor', the motorboat that laps the sea).
 const SITE = {
   name: 'Lucy Lu',
   role: '3D artist · engineer',
@@ -230,7 +236,7 @@ const SITE = {
               { label: 'Freelance reel', href: 'https://vimeo.com/lucylu' }],
       view: { yaw: 0, pitch: 0 } },
     { title: 'Games & Apps', body: 'Games, web apps and small toys, most of which run right in your browser: a fast-forward paper trading game, a daily Morse puzzle, a planet’s worth of sensors. Lunescape and Starbreaker were Paperbox Studio’s iPad games; they’ve retired, but you can still watch them played.',
-      links: [{ label: 'Browse all', href: 'apps/', newTab: true },
+      links: [{ label: 'Browse all', href: 'apps/', store: true },
               { label: 'Stockwave', href: 'https://www.playstockwave.com/' },
               { label: 'Starbreaker', href: 'apps/#starbreaker', embed: 'https://youtu.be/ELOKL_uuzIE' },
               { label: 'Lunescape', href: 'apps/#lunescape', embed: 'https://youtu.be/8Jjn_P_nJzQ' }],
@@ -1692,12 +1698,15 @@ function viewParams() {
 
 // Chapter views: glide angle, zoom and focus to the chapter's view. Grabbing the camera mid-glide
 // hands the angle back to the user while zoom and focus finish arriving.
+const dock = { v: 0 };   // 0..1: slides the scene aside so the store window never covers the boat being followed
 const tween = { on: false, s: 0, e: 0, dur: 1.5, angles: true, to: null,
   from: { yaw: 0, pitch: 0, zoom: 1, focus: new THREE.Vector3() } };
 const focusNow = new THREE.Vector3(), focusGoal = new THREE.Vector3(), HEAD = new THREE.Vector3(0, 0.45, 0);
+const MOTOR_LOOK = new THREE.Vector3(0, 0.3, 0);
 const FRAME = new THREE.Vector3(1.6, 0, 1.6);   // drop the view a little so the pier and its water fit under the loop
 function focusPoint(key, out) {
   if (key === 'loop') return out.copy(P).add(FRAME);
+  if (key === 'motor') return HB.motor.getWorldPosition(out).add(MOTOR_LOOK);
   const o = key === 'rider' ? lv0.rider.g : lv0[key].g;
   return o.getWorldPosition(out).add(HEAD);
 }
@@ -1722,11 +1731,14 @@ function updateTween(dt) {
   if (tween.s >= 1) { tween.on = false; state.focus = to.focus; }
 }
 
-function updateCamera() {
+function updateCamera(dt) {
   const vp = viewParams();
   const b = smooth(clamp01(state.ride));
   const halfH = THREE.MathUtils.lerp(vp.halfH * state.zoom, 3.1, b);
-  const ox = THREE.MathUtils.lerp(vp.ox, 0, b), oy = THREE.MathUtils.lerp(vp.oy, 0, b);
+  const want = pip.open && pip.kind === 'store' ? 1 : 0;
+  dock.v += (want - dock.v) * Math.min(1, 0.06 * (dt * 60 || 1));
+  const phone = vp.aspect < 0.85;
+  const ox = THREE.MathUtils.lerp(vp.ox, 0, b) - (phone ? 0 : 0.5 * dock.v), oy = THREE.MathUtils.lerp(vp.oy, 0, b) + (phone ? 0.42 * dock.v : 0);
   if (tween.on) focusNow.lerpVectors(tween.from.focus, focusPoint(tween.to.focus, focusGoal), tween.e);
   else focusPoint(state.focus, focusNow);
   camTarget.copy(focusNow).lerp(A.pos, b);
@@ -1990,6 +2002,7 @@ function renderCard(i, instant) {
 // button plays the clip while ↗ still goes to href; a plain YouTube/Vimeo/PDF address works there too.
 function embedFor(l) {
   if (l.form) return { kind: 'form' };
+  if (l.store) return { kind: 'store', src: l.href + '?embed=1' };
   if (l.embed) return embedFor({ href: l.embed }) || { src: l.embed, kind: l.kind || 'video' };
   let u; try { u = new URL(l.href, location.href); } catch (e) { return null; }
   if (!/^https?:$/.test(u.protocol)) return null;
@@ -2020,7 +2033,7 @@ const CLIP_MUTE = matchMedia('(hover: none) and (pointer: coarse)').matches ? 1 
 function openPip(em, label, href) {
   const el = pip.el, wasOpen = pip.open;
   el.dataset.kind = em.kind;
-  $('pipTitle').textContent = em.kind === 'form' ? 'Send me a message' : label;
+  $('pipTitle').textContent = em.kind === 'form' ? 'Send me a message' : em.kind === 'store' ? 'Apps & Games' : label;
   $('pipOut').href = href;
   if (em.kind === 'form') $('pipBody').replaceChildren(contactForm);
   else {
@@ -2036,6 +2049,8 @@ function openPip(em, label, href) {
     if (em.kind === 'video') f.addEventListener('load', () => [300, 1200, 2500].forEach(t => setTimeout(() => { if (f.isConnected) kick(); }, t)));
   }
   pip.open = true; pip.kind = em.kind;
+  // the store: leave the loop and ride along with the motorboat, the app window open beside it
+  if (em.kind === 'store' && state.mode !== 'fp') goView({ yaw: 0.15, pitch: 0.55, zoom: 0.5, focus: 'motor' });
   if (em.kind === 'video' && CLIP_MUTE) setBig(true);   // YouTube picks quality by player size, so phones get the big player
   if (!wasOpen) {
     el.hidden = false; el.classList.add('enter');
@@ -2082,7 +2097,9 @@ contactForm.addEventListener('submit', async e => {
 contactForm.addEventListener('input', () => { const st = contactForm.querySelector('.pip-status'); if (!contactForm.querySelector('[type="submit"]').disabled) st.textContent = ''; });
 function closePip() {
   if (!pip.open) return;
+  const wasStore = pip.kind === 'store';
   pip.open = false; pip.kind = '';
+  if (wasStore && state.mode !== 'fp') goView(SITE.chapters[state.chapter].view || {});   // back to the chapter's own view
   pip.el.classList.remove('big'); setBig(false);
   pip.el.classList.add('enter');
   setTimeout(() => { if (!pip.open) { pip.el.hidden = true; $('pipBody').replaceChildren(); } }, 250);
@@ -2132,6 +2149,7 @@ $('pipOut').addEventListener('click', () => closePip());
 }
 function goChapter(i, fromClick) {
   const to = mod(i, N);
+  if (pip.open && pip.kind === 'store') closePip();
   if (to !== state.chapter) ui.nav(to < state.chapter);
   state.chapter = to;
   if (state.mode !== 'fp') goView(SITE.chapters[state.chapter].view || {});
@@ -2629,7 +2647,7 @@ function frame(nowMs) {
   const fpOn = state.mode === 'fp';
   animate(simT);
   updateHarbour(simT);
-  updateCamera();
+  updateCamera(dt);
   if (fpOn) updateFP(dt, simT);
   updateCopies();
   updateSea();
