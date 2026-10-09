@@ -121,7 +121,7 @@ window.CATALOG = {
       access: 'open', url: 'https://snark-weather.vercel.app/', devices: ['phone', 'desktop'],
       media: { poster: 'snark-weather.jpg', video: 'snark-weather.mp4', phone: true, shots: ['snark-weather-2.jpg', 'snark-weather-3.jpg'] },
       icon: 'icons/snark-weather.png', hue: ['#cd3222', '#f3c9c0'],
-      body: 'A glass-cloud weather app that tells you the forecast in one dry sentence, and remembers whose birthday it is. Hourly and 7-day views, a month calendar with the weather on every day, and six colour themes.',
+      body: 'A glass-cloud weather app that tells you the forecast in one dry sentence. Hourly and 7-day views, a month calendar with the weather on every day, and six colour themes.',
       made: 'React, TypeScript, Open-Meteo', year: 2026 },
     { id: 'drops', name: 'Drops', subtitle: 'Language flashcards', kind: 'app',
       access: 'play', url: 'drops/', devices: ['phone', 'desktop'],
