@@ -7,14 +7,14 @@
 //              'watch' no longer available; gameplay video only
 // devices  — where it works well: 'desktop', 'phone', 'ipad'
 // media    — files in apps/media/: poster (jpg), video (short muted mp4 loop), shots (extra stills),
-//            youtube (id of a full video, played in the details sheet), phone (captured at phone size)
+//            fit (4:3 captures: show the whole frame over a blurred copy), youtube (id of a full video, played in the details sheet), phone (captured at phone size)
 // hue      — icon colour when there's no icon image: a pair of CSS colours
 // note     — a one-line heads-up shown under the button (slow first load, needs an account, ...)
 window.CATALOG = {
-  featured: ['myspot', 'starbreaker', 'world-sense', 'glow'],
+  featured: ['snark-weather', 'breathe', 'starbreaker', 'world-sense'],
   apps: [
     // ── Games ───────────────────────────────────────────────
-    { id: 'jelly-baby', name: 'Jelly Baby', subtitle: 'A very small world with excellent bounce', kind: 'game',
+    { id: 'jelly-toss', name: 'Jelly Toss', subtitle: 'A very small world with excellent bounce', kind: 'game',
       access: 'open', url: 'https://jelly.scottsun.io', devices: ['desktop', 'phone'],
       media: { poster: 'jelly-toss.jpg', video: 'jelly-toss.mp4' }, hue: ['#c2457a', '#ffb3c9'],
       body: 'Wander a 7 cm jelly around a warm wooden tabletop. Try the swing and the trampoline, pull it by the crown and let go, and watch the wobble travel through it.',
@@ -27,7 +27,7 @@ window.CATALOG = {
       made: 'React, Node, live market data', year: 2026 },
     { id: 'starbreaker', name: 'Starbreaker', subtitle: "Swipe n' chill puzzles in space", kind: 'game',
       access: 'watch', devices: ['ipad'], status: 'Retired from the App Store',
-      media: { poster: 'starbreaker.jpg', video: 'starbreaker.mp4', shots: ['starbreaker-2.jpg', 'starbreaker-3.jpg'], youtube: 'ELOKL_uuzIE' },
+      media: { poster: 'starbreaker.jpg', video: 'starbreaker.mp4', fit: true, shots: ['starbreaker-2.jpg', 'starbreaker-3.jpg'], youtube: 'ELOKL_uuzIE' },
       hue: ['#2a2f7a', '#f2a93b'],
       body: 'A match puzzle with an astronaut cat. Hop between levels on a map around the moon, clear jelly and blockers in a set number of moves, and pick up boosters on the way.',
       made: 'Unity, for iPhone and iPad · Paperbox Studio', year: 2023 },
@@ -52,26 +52,11 @@ window.CATALOG = {
       made: 'Paperbox Studio', year: 2023 },
 
     // ── Apps ────────────────────────────────────────────────
-    { id: 'myspot', name: 'My Spot', subtitle: 'A player for a very big music library', kind: 'app',
-      access: 'open', url: 'https://myspot-web.netlify.app/', devices: ['desktop'],
-      media: { poster: 'myspot.jpg', video: 'myspot.mp4' }, hue: ['#4a5a1f', '#c8e04a'],
-      body: 'A YouTube-style player for thousands of AI-made songs, with synced lyrics, channels and playlists, and a side panel for making cover art and visuals to play along with each track.',
-      made: 'Python, FastAPI, JavaScript', year: 2026 },
-    { id: 'world-sense', name: 'Earth’s Sensorium', subtitle: 'How the planet perceives itself', kind: 'app',
-      access: 'open', url: 'https://world-sense-eight.vercel.app/', devices: ['desktop', 'phone'],
-      media: { poster: 'world-sense.jpg', video: 'world-sense.mp4' }, icon: 'icons/world-sense.png', hue: ['#2c4a3e', '#c9b27a'],
-      body: '124 instruments through which the planet senses the world, from seismometers to sea-floor microphones, arranged as senses rather than scientific disciplines.',
-      made: 'Static site', year: 2026 },
     { id: 'cohear', name: 'Cohear', subtitle: 'Listen together, be there anywhere', kind: 'app',
       access: 'open', url: 'https://cohere-main.netlify.app/', devices: ['desktop', 'phone'],
       media: { poster: 'cohear.jpg', video: 'cohear.mp4' }, icon: 'icons/cohear.png', hue: ['#4a2a6a', '#e07ab8'],
       body: 'Concert discovery with synchronized live rooms, so you can follow a show in sync with the crowd from wherever you are.',
       made: 'React, Vite', year: 2026 },
-    { id: 'totd', name: 'Thing of the Day', subtitle: 'A daily dose of the interesting', kind: 'app',
-      access: 'open', url: 'https://totd.vercel.app/', devices: ['desktop', 'phone'],
-      media: { poster: 'totd.jpg', video: 'totd.mp4' }, icon: 'icons/totd.png', hue: ['#1b1b1b', '#e8a35a'],
-      body: 'A generated daily edition: one thing a day, with pictures and notes. Step back through past editions or jump around the calendar.',
-      made: 'Next.js', year: 2026 },
     { id: 'booklit', name: 'Booklit', subtitle: 'Reading tracker and 3D shelf', kind: 'app',
       access: 'open', url: 'https://bookreader-af115.web.app/', devices: ['desktop'],
       media: { poster: 'booklit.jpg', video: 'booklit.mp4' }, icon: 'icons/booklit.png', hue: ['#5a3a22', '#e3b77a'],
@@ -85,7 +70,7 @@ window.CATALOG = {
       made: 'React', year: 2026 },
     { id: 'breathe', name: 'Breathe', subtitle: 'Breath-hold tracker', kind: 'app',
       access: 'open', url: 'https://breathcount.netlify.app/', devices: ['phone', 'desktop'],
-      media: { poster: 'breathe.jpg', video: 'breathe.mp4', phone: true }, icon: 'icons/breathe.png', hue: ['#3d6b63', '#a8d8c8'],
+      media: { poster: 'breathe.jpg', video: 'breathe.mp4', phone: true, shots: ['breathe-2.jpg'] }, icon: 'icons/breathe.png', hue: ['#3d6b63', '#a8d8c8'],
       body: 'A quiet practice for timing and tracking breath holds.',
       made: 'Static site', year: 2026 },
     { id: 'snark-weather', name: 'Snark Weather', subtitle: 'A forecast with attitude', kind: 'app',
@@ -138,6 +123,16 @@ window.CATALOG = {
       media: { poster: 'noteforge.jpg', video: 'noteforge.mp4' }, hue: ['#0a2a4a', '#4aa8ff'],
       note: 'Runs entirely in your browser; your audio is never uploaded.',
       body: 'Drop in a song and watch it turn into a falling-note piano roll, sheet music and chords, with playback, WAV and MIDI export.', made: 'Plain JavaScript, Web Audio', year: 2026 },
+    { id: 'myspot', name: 'My Spot', subtitle: 'A player for a very big music library', kind: 'app',
+      access: 'open', url: 'https://myspot-web.netlify.app/', devices: ['desktop'],
+      media: { poster: 'myspot.jpg', video: 'myspot.mp4' }, hue: ['#4a5a1f', '#c8e04a'],
+      body: 'A YouTube-style player for thousands of AI-made songs, with synced lyrics, channels and playlists, and a side panel for making cover art and visuals to play along with each track.',
+      made: 'Python, FastAPI, JavaScript', year: 2026 },
+    { id: 'world-sense', name: 'Earth’s Sensorium', subtitle: 'How the planet perceives itself', kind: 'app',
+      access: 'open', url: 'https://world-sense-eight.vercel.app/', devices: ['desktop', 'phone'],
+      media: { poster: 'world-sense.jpg', video: 'world-sense.mp4' }, icon: 'icons/world-sense.png', hue: ['#2c4a3e', '#c9b27a'],
+      body: '124 instruments through which the planet senses the world, from seismometers to sea-floor microphones, arranged as senses rather than scientific disciplines.',
+      made: 'Static site', year: 2026 },
     { id: 'js-piano', name: 'JS Piano', subtitle: 'A playable piano', kind: 'toy', access: 'play', url: 'js-piano/', devices: ['desktop'],
       media: { poster: 'js-piano.jpg', video: 'js-piano.mp4' }, hue: ['#1a1a1a', '#f0ece2'],
       body: 'Play with the mouse or your keyboard.', made: 'Plain JavaScript', year: 2026 },
