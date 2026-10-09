@@ -1,0 +1,1453 @@
+<meta charset="utf-8">
+<title>Afterlife Census</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0b0f1e;
+    --panel: #11172d;
+    --panel-2: #161d38;
+    --line: #252d50;
+    --ink: #ebe6d6;
+    --muted: #9098b6;
+    --faint: #5d6488;
+    --accent: #f1d58a;
+    --display: "Marcellus", "Trajan Pro", Georgia, serif;
+    --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { background: var(--bg); color: var(--ink); }
+  body { font-family: var(--body); font-size: 15px; line-height: 1.55; padding-inline: 20px; padding-block: 28px 64px; }
+  .wrap { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 400; margin: 0; text-wrap: balance; letter-spacing: 0.01em; }
+  h1 { font-size: clamp(2rem, 4.6vw, 3.4rem); line-height: 1.05; }
+  h2 { font-size: 1.55rem; }
+  h3 { font-size: 1.2rem; }
+  p { margin: 0; }
+  .eyebrow { font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .lede { color: var(--muted); max-width: 68ch; font-size: 1rem; }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  button, select, input { font: inherit; color: inherit; }
+  button:focus-visible, select:focus-visible, input:focus-visible, .row:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  select, input[type="search"] { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+  input[type="range"] { accent-color: var(--accent); }
+
+  header { display: flex; flex-direction: column; gap: 10px; }
+
+  .lens { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; padding: 12px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+  .lens label { display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--muted); }
+  .lens label.chk { cursor: pointer; }
+  .lens select { color: var(--ink); max-width: 100%; }
+  .lens .ghost { margin-left: auto; }
+  .ghost { background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 0.8rem; color: var(--muted); cursor: pointer; }
+  .ghost:hover { color: var(--ink); border-color: var(--faint); }
+  #linkOut { width: 100%; font-family: var(--mono); font-size: 0.75rem; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+
+  .stage { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  @media (max-width: 900px) { .stage { grid-template-columns: 1fr; } }
+
+  .sky { position: relative; background: radial-gradient(ellipse at 50% 30%, #172048 0%, var(--bg) 70%); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  #sky { display: block; width: 100%; touch-action: none; cursor: crosshair; }
+  .tip { position: absolute; pointer-events: none; background: rgba(9, 12, 26, 0.94); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 0.82rem; max-width: 260px; z-index: 3; }
+  .tip b { font-family: var(--display); font-weight: 400; font-size: 1rem; display: block; }
+  .tip .dim { color: var(--muted); }
+  .scale-note { position: absolute; top: 10px; left: 12px; font-size: 0.72rem; color: var(--muted); display: flex; align-items: center; gap: 6px; pointer-events: none; }
+  .scale-note i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink); display: inline-block; }
+
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px; border-top: 1px solid var(--line); background: var(--panel); }
+  .play { background: var(--accent); color: #1a1606; border: 0; border-radius: 999px; padding: 8px 18px; font-weight: 600; cursor: pointer; min-width: 128px; }
+  .play:hover { filter: brightness(1.08); }
+  #scrub { flex: 1 1 220px; }
+  .eras { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+  .eras button { background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 0.78rem; color: var(--muted); cursor: pointer; }
+  .eras button:hover { color: var(--ink); border-color: var(--faint); }
+  .pace { font-size: 0.75rem; color: var(--faint); width: 100%; }
+
+  .side { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .clock { display: flex; flex-direction: column; gap: 2px; }
+  .clock .year { font-family: var(--display); font-size: clamp(2.2rem, 4vw, 3rem); line-height: 1; color: var(--accent); }
+  .clock .where { font-size: 0.85rem; color: var(--muted); }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat { display: flex; flex-direction: column; gap: 2px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .stat .v { font-family: var(--mono); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 0.68rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+
+  .truth { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+  .truth p { font-size: 0.86rem; color: var(--muted); }
+  .slide { display: flex; flex-direction: column; gap: 4px; }
+  .slide .top { display: flex; justify-content: space-between; gap: 10px; font-size: 0.8rem; }
+  .slide .top b { font-weight: 500; }
+  .slide input { width: 100%; }
+  .stops { display: flex; justify-content: space-between; gap: 8px; font-size: 0.7rem; color: var(--faint); }
+  .stops button { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; text-align: left; font-size: inherit; }
+  .stops button:last-child { text-align: right; }
+  .stops button:hover { color: var(--ink); }
+  .stopnote { font-size: 0.78rem; color: var(--muted); min-height: 1.2em; }
+  .dests { display: flex; flex-direction: column; }
+  .dest { display: grid; grid-template-columns: 12px minmax(0, 1fr) 70px 52px; gap: 10px; align-items: baseline; padding-block: 6px; border-top: 1px solid var(--line); font-size: 0.86rem; }
+  .dest .sw { align-self: center; }
+  .dest small { display: block; color: var(--muted); font-size: 0.74rem; line-height: 1.35; }
+  .dest .num { text-align: right; font-size: 0.8rem; }
+
+  .table { display: flex; flex-direction: column; }
+  .tcap { font-size: 0.8rem; color: var(--muted); }
+  .tcap b { color: var(--ink); font-weight: 500; }
+  .thead, .row { display: grid; grid-template-columns: 14px minmax(0, 1fr) 66px 54px 62px 54px; gap: 10px; align-items: center; padding: 5px 6px; }
+  .thead { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); border-bottom: 1px solid var(--line); }
+  .row span:nth-child(n+3) { text-align: right; }
+  .thead button { background: none; border: 0; padding: 2px 0; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; text-align: right; white-space: nowrap; }
+  .thead button[data-sort="name"] { text-align: left; }
+  .thead button:hover, .thead button.on { color: var(--ink); }
+  .thead button.on::after { content: " ▾"; }
+  .thead button.on.asc::after { content: " ▴"; }
+  .thead .grp { grid-column: 3 / span 2; text-align: center; border-bottom: 1px solid var(--line); padding-bottom: 2px; }
+  .thead .grp.liv { grid-column: 5 / span 2; }
+  .row { border-radius: 6px; cursor: pointer; font-size: 0.86rem; border: 1px solid transparent; }
+  .row:hover { background: var(--panel-2); }
+  .row.sel { border-color: var(--faint); background: var(--panel-2); }
+  .row.empty { opacity: 0.35; }
+  .sw { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+  .rname { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+  .rname b { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rname small { color: var(--muted); font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rb { color: var(--accent); font-weight: 400; }
+  .row .num { font-size: 0.8rem; line-height: 1.2; }
+  .row .liv { color: var(--muted); }
+  .rng { display: block; color: var(--faint); font-size: 0.66rem; }
+
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+  @media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .phead { display: flex; flex-direction: column; gap: 4px; }
+
+  .detail .head { display: flex; align-items: center; gap: 12px; }
+  .detail .big { width: 18px; height: 18px; border-radius: 50%; flex: none; box-shadow: 0 0 18px currentColor; }
+  .detail .meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.82rem; color: var(--muted); }
+  .detail .meta b { color: var(--ink); font-weight: 500; }
+  .note { font-size: 0.82rem; color: var(--muted); border-left: 2px solid var(--line); padding-left: 10px; }
+  .places { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; }
+  .place { display: grid; grid-template-columns: minmax(110px, 0.8fr) minmax(0, 2fr); gap: 12px; font-size: 0.84rem; padding-block: 5px; border-top: 1px solid var(--line); }
+  .place b { font-weight: 500; }
+  .place span { color: var(--muted); }
+  @media (max-width: 520px) { .place { grid-template-columns: 1fr; gap: 2px; } }
+  .pill { display: inline-block; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+
+  .ticker { display: flex; flex-direction: column; gap: 6px; min-height: 120px; }
+  .tick { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; font-size: 0.86rem; animation: in 0.5s ease; }
+  .tick .num { color: var(--muted); font-size: 0.78rem; }
+  .tick em { font-style: normal; color: var(--muted); }
+  @keyframes in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+  .chartbox { position: relative; }
+  .conf { position: relative; height: 18px; margin-bottom: 6px; font-size: 0.66rem; color: var(--muted); }
+  .conf span { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; border-radius: 3px; overflow: hidden; white-space: nowrap; letter-spacing: 0.04em; }
+  #chart { display: block; width: 100%; height: 220px; cursor: pointer; border-radius: 6px; }
+  .xt { position: relative; height: 34px; font-size: 0.7rem; color: var(--muted); }
+  .xt span { position: absolute; top: 4px; transform: translateX(-50%); white-space: nowrap; }
+  .xt span::before { content: ""; position: absolute; left: 50%; top: -6px; height: 5px; border-left: 1px solid var(--faint); }
+  .xt span.alt { top: 18px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.76rem; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+  .anc-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; font-size: 0.85rem; color: var(--muted); }
+  .anc-controls label { display: inline-flex; align-items: center; gap: 8px; }
+  .anc-controls select { color: var(--ink); }
+  .anc-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+  @media (max-width: 900px) { .anc-grid { grid-template-columns: 1fr; } }
+  .anc-head { font-family: var(--display); font-size: 1.3rem; line-height: 1.3; text-wrap: balance; }
+  .bars { display: flex; flex-direction: column; gap: 5px; }
+  .bar { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 50px; gap: 10px; align-items: center; font-size: 0.8rem; }
+  .bar .track { height: 8px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .fill { height: 100%; border-radius: 4px; }
+  .bar .lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+  .bar .num { text-align: right; }
+  .nearest { display: flex; flex-direction: column; }
+  .near { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 0.84rem; padding-block: 5px; border-top: 1px solid var(--line); }
+  .near span:last-child { color: var(--muted); font-size: 0.78rem; text-align: right; }
+  #strip { display: block; width: 100%; height: 90px; border-radius: 6px; }
+  .stripx { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--muted); }
+
+  .figtools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+  .figtools input { min-width: 0; flex: 1 1 220px; max-width: 360px; }
+  .figtools span { font-size: 0.8rem; color: var(--muted); }
+  .figs { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px 24px; }
+  .fgroup { display: flex; flex-direction: column; gap: 6px; }
+  .fgroup h4 { margin: 0; font-weight: 500; font-size: 0.8rem; display: flex; align-items: center; gap: 7px; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 0.8rem; cursor: pointer; transition: opacity 0.3s; }
+  .chip small { color: var(--muted); font-family: var(--mono); font-size: 0.7rem; margin-left: 4px; }
+  .chip.future { opacity: 0.32; }
+  .chip:hover { border-color: var(--faint); }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px 28px; font-size: 0.86rem; color: var(--muted); }
+  .notes h3 { color: var(--ink); margin-bottom: 6px; font-size: 1.05rem; }
+  .notes ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+  .notes a { color: var(--accent); }
+
+  @media (max-width: 520px) {
+    .thead, .row { grid-template-columns: 12px minmax(0, 1fr) 60px 46px 56px 46px; gap: 6px; }
+    .rname small { display: none; }
+    .stats { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat .v { font-size: 1rem; }
+    .lens .ghost { margin-left: 0; }
+    .bar { grid-template-columns: minmax(0, 110px) minmax(0, 1fr) 46px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .tick { animation: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">A census of every human who has ever lived</span>
+    <h1>Afterlife Census</h1>
+    <p class="lede">Roughly 117 billion people have been born since our species appeared, and about 109 billion have died. Each dot is 20 million of them, sorted by the belief they most likely held when they died. By default every tradition's afterlife is real for its own followers. Switch the rules to see where everyone would be if a single tradition were true.</p>
+  </header>
+
+  <div class="lens">
+    <label>Afterlife rules <select id="truth"></select></label>
+    <label>Region <select id="view"></select></label>
+    <label class="chk"><input type="checkbox" id="kids"> Highlight children</label>
+    <label class="chk"><input type="checkbox" id="ranges"> Show uncertainty</label>
+    <button type="button" class="ghost" id="copyLink">Copy link to this view</button>
+    <input id="linkOut" type="text" readonly hidden aria-label="Link to this view">
+  </div>
+
+  <section class="stage">
+    <div class="sky">
+      <canvas id="sky" aria-label="Realms of the dead, each drawn as a cluster of dots sized by population"></canvas>
+      <div class="scale-note"><i></i>= 20 million people</div>
+      <div class="tip" id="tip" hidden></div>
+      <div class="controls">
+        <button class="play" id="play" type="button">▶ Replay history</button>
+        <input id="scrub" type="range" min="0" max="10000" step="1" value="10000" aria-label="Position in history">
+        <select id="speed" aria-label="Playback speed">
+          <option value="0.5">½×</option>
+          <option value="1" selected>1×</option>
+          <option value="3">3×</option>
+          <option value="8">8×</option>
+        </select>
+        <div class="eras" id="eras"></div>
+        <p class="pace">Time is paced by births, so every second of playback covers the same number of lives. The first 150,000 years pass quickly because few people were alive.</p>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="clock">
+        <span class="eyebrow">Year</span>
+        <span class="year" id="year">2026 CE</span>
+        <span class="where" id="where">Whole world</span>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="v" id="sBorn">–</span><span class="k">Ever born</span></div>
+        <div class="stat"><span class="v" id="sDead">–</span><span class="k">Dead</span></div>
+        <div class="stat"><span class="v" id="sKids">–</span><span class="k" id="sKidsK">Died as children</span></div>
+        <div class="stat"><span class="v" id="sLive">–</span><span class="k">Alive</span></div>
+      </div>
+      <div class="truth" id="truthPanel" hidden></div>
+      <p class="tcap" id="tcap"></p>
+      <div class="table" role="list">
+        <div class="thead" id="thead"><span></span><span></span><span class="grp">Dead</span><span class="grp liv">Living</span><span></span><button type="button" data-sort="name">Realm</button><button type="button" data-sort="dead">Count</button><button type="button" data-sort="deadPct">Share</button><button type="button" data-sort="living">Count</button><button type="button" data-sort="livingPct">Share</button></div>
+        <div id="rows"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="two">
+    <div class="panel detail" id="detail"></div>
+    <div class="panel">
+      <span class="eyebrow">Recent arrivals</span>
+      <div class="ticker" id="ticker"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="phead">
+      <h2>Who was dying, and what they believed</h2>
+      <p class="lede" id="chartLede">Each column is a slice of history holding the same number of births. Click anywhere to jump there.</p>
+    </div>
+    <div class="chartbox">
+      <div class="conf" id="conf"></div>
+      <svg id="chart" viewBox="0 0 1000 220" preserveAspectRatio="none" aria-label="Stacked share of deaths by belief over history"></svg>
+      <div class="xt" id="xt"></div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section class="panel" id="ancestors">
+    <div class="phead">
+      <h2>Where your ancestors would be</h2>
+      <p class="lede">Pick where your family comes from. Going back one generation at a time (about 27 years each), this shows which realms your ancestors most likely entered.</p>
+    </div>
+    <div class="anc-controls">
+      <label>Family from <select id="ancA"></select></label>
+      <label>and <select id="ancB"></select></label>
+      <label id="ancMixWrap" hidden><input type="range" id="ancMix" min="5" max="95" step="5" value="50" aria-label="Share of ancestry from the first region"> <span class="num" id="ancMixLbl">50 / 50</span></label>
+    </div>
+    <div class="anc-grid">
+      <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+        <p class="anc-head" id="ancHead"></p>
+        <div class="bars" id="ancBars"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <span class="eyebrow">Your last 120 generations, oldest on the left</span>
+        <svg id="strip" viewBox="0 0 120 100" preserveAspectRatio="none" aria-label="Likely realms of your ancestors over the last 120 generations"></svg>
+        <div class="stripx" id="stripx"></div>
+        <span class="eyebrow" style="margin-top:8px">Your most recent ancestors in each realm</span>
+        <div class="nearest" id="ancNear"></div>
+      </div>
+    </div>
+    <p class="note">This is a probability sketch, not genealogy. Families mix across regions, and because of pedigree collapse your trillions of ancestral slots are filled by far fewer real people. Before about 60,000 years ago, everyone's ancestors lived in Africa.</p>
+  </section>
+
+  <section class="panel">
+    <div class="phead">
+      <h2>Notable arrivals</h2>
+      <p class="lede">Historical figures whose beliefs are well documented, placed at the dot for the moment they died. Click a name to travel to that year.</p>
+    </div>
+    <div class="figtools">
+      <input type="search" id="figSearch" placeholder="Search figures, realms or regions" aria-label="Search figures">
+      <span id="figCount"></span>
+    </div>
+    <div class="figs" id="figs"></div>
+  </section>
+
+  <section class="notes">
+    <div>
+      <h3>How the numbers are built</h3>
+      <ul>
+        <li>Births per era follow the Population Reference Bureau's estimate of about 117 billion people ever born, starting 190,000 years ago (PRB, 2022), extended to 2026.</li>
+        <li>Within each era, births track estimated population, and deaths are births minus population growth.</li>
+        <li>The world is split into seven regions, each with its own population share and belief mix over time. The world view adds them up.</li>
+        <li>Modern shares follow Pew Research Center's 2020 global religious composition. The 1900 and 1970 shares lean on the World Christian Database.</li>
+        <li>About 45% of all deaths ever were children under 15. That share held steady until the 1800s and has since fallen below 10%.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Judgment calls</h3>
+      <ul>
+        <li>Uncertainty ranges assume every error within an era pushes the same way: ±50% before 40,000 BCE, ±40% to 3000 BCE, ±30% to 1500, ±20% to 1800, ±10% to 1950, and ±4% after. They are wide on purpose.</li>
+        <li>Syncretism is ignored. Someone in Tang China who honored ancestors and visited Buddhist temples counts in one realm.</li>
+        <li>Everyone who died before about 100,000 BCE goes to The Unrecorded, fading to zero by 40,000 BCE.</li>
+        <li>In the single-tradition modes, anything the tradition leaves to divine judgment is either set by the slider or left out. Cause-of-death shares for the Norse and Aztec rules are rough estimates.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>What the model leaves out</h3>
+      <ul>
+        <li>Individual deeds. No mode judges anyone's life, only which group they belonged to or how they died.</li>
+        <li>Conversion during life. People count in the tradition they most likely held at death.</li>
+        <li>Hundreds of distinct Indigenous and folk religions share one realm for readability, which flattens real differences.</li>
+        <li>Sources: <a href="https://www.prb.org/articles/how-many-people-have-ever-lived-on-earth/" target="_blank" rel="noopener">PRB</a>, <a href="https://www.pewresearch.org/religion/2025/06/09/how-the-global-religious-landscape-changed-from-2010-to-2020/" target="_blank" rel="noopener">Pew Research</a>.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+(() => {
+  const ARTIFACT_URL = 'https://claude.ai/artifact/Jn33Fv5za2Xmesk43uapwX';
+  // ---------- Realms ----------
+  const REALMS = [
+    { k: 'unknown', name: 'The Unrecorded', trad: 'Beliefs unknown', span: 'Before ~40,000 BCE', color: '#948b7c',
+      desc: 'People whose beliefs we have no way of knowing. Everyone who died before the first evidence of burial ritual, about 100,000 years ago, is placed here. The share fades to zero by 40,000 BCE, when grave goods, ochre and cave art make some kind of belief about death very likely.',
+      note: 'Lucy (Australopithecus afarensis, 3.2 million years old) is shown here as an honorary resident. She was not our species, so she is not one of the 117 billion people counted.' },
+    { k: 'folk', name: 'The Spirit World', trad: 'Ancestral, animist & folk', span: '~100,000 BCE – today', color: '#c08a55',
+      desc: 'Most humans who ever lived belonged to small-scale societies whose dead joined the ancestors, the land, or a spirit world. This realm groups hundreds of distinct traditions, from Paleolithic foragers to Yoruba, Lakota and Aboriginal Australian peoples.',
+      note: 'Placing Paleolithic people here is still a guess. It rests on burials, grave goods and cave art, not on anything they told us.' },
+    { k: 'egypt', name: 'Aaru, the Field of Reeds', trad: 'Ancient Egyptian religion', span: 'c. 3100 BCE – 400s CE, revived as Kemetism', color: '#e3ad5c',
+      desc: "After the Weighing of the Heart against the feather of Ma'at in the Duat, the justified dead lived on in an idealized Nile landscape. Hearts heavy with wrongdoing were devoured by Ammit. A small modern revival, Kemetism, has a few thousand followers." },
+    { k: 'meso', name: 'Kur, the Great Below', trad: 'Sumerian, Akkadian & Babylonian', span: 'c. 3500 BCE – 100s CE', color: '#a8745a',
+      desc: 'A dim underworld ruled by Ereshkigal where nearly everyone went regardless of deeds. The dead ate dust and depended on offerings poured by the living.' },
+    { k: 'greco', name: 'Hades', trad: 'Greek & Roman religion', span: 'c. 1200 BCE – 400s CE, revived since the 1970s', color: '#d9826b',
+      desc: 'Ferried across the Styx by Charon, most shades drifted through the Asphodel Meadows. Heroes and initiates reached Elysium. The worst offenders went down to Tartarus. Zeus ruled the sky, but his brother Hades ruled here. Book 11 of Homer\'s Odyssey, where Odysseus summons the shades and Achilles says he would rather be a living servant than king of the dead, is one of the oldest descriptions. Hellenic polytheism has been revived since the 1970s and was legally recognized in Greece in 2017. It has an estimated few tens of thousands of followers.' },
+    { k: 'norse', name: 'Valhalla & Hel', trad: 'Norse, Germanic & Celtic', span: 'c. 800 BCE – 1100s CE, revived as Heathenry', color: '#8fa3bd',
+      desc: "Half the battle-slain went to Odin's hall Valhalla and half to Freyja's field Fólkvangr. Most others went to Hel. Celtic peoples spoke of an Otherworld across the western sea. Modern Heathenry revives the Norse gods. Iceland recognized it in 1973, and it has perhaps tens of thousands of followers worldwide." },
+    { k: 'americas', name: 'Mictlan & the Upper Worlds', trad: 'Mesoamerican & Andean', span: 'c. 1200 BCE – 1600s CE', color: '#d6605c',
+      desc: "For the Mexica, most of the dead made a four-year journey through Mictlan's nine levels, while warriors and women who died in childbirth joined the Sun. Andean peoples kept ancestors present as venerated mummies." },
+    { k: 'chinese', name: 'The Ancestral Halls', trad: 'Chinese folk religion & Taoism', span: 'c. 1600 BCE – today', color: '#4fb3a9',
+      desc: 'The dead pass through the courts of Diyu to be judged and eventually reborn, while as ancestors they are fed and honored by descendants. Taoist adepts sought to become xian, the immortals.' },
+    { k: 'shinto', name: 'Yomi & the Kami', trad: 'Shinto', span: 'c. 300 BCE – today', color: '#9fd6c9',
+      desc: 'Ancient myth describes Yomi, a shadowed land of the dead. In practice the dead become ancestral kami who watch over the family. Most Japanese also follow Buddhist funeral rites.' },
+    { k: 'hindu', name: 'Saṃsāra & Moksha', trad: 'Hinduism', span: 'c. 1500 BCE – today', color: '#ee7b3a', rebirth: true,
+      desc: 'The ātman is reborn according to its karma, sometimes after a stay in a heaven (svarga) or hell (naraka). Moksha, liberation, ends the cycle for good.' },
+    { k: 'buddhist', name: 'The Six Realms & Nirvāṇa', trad: 'Buddhism', span: 'c. 5th century BCE – today', color: '#ebc84f', rebirth: true,
+      desc: "Beings are reborn among gods, demigods, humans, animals, hungry ghosts and hell-beings until awakening. Pure Land schools hope for rebirth in Amitābha's Western Paradise." },
+    { k: 'jain', name: 'Siddhashila', trad: 'Jainism', span: 'c. 6th century BCE – today', color: '#d8a3c4', rebirth: true,
+      desc: 'Souls cycle through rebirth until every trace of karma is shed. The liberated rise to Siddhashila at the summit of the universe, in endless knowledge and bliss.' },
+    { k: 'sikh', name: 'Sach Khand', trad: 'Sikhism', span: 'c. 1500 CE – today', color: '#5aa0e0', rebirth: true,
+      desc: 'Sikhs seek mukti, release from rebirth through union with Waheguru, dwelling in Sach Khand, the Realm of Truth.' },
+    { k: 'zoro', name: 'Garōdmān, the House of Song', trad: 'Zoroastrianism', span: 'c. 1000 BCE – today', color: '#e8573f',
+      desc: 'On the fourth dawn the soul crosses the Chinvat Bridge, which widens for the righteous and narrows to a blade for the wicked. At the end of time, all is renewed in the Frashokereti.' },
+    { k: 'jewish', name: 'Olam Ha-Ba', trad: 'Judaism', span: 'c. 1000 BCE – today', color: '#7aa2ff',
+      desc: 'Early texts speak of Sheol. Later tradition describes Gan Eden, the World to Come, and the resurrection of the dead. The Talmud teaches that the righteous of all nations have a share in it.' },
+    { k: 'christian', name: 'Heaven', trad: 'Christianity', span: '30s CE – today', color: '#f4ecd0',
+      desc: 'Believers hope for eternal life with God and the resurrection of the body. Catholic teaching adds purgatory, and most traditions also describe hell. All denominations are counted together.' },
+    { k: 'islam', name: 'Jannah', trad: 'Islam', span: '610 CE – today', color: '#4cbf7a',
+      desc: 'After questioning in the grave, souls wait in the barzakh for the Day of Judgment. The righteous enter the gardens of Jannah, and others face Jahannam.' },
+    { k: 'atheist', name: 'Oblivion', trad: 'Atheism', span: 'Ancient skeptics – today', color: '#6f7695',
+      desc: 'No afterlife. Consciousness ends at death, and a person continues only through memory, influence, descendants, and the matter that returns to the earth.' },
+    { k: 'agnostic', name: 'The Open Question', trad: 'Agnostic & nonreligious', span: 'Mostly the last century', color: '#a99ddb',
+      desc: 'Neither affirmed nor denied. Only people who stated it themselves are counted here: self-described agnostics and people who tell census takers and surveys they have no religion.',
+      note: 'Almost everyone in this realm died after 1900, because that is when surveys and censuses began asking the question.' },
+  ];
+  // The geography inside each realm, as the tradition itself describes it: [place, who goes there].
+  // People are not divided among these places. The texts rarely say how many go where.
+  const PLACES = {
+    folk: [['The ancestors', 'Most traditions: the dead stay near, honored and consulted by the living'], ['Orun Rere & Orun Apadi', 'Yoruba: the good heaven and the heaven of potsherds for wrongdoers'], ['Country', 'Aboriginal Australian: the spirit returns to its ancestral land and the Dreaming'], ['Summerland', 'Many modern Pagans and Wiccans, who are counted in this realm'], ['Restless ghosts', 'Many traditions: those who died badly or were never properly buried']],
+    egypt: [['The Duat', 'Everyone: a perilous underworld journey ending at the Weighing of the Heart'], ['Aaru, the Field of Reeds', 'The justified, whose hearts balanced against the feather of Ma\'at'], ['The jaws of Ammit', 'Those whose hearts were heavy: devoured, a second and final death']],
+    meso: [['Kur / Irkalla', 'Nearly everyone, good or bad'], ['A gentler corner', 'Those with many children and proper offerings drank clean water (Gilgamesh, Tablet XII)'], ['Wandering ghosts', 'The unburied and forgotten, who could haunt the living']],
+    greco: [['Asphodel Meadows', 'The ordinary majority, as flitting, witless shades'], ['Elysium / Isles of the Blessed', 'Heroes, favorites of the gods, and later mystery initiates'], ['Tartarus', 'Titans and great offenders like Sisyphus and Tantalus'], ['The banks of the Styx', 'The unburied, who could not cross for a hundred years']],
+    norse: [['Valhalla', 'Half the battle-slain, chosen by Valkyries for Odin'], ['Fólkvangr', 'The other half of the battle-slain, chosen by Freyja'], ['Hel', 'Those who died of sickness or old age'], ['Rán\'s hall', 'The drowned'], ['Helgafell', 'In Icelandic sagas, a holy mountain where some families gathered']],
+    americas: [['Mictlan', 'Most of the dead, after a four-year journey through nine levels'], ['House of the Sun', 'Warriors, the sacrificed, and women who died in childbirth'], ['Tlalocan', 'Those who drowned, were struck by lightning, or died of water-linked illness'], ['Chichihuacuauhco', 'Infants, nursed by a tree dripping milk until rebirth']],
+    chinese: [['Diyu', 'The ten courts of judgment, then punishment or passage to rebirth'], ['The ancestral altar', 'Ancestors fed and honored by their descendants'], ['Hungry ghosts', 'The neglected, with no descendants to make offerings'], ['Realms of the xian', 'Taoist immortals who transcended death']],
+    shinto: [['Yomi', 'The polluted land of the dead in the oldest myths'], ['Tokoyo', 'An eternal land beyond the sea'], ['Among the kami', 'After about 33 years of rites, the ancestor merges into the family\'s protective kami']],
+    hindu: [['Svarga', 'A heaven for good karma, temporary'], ['Naraka', 'Hells for bad karma, also temporary'], ['Pitṛloka', 'The world of the ancestors, sustained by śrāddha rites'], ['Rebirth', 'Most souls, returning in a new body'], ['Moksha', 'The liberated, freed from the cycle forever']],
+    buddhist: [['Six realms', 'Gods, demigods, humans, animals, hungry ghosts and hell-beings, by karma'], ['Sukhāvatī, the Pure Land', 'Those reborn by Amitābha\'s vow, where awakening is easy'], ['Nirvāṇa', 'The awakened, beyond rebirth. Not a place at all']],
+    jain: [['Heavens', 'Temporary rebirth among the gods'], ['Seven hells', 'Temporary rebirth for heavy karma'], ['Human, animal & plant births', 'Most souls, still cycling'], ['Siddhashila', 'The liberated, at the top of the universe']],
+    sikh: [['Rebirth', 'Those still bound by haumai, the ego'], ['Sach Khand', 'The liberated, merged with Waheguru. Many Sikhs read heaven and hell as states of mind']],
+    zoro: [['The Chinvat Bridge', 'Everyone, on the fourth dawn after death'], ['Garōdmān, the House of Song', 'The righteous'], ['Hamistagan', 'Those whose good and evil deeds balance exactly'], ['Drujo Demana, the House of Lies', 'The wicked, until the end of time'], ['Frashokereti', 'At the end, all are purified and the world renewed']],
+    jewish: [['Sheol', 'Everyone, in the early books of the Hebrew Bible'], ['Gan Eden', 'The righteous'], ['Gehinnom', 'A place of purification, traditionally up to twelve months for most'], ['Olam Ha-Ba', 'The World to Come, after the resurrection of the dead']],
+    christian: [['Heaven', 'The saved, in the presence of God'], ['Purgatory', 'Catholic: the saved who still need purifying'], ['Hell', 'The damned. Traditions differ on who and how many, and some hope for universal salvation'], ['Limbo', 'Medieval speculation for unbaptized infants and the righteous of old, never formal doctrine'], ['New Heavens and New Earth', 'The final state after the resurrection of the body']],
+    islam: [['Barzakh', 'Everyone, between death and Judgment Day'], ['Jannah', 'The righteous, across levels up to al-Firdaus'], ['Al-A\'raf, the Heights', 'Those whose good and bad deeds balance'], ['Jahannam', 'The damned. Many scholars teach believers leave it eventually']],
+    atheist: [['Nowhere', 'The self ends. The body returns to the carbon and nitrogen cycles']],
+    agnostic: [['Undecided', 'Whatever the answer turns out to be']],
+    unknown: [['Unknown', 'We cannot say what these people believed, or whether they had beliefs about death at all']],
+  };
+  REALMS.forEach(r => { r.places = PLACES[r.k] || []; });
+  const IDX = Object.fromEntries(REALMS.map((r, i) => [r.k, i]));
+  const K = REALMS.length;
+  const FOLK = IDX.folk, UNKNOWN = IDX.unknown;
+  REALMS[IDX.hindu].between = [365, 'about a year on the road to Yama, in the Garuda Purana'];
+  REALMS[IDX.buddhist].between = [49, 'up to 49 days in the bardo, in Tibetan teaching'];
+  REALMS[IDX.jain].between = [0, 'none, because Jain teaching holds that rebirth is instant'];
+
+  // MODEL-START
+  const REGIONS = [
+    { k: 'europe', name: 'Europe', pop: [[-190000, 0], [-60000, 0], [-45000, 3], [-10000, 8], [-3000, 10], [-1000, 12], [1, 14], [1000, 13], [1500, 18], [1800, 20], [1900, 25], [1950, 22], [2000, 12], [2026, 9]] },
+    { k: 'mena', name: 'Middle East & North Africa', pop: [[-190000, 0], [-100000, 2], [-60000, 4], [-10000, 8], [-3000, 16], [-1000, 16], [1, 14], [1000, 12], [1500, 7], [1800, 5], [1900, 4], [1950, 4], [2000, 6], [2026, 7]] },
+    { k: 'africa', name: 'Sub-Saharan Africa', pop: [[-190000, 100], [-100000, 98], [-60000, 94], [-45000, 55], [-10000, 20], [-3000, 10], [-1000, 8], [1, 6], [1000, 8], [1500, 9], [1800, 7], [1900, 5], [1950, 7], [2000, 11], [2026, 15]] },
+    { k: 'sasia', name: 'South Asia', pop: [[-190000, 0], [-60000, 1], [-45000, 15], [-10000, 18], [-3000, 18], [-1000, 22], [1, 25], [1000, 25], [1500, 23], [1800, 19], [1900, 18], [1950, 18], [2000, 22], [2026, 25]] },
+    { k: 'easia', name: 'East Asia', pop: [[-190000, 0], [-60000, 0], [-45000, 12], [-10000, 22], [-3000, 26], [-1000, 26], [1, 26], [1000, 26], [1500, 28], [1800, 36], [1900, 29], [1950, 28], [2000, 25], [2026, 21]] },
+    { k: 'seasia', name: 'Southeast Asia & Oceania', pop: [[-190000, 0], [-60000, 1], [-45000, 15], [-10000, 10], [-3000, 8], [-1000, 6], [1, 5], [1000, 6], [1500, 6], [1800, 5], [1900, 6], [1950, 7], [2000, 9], [2026, 9]] },
+    { k: 'americas', name: 'The Americas', pop: [[-190000, 0], [-16000, 0], [-13000, 5], [-10000, 14], [-3000, 12], [-1000, 10], [1, 10], [1000, 10], [1500, 9], [1600, 3], [1800, 3], [1900, 9], [1950, 13], [2000, 14], [2026, 13]] },
+  ];
+  const R = REGIONS.length, WORLD = R;
+  const RIDX = Object.fromEntries(REGIONS.map((r, i) => [r.k, i]));
+
+  // Percent of each region's population in each tradition: [year, pct]. The Spirit World is the remainder.
+  const RELIGION = {
+    europe: {
+      greco: [[-1200, 0], [-800, 10], [-500, 25], [1, 55], [300, 40], [400, 12], [550, 0], [1970, 0], [2026, 0.004]],
+      norse: [[-800, 0], [-500, 12], [1, 20], [500, 20], [900, 15], [1000, 8], [1100, 2], [1300, 0], [1970, 0], [2026, 0.005]],
+      jewish: [[1, 0], [100, 1], [300, 1.5], [1000, 1], [1500, 1], [1800, 1.5], [1900, 2.3], [1940, 2.5], [1950, 0.9], [2000, 0.25], [2026, 0.2]],
+      christian: [[30, 0], [100, 0.2], [300, 8], [400, 30], [600, 45], [800, 55], [1000, 75], [1200, 88], [1500, 93], [1800, 94.5], [1900, 93], [1950, 82], [1970, 75], [2000, 75], [2026, 68]],
+      islam: [[700, 0], [750, 3], [1000, 5], [1300, 3], [1500, 3], [1800, 3], [1900, 3], [1950, 2], [2000, 7], [2026, 9]],
+      hindu: [[1950, 0], [2026, 0.3]], buddhist: [[1950, 0], [2026, 0.2]], sikh: [[1950, 0], [2026, 0.05]],
+      atheist: [[1700, 0], [1800, 0.1], [1900, 0.5], [1920, 3], [1950, 8], [1970, 10], [2000, 7], [2026, 7]],
+      agnostic: [[1700, 0], [1800, 0.3], [1900, 1], [1950, 7], [1970, 12], [2000, 12], [2026, 18]],
+    },
+    mena: {
+      egypt: [[-3500, 0], [-3100, 15], [-2000, 22], [-1000, 18], [-500, 12], [1, 10], [300, 5], [450, 0]],
+      meso: [[-4000, 0], [-3500, 15], [-2000, 30], [-1000, 25], [-500, 18], [1, 5], [200, 0]],
+      greco: [[-600, 0], [-500, 3], [-300, 15], [1, 20], [300, 12], [400, 4], [550, 0]],
+      zoro: [[-1200, 0], [-800, 10], [-500, 35], [1, 25], [300, 35], [640, 30], [700, 20], [800, 10], [1000, 3], [1500, 0.3], [1900, 0.08], [2026, 0.02]],
+      jewish: [[-1200, 0], [-1000, 3], [-500, 4], [1, 8], [200, 4], [1000, 2], [1500, 1.5], [1900, 1.2], [1950, 1.2], [2000, 1.1], [2026, 1.25]],
+      christian: [[30, 0], [100, 0.5], [300, 10], [400, 28], [600, 40], [640, 40], [700, 36], [800, 30], [1000, 20], [1200, 14], [1500, 8], [1800, 8], [1900, 7], [1950, 5], [2000, 4], [2026, 3.5]],
+      islam: [[610, 0], [640, 10], [700, 30], [800, 52], [1000, 72], [1200, 80], [1500, 88], [1800, 88], [1900, 90], [1950, 92], [2000, 93], [2026, 92]],
+      atheist: [[1920, 0], [1950, 0.2], [2026, 1]], agnostic: [[1920, 0], [1950, 0.3], [2026, 2]],
+    },
+    africa: {
+      egypt: [[-2000, 0], [-1000, 3], [1, 3], [350, 0]],
+      christian: [[300, 0], [350, 3], [600, 5], [1000, 4], [1400, 3], [1500, 2], [1800, 2], [1900, 9], [1950, 30], [1970, 45], [2000, 57], [2026, 60]],
+      islam: [[800, 0], [1000, 2], [1300, 6], [1500, 8], [1800, 12], [1900, 14], [1950, 22], [2000, 30], [2026, 34]],
+      atheist: [[1950, 0], [2026, 0.3]], agnostic: [[1950, 0], [2026, 3]],
+    },
+    sasia: {
+      hindu: [[-1800, 0], [-1500, 30], [-1000, 60], [-500, 75], [1, 70], [500, 72], [1000, 80], [1200, 78], [1500, 75], [1800, 72], [1900, 69], [1950, 66], [2000, 62], [2026, 58]],
+      buddhist: [[-500, 0], [-400, 3], [-250, 15], [1, 20], [300, 18], [600, 15], [800, 10], [1000, 5], [1200, 2], [1500, 1], [1900, 0.8], [2026, 1.2]],
+      jain: [[-550, 0], [-400, 2], [500, 2.4], [1000, 2], [1500, 1.3], [1900, 0.4], [2026, 0.25]],
+      sikh: [[1500, 0], [1600, 0.3], [1800, 0.5], [1900, 1.1], [2026, 1.3]],
+      islam: [[700, 0], [1000, 2], [1200, 6], [1500, 12], [1800, 20], [1900, 23], [1950, 27], [2000, 31], [2026, 34]],
+      christian: [[50, 0], [100, 0.1], [1500, 0.3], [1800, 0.5], [1900, 1], [2026, 2.3]],
+      zoro: [[900, 0], [1000, 0.02], [1900, 0.03], [2026, 0.004]],
+      atheist: [[1950, 0], [2026, 0.3]], agnostic: [[1950, 0], [2026, 0.5]],
+    },
+    easia: {
+      chinese: [[-2000, 0], [-1500, 40], [-500, 80], [1, 85], [300, 65], [700, 45], [1000, 45], [1500, 55], [1800, 63], [1900, 62], [1950, 38], [1970, 18], [2000, 10], [2026, 4]],
+      buddhist: [[1, 0], [100, 1], [300, 15], [600, 38], [800, 45], [1000, 42], [1200, 38], [1500, 32], [1800, 26], [1900, 25], [1950, 20], [1970, 12], [2000, 12], [2026, 9]],
+      shinto: [[-300, 0], [1, 2], [600, 4], [1500, 5], [1900, 7], [1950, 3], [2000, 0.3], [2026, 0.2]],
+      christian: [[1550, 0], [1700, 0.1], [1900, 0.3], [1950, 0.8], [2000, 4], [2026, 5]],
+      islam: [[900, 0], [1000, 0.3], [1500, 1], [1900, 2], [2026, 1.5]],
+      atheist: [[1900, 0], [1920, 0.5], [1950, 12], [1970, 22], [2000, 20], [2026, 24]],
+      agnostic: [[1890, 0], [1900, 0.2], [1950, 18], [1970, 40], [2000, 50], [2026, 55]],
+    },
+    seasia: {
+      hindu: [[1, 0], [300, 5], [700, 20], [1000, 25], [1300, 15], [1500, 5], [1900, 1.5], [2026, 1.5]],
+      buddhist: [[1, 0], [300, 2], [500, 5], [1000, 15], [1300, 30], [1500, 35], [1800, 38], [1900, 35], [1950, 30], [2000, 25], [2026, 22]],
+      islam: [[1200, 0], [1300, 3], [1500, 15], [1600, 30], [1800, 38], [1900, 40], [1950, 38], [2000, 39], [2026, 40]],
+      christian: [[1520, 0], [1600, 3], [1800, 8], [1900, 12], [1950, 18], [2000, 23], [2026, 25]],
+      chinese: [[1, 0], [1000, 3], [1900, 5], [2026, 4]],
+      atheist: [[1950, 0], [1970, 2], [2026, 3]], agnostic: [[1950, 0], [2026, 3]],
+    },
+    americas: {
+      americas: [[-1500, 0], [-1200, 15], [1, 25], [1000, 35], [1500, 55], [1550, 20], [1650, 0]],
+      christian: [[1492, 0], [1520, 1], [1550, 25], [1600, 55], [1700, 75], [1800, 80], [1900, 90], [1950, 93], [1970, 92], [2000, 86], [2026, 75]],
+      jewish: [[1700, 0], [1800, 0.1], [1900, 0.8], [1950, 1.5], [2000, 0.8], [2026, 0.6]],
+      islam: [[1950, 0], [2026, 0.4]], buddhist: [[1900, 0], [1950, 0.1], [2026, 0.5]], hindu: [[1950, 0], [2026, 0.2]],
+      egypt: [[1970, 0], [2026, 0.0003]], norse: [[1970, 0], [2026, 0.002]], greco: [[1970, 0], [2026, 0.001]],
+      atheist: [[1900, 0], [1950, 0.5], [2000, 1.5], [2026, 3]], agnostic: [[1900, 0], [1950, 1.5], [2000, 8], [2026, 17]],
+    },
+  };
+
+  // Share of all deaths that were children under 15.
+  const CHILD = [[-190000, 0.46], [1800, 0.46], [1900, 0.44], [1950, 0.42], [1970, 0.35], [1990, 0.27], [2000, 0.21], [2026, 0.09]];
+  // Rough shares of adult deaths by cause, used only by the Norse and Aztec rules.
+  const CAUSE = {
+    battle: [[-190000, 0.12], [-3000, 0.12], [-2000, 0.07], [1700, 0.05], [1850, 0.03], [1913, 0.03], [1916, 0.06], [1919, 0.03], [1938, 0.03], [1942, 0.08], [1946, 0.02], [1950, 0.01], [2026, 0.005]],
+    drown: [[-190000, 0.015], [1900, 0.012], [2026, 0.004]],
+    childbirth: [[-190000, 0.04], [1800, 0.04], [1900, 0.03], [1950, 0.015], [2026, 0.004]],
+    water: [[-190000, 0.06], [1900, 0.06], [2026, 0.02]],
+  };
+  // Relative error on each era's numbers, assumed to push the same way within an era.
+  const ERR = y => y < -40000 ? 0.5 : y < -3000 ? 0.4 : y < 1500 ? 0.3 : y < 1800 ? 0.2 : y < 1950 ? 0.1 : 0.04;
+
+  const POP = [[-190000, 0.000002], [-50000, 2], [-8000, 5], [-5000, 15], [-3000, 45], [-1000, 115], [-500, 190], [1, 300], [500, 280], [1000, 310],
+    [1200, 450], [1340, 470], [1400, 380], [1500, 460], [1650, 500], [1750, 795], [1850, 1265], [1900, 1656], [1950, 2499], [1975, 4061],
+    [2000, 6149], [2010, 6986], [2022, 7963], [2026, 8230]];
+  const BOUNDS = [-190000, -50000, -8000, 1, 1200, 1650, 1750, 1850, 1900, 1950, 2000, 2010, 2022, 2026];
+  const BIRTHS = [7.856, 1.137, 46.0, 26.4, 12.8, 3.3, 4.4, 2.9, 3.4, 5.7, 1.3, 1.6, 0.53];
+  const DOT = 20e6;
+  const START = BOUNDS[0], END = BOUNDS[BOUNDS.length - 1];
+
+  function popAt(y) {
+    if (y <= POP[0][0]) return POP[0][1] * 1e6;
+    for (let i = 1; i < POP.length; i++) {
+      if (y <= POP[i][0]) {
+        const [a, pa] = POP[i - 1], [b, pb] = POP[i];
+        const f = (y - a) / (b - a);
+        return Math.exp(Math.log(pa) + f * (Math.log(pb) - Math.log(pa))) * 1e6;
+      }
+    }
+    return POP[POP.length - 1][1] * 1e6;
+  }
+  function kfVal(kf, y) {
+    if (!kf || y < kf[0][0]) return 0;
+    const last = kf[kf.length - 1];
+    if (y >= last[0]) return last[1];
+    for (let i = 1; i < kf.length; i++) {
+      if (y < kf[i][0]) {
+        const [a, va] = kf[i - 1], [b, vb] = kf[i];
+        return va + (vb - va) * (y - a) / (b - a);
+      }
+    }
+    return 0;
+  }
+  function regionWeights(y) {
+    const w = new Float64Array(R);
+    let t = 0;
+    for (let r = 0; r < R; r++) { w[r] = kfVal(REGIONS[r].pop, y); t += w[r]; }
+    for (let r = 0; r < R; r++) w[r] /= t;
+    return w;
+  }
+  // Belief shares for one region, or the population-weighted world when r === WORLD.
+  function sharesAt(r, y) {
+    if (r === WORLD) {
+      const w = regionWeights(y), s = new Float64Array(K);
+      for (let q = 0; q < R; q++) { const sq = sharesAt(q, y); for (let k = 0; k < K; k++) s[k] += w[q] * sq[k]; }
+      return s;
+    }
+    const table = RELIGION[REGIONS[r].k], s = new Float64Array(K);
+    let sum = 0;
+    for (let k = 0; k < K; k++) { s[k] = kfVal(table[REALMS[k].k], y); sum += s[k]; }
+    s[FOLK] = Math.max(0.5, 100 - sum);
+    const tot = sum + s[FOLK];
+    // Before evidence of burial ritual, beliefs are unknowable.
+    const u = y < -100000 ? 1 : y < -40000 ? (-40000 - y) / 60000 : 0;
+    for (let k = 0; k < K; k++) s[k] = s[k] / tot * (1 - u);
+    s[UNKNOWN] = u;
+    return s;
+  }
+  const viewWeight = (v, y) => v === WORLD ? 1 : regionWeights(y)[v];
+
+  // ---------- Slice history ----------
+  const stepFor = y => y < -10000 ? 1000 : y < 1 ? 100 : y < 1500 ? 10 : 2;
+  const S = [];
+  for (let j = 0; j < BIRTHS.length; j++) {
+    const a0 = BOUNDS[j], b0 = BOUNDS[j + 1], part = [];
+    let t = a0;
+    while (t < b0) {
+      const n = Math.min(b0, t + stepFor(t));
+      let w = 0;
+      for (let q = 0; q < 8; q++) w += popAt(t + (q + 0.5) * (n - t) / 8);
+      part.push({ a: t, b: n, w: w * (n - t) });
+      t = n;
+    }
+    const W = part.reduce((s, p) => s + p.w, 0);
+    for (const p of part) {
+      const births = BIRTHS[j] * 1e9 * p.w / W;
+      const deaths = Math.max(0, births - (popAt(p.b) - popAt(p.a)));
+      const mid = (p.a + p.b) / 2;
+      S.push({ a: p.a, b: p.b, mid, births, deaths, child: kfVal(CHILD, mid), err: ERR(mid), w: regionWeights(mid) });
+    }
+  }
+  const N = S.length, V = R + 1;
+  const cumB = new Float64Array(N + 1);
+  for (let i = 0; i < N; i++) cumB[i + 1] = cumB[i] + S[i].births;
+  const TOTAL = cumB[N];
+  // Per view: slice deaths, slice shares, and cumulative dead / child dead / error by realm.
+  const VD = [], VSH = [], CD = [], CC = [], CE = [];
+  for (let v = 0; v < V; v++) {
+    const d = new Float64Array(N), sh = new Float64Array(N * K);
+    const cd = new Float64Array((N + 1) * K), cc = new Float64Array((N + 1) * K), ce = new Float64Array((N + 1) * K);
+    for (let i = 0; i < N; i++) {
+      const s = S[i];
+      d[i] = s.deaths * (v === WORLD ? 1 : s.w[v]);
+      const sv = sharesAt(v, s.mid);
+      for (let k = 0; k < K; k++) {
+        sh[i * K + k] = sv[k];
+        const x = d[i] * sv[k];
+        cd[(i + 1) * K + k] = cd[i * K + k] + x;
+        cc[(i + 1) * K + k] = cc[i * K + k] + x * s.child;
+        ce[(i + 1) * K + k] = ce[i * K + k] + x * s.err;
+      }
+    }
+    VD.push(d); VSH.push(sh); CD.push(cd); CC.push(cc); CE.push(ce);
+  }
+
+  function sliceOfB(B) {
+    let lo = 0, hi = N - 1;
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (cumB[m] <= B) lo = m; else hi = m - 1; }
+    return lo;
+  }
+  function stateAt(B, v) {
+    B = Math.max(0, Math.min(TOTAL, B));
+    const i = sliceOfB(B), s = S[i];
+    const f = s.births ? Math.min(1, (B - cumB[i]) / s.births) : 1;
+    const year = s.a + f * (s.b - s.a);
+    const dead = new Float64Array(K), child = new Float64Array(K), err = new Float64Array(K);
+    let dsum = 0, csum = 0;
+    for (let k = 0; k < K; k++) {
+      const x = f * VD[v][i] * VSH[v][i * K + k];
+      dead[k] = CD[v][i * K + k] + x;
+      child[k] = CC[v][i * K + k] + x * s.child;
+      err[k] = CE[v][i * K + k] + x * s.err;
+      dsum += dead[k]; csum += child[k];
+    }
+    const perDay = new Float64Array(K);
+    for (let k = 0; k < K; k++) perDay[k] = VD[v][i] * VSH[v][i * K + k] / ((s.b - s.a) * 365.25);
+    return { year, dead, child, err, dsum, csum, perDay, born: B, living: popAt(year) * viewWeight(v, year), sh: sharesAt(v, year), i };
+  }
+  function BofYear(y) {
+    y = Math.max(START, Math.min(END, y));
+    for (let i = 0; i < N; i++) if (y <= S[i].b) return cumB[i] + (y - S[i].a) / (S[i].b - S[i].a) * S[i].births;
+    return TOTAL;
+  }
+  // MODEL-END
+
+  // ---------- Figures ----------
+  const FIGURES = [
+    ['Lucy', -3200000, 'unknown', 'africa', 'c. 3.2 million BCE'], ['Omo I', -233000, 'unknown', 'africa', 'c. 233,000 BCE'],
+    ['Cheddar Man', -7100, 'folk', 'europe'], ['Ötzi the Iceman', -3230, 'folk', 'europe'], ['Genghis Khan', 1227, 'folk', 'easia'], ['Bennelong', 1813, 'folk', 'seasia'],
+    ['Kamehameha I', 1819, 'folk', 'seasia'], ['Shaka Zulu', 1828, 'folk', 'africa'], ['Crazy Horse', 1877, 'folk', 'americas'], ['Sitting Bull', 1890, 'folk', 'americas'],
+    ['Khufu', -2566, 'egypt', 'mena'], ['Hatshepsut', -1458, 'egypt', 'mena'], ['Tutankhamun', -1323, 'egypt', 'mena'], ['Ramesses II', -1213, 'egypt', 'mena'], ['Cleopatra VII', -30, 'egypt', 'mena'],
+    ['Hammurabi', -1750, 'meso', 'mena'], ['Nebuchadnezzar II', -562, 'meso', 'mena'],
+    ['Homer', -700, 'greco', 'europe', 'c. 700 BCE'], ['Socrates', -399, 'greco', 'europe'], ['Plato', -347, 'greco', 'europe'], ['Alexander the Great', -323, 'greco', 'mena'], ['Aristotle', -322, 'greco', 'europe'],
+    ['Julius Caesar', -44, 'greco', 'europe'], ['Marcus Aurelius', 180, 'greco', 'europe'], ['Hypatia', 415, 'greco', 'mena'],
+    ['Vercingetorix', -46, 'norse', 'europe'], ['Gorm the Old', 958, 'norse', 'europe'],
+    ['Pakal the Great', 683, 'americas', 'americas'], ['Nezahualcoyotl', 1472, 'americas', 'americas'], ['Pachacuti', 1472, 'americas', 'americas'], ['Moctezuma II', 1520, 'americas', 'americas'],
+    ['Fu Hao', -1200, 'chinese', 'easia', 'c. 1200 BCE'], ['Confucius', -479, 'chinese', 'easia'], ['Zhuangzi', -286, 'chinese', 'easia'], ['Qin Shi Huang', -210, 'chinese', 'easia'],
+    ['Emperor Meiji', 1912, 'shinto', 'easia'],
+    ['Aryabhata', 550, 'hindu', 'sasia'], ['Adi Shankara', 820, 'hindu', 'sasia'], ['Swami Vivekananda', 1902, 'hindu', 'sasia'], ['Srinivasa Ramanujan', 1920, 'hindu', 'sasia'], ['Rabindranath Tagore', 1941, 'hindu', 'sasia'], ['Mahatma Gandhi', 1948, 'hindu', 'sasia'],
+    ['Siddhartha Gautama', -483, 'buddhist', 'sasia'], ['Ashoka', -232, 'buddhist', 'sasia'], ['Xuanzang', 664, 'buddhist', 'easia'], ['Murasaki Shikibu', 1014, 'buddhist', 'easia', 'c. 1014 CE'],
+    ['Kublai Khan', 1294, 'buddhist', 'easia'], ['13th Dalai Lama', 1933, 'buddhist', 'easia'], ['Thich Nhat Hanh', 2022, 'buddhist', 'seasia'],
+    ['Mahavira', -527, 'jain', 'sasia'],
+    ['Guru Nanak', 1539, 'sikh', 'sasia'], ['Ranjit Singh', 1839, 'sikh', 'sasia'],
+    ['Darius the Great', -486, 'zoro', 'mena'], ['Jamsetji Tata', 1904, 'zoro', 'sasia'], ['Freddie Mercury', 1991, 'zoro', 'europe'],
+    ['Hillel the Elder', 10, 'jewish', 'mena'], ['Maimonides', 1204, 'jewish', 'mena'], ['Anne Frank', 1945, 'jewish', 'europe'], ['Golda Meir', 1978, 'jewish', 'mena'],
+    ['Paul the Apostle', 64, 'christian', 'europe'], ['Ezana of Aksum', 360, 'christian', 'africa', 'c. 360 CE'], ['Augustine of Hippo', 430, 'christian', 'mena'], ['Charlemagne', 814, 'christian', 'europe'],
+    ['Joan of Arc', 1431, 'christian', 'europe'], ['Leonardo da Vinci', 1519, 'christian', 'europe'], ['William Shakespeare', 1616, 'christian', 'europe'], ['Galileo Galilei', 1642, 'christian', 'europe'],
+    ['Isaac Newton', 1727, 'christian', 'europe'], ['J. S. Bach', 1750, 'christian', 'europe'], ['Martin Luther King Jr.', 1968, 'christian', 'americas'], ['Haile Selassie', 1975, 'christian', 'africa'],
+    ['Bob Marley', 1981, 'christian', 'americas'], ['Mother Teresa', 1997, 'christian', 'sasia'], ['Nelson Mandela', 2013, 'christian', 'africa'], ['Chinua Achebe', 2013, 'christian', 'africa'],
+    ['Ibn Sina', 1037, 'islam', 'mena'], ['Saladin', 1193, 'islam', 'mena'], ['Rumi', 1273, 'islam', 'mena'], ['Mansa Musa', 1337, 'islam', 'africa'], ['Ibn Battuta', 1369, 'islam', 'mena'],
+    ['Ibn Khaldun', 1406, 'islam', 'mena'], ['Zheng He', 1433, 'islam', 'easia'], ['Suleiman the Magnificent', 1566, 'islam', 'mena'], ['Akbar', 1605, 'islam', 'sasia'],
+    ['Malcolm X', 1965, 'islam', 'americas'], ['Muhammad Ali', 2016, 'islam', 'americas'],
+    ['Karl Marx', 1883, 'atheist', 'europe'], ['Friedrich Nietzsche', 1900, 'atheist', 'europe'], ['Marie Curie', 1934, 'atheist', 'europe'], ['Sigmund Freud', 1939, 'atheist', 'europe'],
+    ['Christopher Hitchens', 2011, 'atheist', 'americas'], ['Stephen Hawking', 2018, 'atheist', 'europe'],
+    ['Charles Darwin', 1882, 'agnostic', 'europe'], ['Thomas Huxley', 1895, 'agnostic', 'europe'], ['Albert Einstein', 1955, 'agnostic', 'americas'], ['Bertrand Russell', 1970, 'agnostic', 'europe'], ['Carl Sagan', 1996, 'agnostic', 'americas'],
+  ].map(([n, y, r, reg, when]) => ({ n, y, r, ri: IDX[r], reg: RIDX[reg], when, B: BofYear(y) }));
+
+  // ---------- If one tradition is true ----------
+  const HELL = '#c2412d';
+  const TRUTHS = {
+    each: { label: 'As each believes' },
+    atheism: {
+      label: 'If atheism is true', title: 'If atheism is true',
+      blurb: 'Every one of them is simply gone, Lucy and Socrates alike. What remains is memory, influence, descendants, and atoms back in circulation.',
+      dests: [{ k: 'gone', name: 'Oblivion', color: '#6f7695', desc: 'Nothing. Consciousness ended at death.' }],
+      assign: () => 'gone',
+    },
+    rebirth: {
+      label: 'If rebirth is real', title: 'If rebirth is real',
+      blurb: 'Nobody stays dead. Hindu, Buddhist, Jain and Sikh teaching agree that every one of these deaths led to a new birth, as a human, an animal, or a being in another realm. The dead are only passing through.',
+      dests: [{ k: 'reborn', name: 'Reborn', color: '#ee9b3a', desc: 'Returned in a new life. Some may be alive today.' }],
+      assign: () => 'reborn',
+    },
+    christianity: {
+      label: 'If Christianity is true', title: 'If Christianity is true',
+      blurb: 'Christians are placed in Heaven, and so are the faithful of Israel who died before Christ, following the tradition of the Harrowing of Hell. For everyone else, Christians disagree. Set the slider.',
+      slider: { label: 'Non-Christians who are saved', def: 0.5, stops: [[0, 'Exclusivist', 'Augustine, Calvin: salvation only through Christ and the Church. Unbaptized children go to Limbo, the gentler medieval view.'], [0.5, 'Inclusivist', 'Vatican II: those who never truly knew the Gospel but sought God may be saved.'], [1, 'Universalist', 'Origen, and the hope of some modern theologians: in the end, all are saved.']] },
+      dests: [
+        { k: 'heaven', name: 'Heaven', color: '#f4ecd0', desc: 'The saved, awaiting the resurrection.' },
+        { k: 'hell', name: 'Hell', color: HELL, desc: 'The damned.' },
+        { k: 'limbo', name: 'Limbo', color: '#8d93b5', desc: 'Unbaptized children, in the medieval view. Never formal doctrine.' },
+      ],
+      assign: (d, s) => d.k === 'christian' ? 'heaven' : d.k === 'jewish' && d.y < 30 ? 'heaven' : d.child ? (s === 0 ? 'limbo' : 'heaven') : d.h < s ? 'heaven' : 'hell',
+    },
+    islam: {
+      label: 'If Islam is true', title: 'If Islam is true',
+      blurb: 'Muslims and all children are placed in Jannah, as are Jews and Christians who died before the Prophet (Qur\'an 2:62). Most scholars hold that people who never received a prophet\'s message, the ahl al-fatra, will be tested on the Day of Judgment. For non-Muslims after 610, scholars differ. Set the slider.',
+      slider: { label: 'Non-Muslims after 610 who are excused', def: 0.5, stops: [[0, 'Strict', 'Anyone who lived after the Prophet and did not accept Islam is held accountable.'], [0.5, 'Middle', 'Many who only heard a distorted message are excused and tested.'], [1, 'Al-Ghazali', 'Most who never received the message clearly are excused and tested.']] },
+      dests: [
+        { k: 'jannah', name: 'Jannah', color: '#4cbf7a', desc: 'The gardens of paradise.' },
+        { k: 'fatra', name: 'The Test', color: '#c9b27a', desc: 'People who never received the message, to be tested on Judgment Day.' },
+        { k: 'jahannam', name: 'Jahannam', color: HELL, desc: 'The fire. Muslim deeds and temporary punishment are not modeled.' },
+      ],
+      assign: (d, s) => d.k === 'islam' || d.child ? 'jannah' : d.y < 610 ? (d.k === 'jewish' || d.k === 'christian' ? 'jannah' : 'fatra') : d.h < s ? 'fatra' : 'jahannam',
+    },
+    judaism: {
+      label: 'If Judaism is true', title: 'If Judaism is true',
+      blurb: '"All Israel has a share in the World to Come" (Mishnah Sanhedrin 10:1), and so do the righteous of the nations, traditionally those who keep the seven Noahide laws. Most souls pass through Gehinnom for up to a year first. How strictly to read "righteous" is set by the slider.',
+      slider: { label: 'Non-Jews judged righteous', def: 0.8, stops: [[0, 'Strict', 'Only those who accepted the Noahide laws as divine commandments, as Maimonides wrote.'], [0.8, 'Broad', 'Most decent people, a common modern reading.'], [1, 'All', 'Everyone eventually.']] },
+      dests: [
+        { k: 'olam', name: 'Olam Ha-Ba', color: '#7aa2ff', desc: 'The World to Come, after the resurrection.' },
+        { k: 'cut', name: 'Cut off', color: '#5b6178', desc: 'Karet: the soul is cut off and ceases.' },
+      ],
+      assign: (d, s) => d.k === 'jewish' || d.child || d.h < s ? 'olam' : 'cut',
+    },
+    greek: {
+      label: 'If Greek religion is true', title: 'If the Greek gods are real',
+      blurb: 'Hades takes everyone, not only Greeks. Most drift through the Asphodel Meadows. Mystery initiates reach Elysium, guessed here as 1 in 10 Greeks and Romans. The unburied, including everyone from before burial customs and the drowned lost at sea, wait on the banks of the Styx.',
+      dests: [
+        { k: 'asphodel', name: 'Asphodel Meadows', color: '#b9b0a0', desc: 'The ordinary shades.' },
+        { k: 'elysium', name: 'Elysium', color: '#e8d27a', desc: 'Heroes and initiates of the Mysteries.' },
+        { k: 'styx', name: 'Banks of the Styx', color: '#4a7aa0', desc: 'The unburied, who cannot cross.' },
+      ],
+      assign: d => d.k === 'unknown' ? 'styx' : !d.child && d.c < kfVal(CAUSE.drown, d.y) ? 'styx' : d.k === 'greco' && !d.child && d.h < 0.1 ? 'elysium' : 'asphodel',
+    },
+    norse: {
+      label: 'If Norse religion is true', title: 'If the Norse gods are real',
+      blurb: 'The Norse sorted the dead by how they died, not what they believed. The battle-slain are split between Odin\'s Valhalla and Freyja\'s Fólkvangr, the drowned go to the sea goddess Rán, and everyone else goes to Hel.',
+      dests: [
+        { k: 'valhalla', name: 'Valhalla', color: '#d9b44a', desc: 'Half the battle-slain.' },
+        { k: 'folkvangr', name: 'Fólkvangr', color: '#c77dab', desc: 'The other half of the battle-slain.' },
+        { k: 'ran', name: 'Rán\'s hall', color: '#3f9fb3', desc: 'The drowned.' },
+        { k: 'hel', name: 'Hel', color: '#6f86a8', desc: 'Sickness, old age, childhood, and everything else.' },
+      ],
+      assign: d => {
+        if (d.child) return 'hel';
+        const b = kfVal(CAUSE.battle, d.y);
+        if (d.c < b) return d.h < 0.5 ? 'valhalla' : 'folkvangr';
+        return d.c < b + kfVal(CAUSE.drown, d.y) ? 'ran' : 'hel';
+      },
+    },
+    aztec: {
+      label: 'If Aztec religion is true', title: 'If the Aztec gods are real',
+      blurb: 'The Mexica also sorted the dead by manner of death. Warriors, the sacrificed, and women who died in childbirth join the Sun. Those taken by water, lightning, or water-linked illness go to Tlaloc\'s paradise. Nursing infants wait under a tree dripping milk. Everyone else makes the four-year journey to Mictlan.',
+      dests: [
+        { k: 'mictlan', name: 'Mictlan', color: '#8e6ab0', desc: 'The nine-level underworld.' },
+        { k: 'sun', name: 'House of the Sun', color: '#f0a030', desc: 'Warriors and women who died in childbirth.' },
+        { k: 'tlalocan', name: 'Tlalocan', color: '#3aa6b9', desc: 'Those taken by water and lightning.' },
+        { k: 'chichi', name: 'Chichihuacuauhco', color: '#f0e0c0', desc: 'Infants, nursed until rebirth.' },
+      ],
+      assign: d => {
+        if (d.child) return d.h < 0.5 ? 'chichi' : 'mictlan';
+        const a = kfVal(CAUSE.battle, d.y) + kfVal(CAUSE.childbirth, d.y);
+        if (d.c < a) return 'sun';
+        return d.c < a + kfVal(CAUSE.drown, d.y) + kfVal(CAUSE.water, d.y) ? 'tlalocan' : 'mictlan';
+      },
+    },
+  };
+
+  // ---------- Formatting ----------
+  function fmtN(n) {
+    if (n >= 1e10) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e8) return Math.round(n / 1e6) + 'M';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return Math.round(n / 1e3) + 'K';
+    return n < 1 ? '0' : Math.round(n).toString();
+  }
+  function fmtYear(y) {
+    if (y < -10000) return (Math.round(-y / 1000) * 1000).toLocaleString('en-US') + ' BCE';
+    if (y < -1000) return (Math.round(-y / 10) * 10).toLocaleString('en-US') + ' BCE';
+    if (y < 1) return Math.max(1, Math.round(-y)) + ' BCE';
+    return Math.floor(y) + ' CE';
+  }
+  const figWhen = f => f.when || fmtYear(f.y);
+  const pct = x => x > 0 && x < 1e-4 ? '<0.01%' : x >= 0.1 ? (x * 100).toFixed(1) + '%' : x > 0 ? (x * 100).toFixed(2) + '%' : '–';
+  const rangeTxt = (v, e) => fmtN(Math.max(0, v - e)) + '–' + fmtN(v + e);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---------- State ----------
+  let view = WORLD, truth = 'each', truthS = 0.5;
+  let B = TOTAL, playing = false, speed = 1, last = performance.now(), prevB = B;
+  let selected = IDX.folk, hover = -1, hoverFig = null, markKids = false, showRanges = false;
+  let st = stateAt(B, view);
+  const DURATION = 75000;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- Dots ----------
+  // Each realm owns a fixed set of dots, ordered by death date. Dot j of realm k stands for its (j+1)th 20 million dead.
+  const MAXK = REALMS.map((r, k) => Math.ceil(CD[WORLD][N * K + k] / DOT) + 2);
+  const TOTDOTS = MAXK.reduce((a, b) => a + b, 0);
+  const hash = (k, i, s) => { const x = Math.sin(k * 127.1 + i * 311.7 + s * 74.7) * 43758.5453; return x - Math.floor(x); };
+  const mk = T => MAXK.map(n => new T(n));
+  const PX = mk(Float32Array), PY = mk(Float32Array), LIVE = mk(Uint8Array), DEST = mk(Int16Array), SLOT = mk(Int32Array), DY = mk(Float64Array), KID = mk(Uint8Array);
+  const H1 = MAXK.map((n, k) => Float32Array.from({ length: n }, (_, i) => hash(k, i, 1)));
+  const H2 = MAXK.map((n, k) => Float32Array.from({ length: n }, (_, i) => hash(k, i, 2)));
+  const H3 = MAXK.map((n, k) => Float32Array.from({ length: n }, (_, i) => hash(k, i, 3)));
+  const SPX = MAXK.map((n, k) => Float32Array.from({ length: n }, (_, i) => hash(k, i, 4)));
+  const GA = Math.PI * (3 - Math.sqrt(5));
+  const OX = new Float32Array(TOTDOTS + 8), OY = new Float32Array(TOTDOTS + 8);
+  for (let i = 0; i < OX.length; i++) { const r = Math.sqrt(i + 0.5); OX[i] = r * Math.cos(i * GA); OY[i] = r * Math.sin(i * GA); }
+  const shown = new Int32Array(K);
+  const nFinal = new Int32Array(K);
+  let dests = [], destPack = null, DL = [];
+
+  function computeDotYears() {
+    const cd = CD[view];
+    for (let k = 0; k < K; k++) {
+      nFinal[k] = Math.min(MAXK[k] - 1, Math.floor(cd[N * K + k] / DOT));
+      let i = 0;
+      for (let j = 0; j < MAXK[k]; j++) {
+        const t = (j + 0.5) * DOT;
+        while (i < N && cd[(i + 1) * K + k] < t) i++;
+        if (i >= N) { DY[k][j] = END; KID[k][j] = 0; continue; }
+        const x0 = cd[i * K + k], x1 = cd[(i + 1) * K + k];
+        DY[k][j] = S[i].a + (t - x0) / ((x1 - x0) || 1) * (S[i].b - S[i].a);
+        KID[k][j] = H2[k][j] < kfVal(CHILD, DY[k][j]) ? 1 : 0;
+      }
+    }
+  }
+  function assignDests() {
+    const counts = [];
+    if (truth === 'each') {
+      dests = REALMS.map((r, k) => ({ k: r.k, name: r.name, color: r.color, desc: r.trad, realm: k }));
+      for (let k = 0; k < K; k++) { for (let j = 0; j < MAXK[k]; j++) { DEST[k][j] = k; SLOT[k][j] = j; } counts[k] = CD[view][N * K + k] > DOT * 0.02 ? nFinal[k] + 1 : 0; }
+    } else {
+      const T = TRUTHS[truth];
+      dests = T.dests;
+      const di = Object.fromEntries(dests.map((d, i) => [d.k, i]));
+      dests.forEach((d, i) => { counts[i] = 0; });
+      const all = [];
+      for (let k = 0; k < K; k++) for (let j = 0; j <= nFinal[k]; j++) all.push([DY[k][j], k, j]);
+      all.sort((a, b) => a[0] - b[0]);
+      const dot = { k: '', y: 0, child: false, h: 0, c: 0 };
+      for (const [y, k, j] of all) {
+        dot.k = REALMS[k].k; dot.y = y; dot.child = !!KID[k][j]; dot.h = H1[k][j]; dot.c = H3[k][j];
+        const d = di[T.assign(dot, truthS)];
+        DEST[k][j] = d; SLOT[k][j] = counts[d]++;
+      }
+    }
+    const circles = dests.map((d, i) => ({ i, r: counts[i] > 0 ? Math.sqrt(counts[i]) + 2.4 : 0 })).filter(c => c.r > 0);
+    d3.packSiblings(circles);
+    destPack = { circles, enc: d3.packEnclose(circles) };
+    layout();
+  }
+  function rebuild() {
+    computeDotYears();
+    for (const f of FIGURES) {
+      if (view !== WORLD && f.reg !== view) { f.slot = -1; continue; }
+      f.slot = Math.min(nFinal[f.ri], Math.floor(stateAt(f.B, view).dead[f.ri] / DOT));
+    }
+    assignDests();
+  }
+
+  // ---------- Canvas ----------
+  const canvas = document.getElementById('sky');
+  const ctx = canvas.getContext('2d');
+  const tip = document.getElementById('tip');
+  const BAND = 46;
+  let W = 0, H = 0, unit = 1, dotR = 1, dpr = 1;
+  const stars = Array.from({ length: 140 }, () => [Math.random(), Math.random(), Math.random()]);
+
+  function resize() {
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = canvas.clientWidth;
+    H = Math.round(Math.min(W * 0.95, 760));
+    canvas.style.height = H + 'px';
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    layout();
+  }
+  function layout() {
+    if (!destPack || !W) return;
+    const area = H - BAND, { circles, enc } = destPack;
+    unit = Math.min(W, area) / (2 * enc.r) * 0.97;
+    dotR = Math.max(0.55, Math.min(4, unit * 0.46));
+    DL = dests.map(() => null);
+    for (const c of circles) DL[c.i] = { x: W / 2 + (c.x - enc.x) * unit, y: area / 2 + (c.y - enc.y) * unit + 4 };
+  }
+
+  const vis = new Float64Array(32);
+  let visCount = [];
+  function draw(now, dt) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(235,230,214,0.35)';
+    for (const [x, y, z] of stars) ctx.fillRect(x * W, y * (H - BAND), z < 0.85 ? 1 : 1.6, z < 0.85 ? 1 : 1.6);
+    const g = ctx.createLinearGradient(0, H - BAND, 0, H);
+    g.addColorStop(0, 'rgba(241,213,138,0)'); g.addColorStop(1, 'rgba(241,213,138,0.16)');
+    ctx.fillStyle = g; ctx.fillRect(0, H - BAND, W, BAND);
+    ctx.strokeStyle = 'rgba(241,213,138,0.35)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, H - BAND / 2 + 0.5); ctx.lineTo(W, H - BAND / 2 + 0.5); ctx.stroke();
+    ctx.fillStyle = '#9098b6'; ctx.font = '12px Figtree, system-ui, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('The living · ' + fmtN(st.living), 12, H - 8);
+    ctx.textAlign = 'right'; ctx.fillText(fmtYear(st.year), W - 12, H - 8);
+
+    const a = reduceMotion ? 1 : 1 - Math.exp(-dt / 220);
+    const nd = dests.length;
+    vis.fill(0);
+    const sy = H - BAND / 2;
+    for (let k = 0; k < K; k++) {
+      const n = st.dead[k] / DOT;
+      const full = Math.min(Math.floor(n), nFinal[k] + 1);
+      if (full < shown[k]) for (let j = full; j < shown[k]; j++) LIVE[k][j] = 0;
+      const spawn = playing && full - shown[k] < 80 && !reduceMotion;
+      shown[k] = full;
+      if (n <= 0) continue;
+      const col = REALMS[k].color;
+      for (let pass = 0; pass < (markKids ? 2 : 1); pass++) {
+        ctx.fillStyle = col;
+        ctx.globalAlpha = markKids ? (pass === 0 ? 0.16 : 1) : 1;
+        ctx.beginPath();
+        for (let j = 0; j < full; j++) {
+          if (markKids && KID[k][j] !== pass) continue;
+          const d = DEST[k][j], L = DL[d];
+          if (!L) continue;
+          const tx = L.x + OX[SLOT[k][j]] * unit, ty = L.y + OY[SLOT[k][j]] * unit;
+          if (!LIVE[k][j]) { if (spawn) { PX[k][j] = SPX[k][j] * W; PY[k][j] = sy; } else { PX[k][j] = tx; PY[k][j] = ty; } LIVE[k][j] = 1; }
+          else { PX[k][j] += (tx - PX[k][j]) * a; PY[k][j] += (ty - PY[k][j]) * a; }
+          vis[d]++;
+          ctx.moveTo(PX[k][j] + dotR, PY[k][j]); ctx.arc(PX[k][j], PY[k][j], dotR, 0, Math.PI * 2);
+        }
+        ctx.fill();
+      }
+      const frac = n - Math.floor(n);
+      if (full <= nFinal[k] && frac > 0.02) {
+        const d = DEST[k][full], L = DL[d];
+        if (L) {
+          const tx = L.x + OX[SLOT[k][full]] * unit, ty = L.y + OY[SLOT[k][full]] * unit;
+          ctx.globalAlpha = frac * (markKids && !KID[k][full] ? 0.16 : 1);
+          ctx.fillStyle = col; ctx.beginPath(); ctx.arc(tx, ty, dotR, 0, Math.PI * 2); ctx.fill();
+          vis[d] += frac;
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+    visCount = Array.from(vis.subarray(0, nd));
+
+    // rings
+    for (let d = 0; d < nd; d++) {
+      const L = DL[d]; if (!L || vis[d] <= 0) continue;
+      const R = unit * Math.sqrt(Math.max(vis[d], 1)) + dotR * 3;
+      const on = truth === 'each' ? d === selected || d === hover : d === hover;
+      ctx.globalAlpha = on ? 0.75 : truth === 'each' ? 0.18 : 0.5;
+      ctx.strokeStyle = truth === 'each' && d === selected ? '#f1d58a' : dests[d].color;
+      ctx.lineWidth = on ? 1.5 : 1;
+      ctx.beginPath(); ctx.arc(L.x, L.y, R, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // figures
+    const labels = [];
+    for (const f of FIGURES) {
+      if (f.slot < 0 || st.born < f.B) continue;
+      const j = Math.min(f.slot, shown[f.ri] - 1);
+      if (j < 0 || !LIVE[f.ri][j]) continue;
+      const x = PX[f.ri][j], y = PY[f.ri][j];
+      const flash = f.flash && now - f.flash < 3500;
+      const on = flash || f === hoverFig || (truth === 'each' && f.ri === selected);
+      ctx.fillStyle = on ? '#fffbe8' : 'rgba(255,251,232,0.55)';
+      star(x, y, on ? 4.5 : 2.6);
+      if (flash || f === hoverFig) labels.push([f, x, y, flash ? 1 - Math.max(0, (now - f.flash - 2500) / 1000) : 1]);
+    }
+
+    // labels
+    ctx.textAlign = 'center';
+    for (let d = 0; d < nd; d++) {
+      const L = DL[d]; if (!L || vis[d] <= 0) continue;
+      const R = unit * Math.sqrt(Math.max(vis[d], 1)) + dotR * 3;
+      const force = truth !== 'each' || d === hover || d === selected;
+      if (R < 30 && !(force && R >= 8) && d !== hover) continue;
+      const fs = Math.max(11, Math.min(20, R / 5));
+      ctx.font = `${fs}px Marcellus, Georgia, serif`;
+      const ly = R < 30 ? L.y - R - fs * 0.9 : L.y - 2;
+      shadowText(dests[d].name, L.x, ly, '#ebe6d6');
+      ctx.font = `${Math.max(10, fs * 0.62)}px "IBM Plex Mono", monospace`;
+      const cnt = truth === 'each' ? st.dead[d] : vis[d] * DOT;
+      shadowText((truth === 'each' ? '' : '≈') + fmtN(cnt), L.x, ly + fs * 0.85, '#c9c3b2');
+    }
+    for (const [f, x, y, al] of labels) {
+      ctx.globalAlpha = Math.max(0, al);
+      ctx.font = '12px Figtree, system-ui, sans-serif';
+      const txt = f.n + ' · ' + figWhen(f);
+      const w = ctx.measureText(txt).width + 14;
+      const lx = Math.max(w / 2 + 4, Math.min(W - w / 2 - 4, x)), ly = Math.max(16, y - 16);
+      ctx.fillStyle = 'rgba(9,12,26,0.9)';
+      roundRect(lx - w / 2, ly - 11, w, 20, 10); ctx.fill();
+      ctx.strokeStyle = REALMS[f.ri].color; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#fffbe8'; ctx.textAlign = 'center'; ctx.fillText(txt, lx, ly + 3);
+      ctx.globalAlpha = 1;
+    }
+  }
+  function star(x, y, r) {
+    ctx.beginPath();
+    for (let j = 0; j < 8; j++) { const an = j * Math.PI / 4, rr = j % 2 ? r * 0.35 : r; ctx.lineTo(x + Math.cos(an) * rr, y + Math.sin(an) * rr); }
+    ctx.closePath(); ctx.fill();
+  }
+  function shadowText(t, x, y, c) {
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(11,15,30,0.85)'; ctx.lineJoin = 'round';
+    ctx.strokeText(t, x, y); ctx.fillStyle = c; ctx.fillText(t, x, y);
+  }
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  // ---------- Side panels ----------
+  const $ = id => document.getElementById(id);
+  const rowsEl = $('rows'), tickerEl = $('ticker'), detailEl = $('detail'), truthEl = $('truthPanel');
+  const rowEls = REALMS.map((r, k) => {
+    const el = document.createElement('div');
+    el.className = 'row'; el.tabIndex = 0; el.setAttribute('role', 'listitem');
+    el.innerHTML = `<span class="sw" style="background:${r.color}"></span><span class="rname"><b>${r.name}${r.rebirth ? ' <span class="rb" title="Rebirth tradition">↻</span>' : ''}</b><small>${r.trad}</small></span><span class="num s"></span><span class="num p"></span><span class="num liv"></span><span class="num lp liv"></span>`;
+    el.addEventListener('click', () => select(k));
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(k); } });
+    el.addEventListener('mouseenter', () => { if (truth === 'each') hover = k; });
+    el.addEventListener('mouseleave', () => { if (truth === 'each') hover = -1; });
+    return el;
+  });
+  let sortKey = 'dead', sortAsc = false;
+  const headBtns = [...document.querySelectorAll('#thead button')];
+  function paintHead() {
+    for (const b of headBtns) {
+      const on = b.dataset.sort === sortKey;
+      b.classList.toggle('on', on); b.classList.toggle('asc', on && sortAsc);
+      b.setAttribute('aria-sort', on ? (sortAsc ? 'ascending' : 'descending') : 'none');
+    }
+  }
+  headBtns.forEach(b => b.addEventListener('click', () => {
+    const key = b.dataset.sort;
+    if (key === sortKey) sortAsc = !sortAsc; else { sortKey = key; sortAsc = key === 'name'; }
+    paintHead(); updateTable();
+  }));
+  paintHead();
+
+  function updateTable() {
+    const val = k => sortKey === 'dead' || sortKey === 'deadPct' ? st.dead[k] : st.sh[k];
+    const order = [...Array(K).keys()].sort((a, b) => {
+      const c = sortKey === 'name' ? REALMS[a].name.localeCompare(REALMS[b].name) : val(a) - val(b) || st.dead[a] - st.dead[b];
+      return sortAsc ? c : -c;
+    });
+    order.forEach((k, j) => {
+      const el = rowEls[k];
+      if (rowsEl.children[j] !== el) rowsEl.insertBefore(el, rowsEl.children[j] || null);
+      el.querySelector('.s').innerHTML = fmtN(st.dead[k]) + (showRanges && st.dead[k] > 0 ? `<small class="rng">${rangeTxt(st.dead[k], st.err[k])}</small>` : '');
+      el.querySelector('.p').textContent = pct(st.dsum ? st.dead[k] / st.dsum : 0);
+      const liv = st.living * st.sh[k];
+      el.querySelector('.liv').textContent = liv >= 1e3 ? fmtN(liv) : '–';
+      el.querySelector('.lp').textContent = pct(liv >= 1e3 ? st.sh[k] : 0);
+      el.classList.toggle('sel', k === selected);
+      el.classList.toggle('empty', st.dead[k] < 1e5 && liv < 1e3);
+    });
+    $('year').textContent = fmtYear(st.year);
+    $('where').textContent = view === WORLD ? 'Whole world' : REGIONS[view].name;
+    $('sBorn').textContent = view === WORLD ? fmtN(st.born) : '–';
+    $('sDead').textContent = fmtN(st.dsum);
+    $('sKids').textContent = fmtN(st.csum);
+    $('sKidsK').textContent = 'Died as children' + (st.dsum ? ' · ' + Math.round(st.csum / st.dsum * 100) + '%' : '');
+    $('sLive').textContent = fmtN(st.living);
+    let rd = 0, rl = 0;
+    REALMS.forEach((r, k) => { if (r.rebirth) { rd += st.dead[k]; rl += st.sh[k]; } });
+    $('tcap').innerHTML = (truth === 'each' ? '' : '<b>Where they came from.</b> ') + `<span class="rb">↻</span> Rebirth traditions: <b class="num">${pct(st.dsum ? rd / st.dsum : 0)}</b> of the dead, <b class="num">${pct(rl)}</b> of the living.`;
+  }
+
+  function updateDetail() {
+    const r = REALMS[selected], k = selected;
+    const figs = FIGURES.filter(f => f.ri === k && (view === WORLD || f.reg === view));
+    const here = figs.filter(f => st.born >= f.B);
+    const kids = st.dead[k] ? st.child[k] / st.dead[k] : 0;
+    let between = '';
+    if (r.between) {
+      const [days, how] = r.between;
+      between = `<p class="note">If rebirth works as taught, few stay here long. Of the ${fmtN(st.dead[k])} who passed through, about <b class="num">${fmtN(st.perDay[k] * days)}</b> would be between lives right now: ${how}.</p>`;
+    } else if (r.rebirth) {
+      between = '<p class="note">In this tradition souls do not stay here. They are reborn until liberated, many of them perhaps into people alive today.</p>';
+    }
+    detailEl.innerHTML = `
+      <span class="eyebrow">Realm${view === WORLD ? '' : ' · ' + REGIONS[view].name}</span>
+      <div class="head"><span class="big" style="background:${r.color};color:${r.color}"></span><h2>${r.name}</h2></div>
+      <div class="meta"><span>${r.trad}</span><span>${r.span}</span>${r.rebirth ? '<span class="pill">Rebirth tradition</span>' : ''}</div>
+      <p>${r.desc}</p>
+      <div class="meta">
+        <span>Dead by ${fmtYear(st.year)}: <b class="num">${fmtN(st.dead[k])}</b>${st.dead[k] > 0 ? ` <span class="num">(range ${rangeTxt(st.dead[k], st.err[k])})</span>` : ''}</span>
+        <span>Share of all dead: <b class="num">${pct(st.dsum ? st.dead[k] / st.dsum : 0)}</b></span>
+        <span>Died as children: <b class="num">${fmtN(st.child[k])}</b>${kids ? ` (${Math.round(kids * 100)}%)` : ''}</span>
+        <span>Followers alive: <b class="num">${fmtN(st.living * st.sh[k])}</b></span>
+      </div>
+      ${between}
+      ${r.places.length > 1 ? `<div class="places"><span class="eyebrow">Places within this realm</span>${r.places.map(([p, w]) => `<div class="place"><b>${p}</b><span>${w}</span></div>`).join('')}<p class="note">In "As each believes" mode, everyone is counted in the realm as a whole. The tradition's own texts do not say how many go to each place.</p></div>` : ''}
+      ${figs.length ? `<div class="meta">Notable residents: ${here.length ? here.map(f => `<b>${f.n}</b>`).join(', ') : '<span>none yet</span>'}</div>` : ''}
+      ${r.note ? `<p class="note">${r.note}</p>` : ''}`;
+  }
+  function select(k) { selected = k; updateDetail(); updateTable(); }
+
+  function renderTruthPanel() {
+    if (truth === 'each') { truthEl.hidden = true; truthEl.innerHTML = ''; return; }
+    const T = TRUTHS[truth];
+    truthEl.hidden = false;
+    const sl = T.slider;
+    truthEl.innerHTML = `
+      <span class="eyebrow">One tradition, everyone judged by it</span>
+      <h3>${T.title}</h3>
+      <p id="truthBlurb">${T.blurb}</p>
+      ${sl ? `<div class="slide">
+        <div class="top"><b>${sl.label}</b><span class="num" id="truthVal"></span></div>
+        <input type="range" id="truthS" min="0" max="1" step="0.01" value="${truthS}" aria-label="${sl.label}">
+        <div class="stops">${sl.stops.map(([v, n]) => `<button type="button" data-v="${v}">${n}</button>`).join('')}</div>
+        <p class="stopnote" id="stopNote"></p>
+      </div>` : ''}
+      <div class="dests" id="destList"></div>`;
+    if (sl) {
+      const inp = $('truthS');
+      inp.addEventListener('input', () => { truthS = +inp.value; paintSlider(); assignDests(); });
+      truthEl.querySelectorAll('.stops button').forEach(b => b.addEventListener('click', () => { truthS = +b.dataset.v; inp.value = truthS; paintSlider(); assignDests(); }));
+      paintSlider();
+    }
+    updateTruthCounts();
+  }
+  function paintSlider() {
+    const sl = TRUTHS[truth].slider; if (!sl) return;
+    $('truthVal').textContent = Math.round(truthS * 100) + '%';
+    let best = sl.stops[0];
+    for (const s of sl.stops) if (Math.abs(s[0] - truthS) < Math.abs(best[0] - truthS)) best = s;
+    $('stopNote').textContent = best[1] + ': ' + best[2];
+  }
+  function updateTruthCounts() {
+    if (truth === 'each') return;
+    const list = $('destList'); if (!list) return;
+    const tot = visCount.reduce((a, b) => a + b, 0) || 1;
+    list.innerHTML = dests.map((d, i) => `<div class="dest"><span class="sw" style="background:${d.color}"></span><span>${d.name}<small>${d.desc}</small></span><span class="num">≈${fmtN((visCount[i] || 0) * DOT)}</span><span class="num">${pct((visCount[i] || 0) / tot)}</span></div>`).join('');
+    if (truth === 'rebirth') {
+      let perDay = 0; for (let k = 0; k < K; k++) perDay += st.perDay[k];
+      $('truthBlurb').textContent = TRUTHS.rebirth.blurb + ` At this moment only about ${fmtN(perDay * 49)} would be between lives, if the bardo lasts up to 49 days.`;
+    }
+  }
+
+  const recent = [];
+  function pushArrival(f) {
+    recent.unshift(f); if (recent.length > 6) recent.pop();
+    tickerEl.innerHTML = recent.map(f => `<div class="tick"><span class="num">${figWhen(f)}</span><span>${f.n} <em>→ ${arrivalPlace(f)}</em></span></div>`).join('');
+  }
+  function arrivalPlace(f) {
+    if (truth === 'each' || f.slot < 0) return REALMS[f.ri].name;
+    const d = dests[DEST[f.ri][Math.min(f.slot, nFinal[f.ri])]];
+    return d ? d.name : REALMS[f.ri].name;
+  }
+  function seedTicker() {
+    recent.length = 0;
+    FIGURES.filter(f => st.born >= f.B && (view === WORLD || f.reg === view)).sort((a, b) => b.y - a.y).slice(0, 6).reverse().forEach(pushArrival);
+    if (!recent.length) tickerEl.innerHTML = '<p class="lede">No notable figures yet in this view.</p>';
+  }
+
+  // ---------- Figures list ----------
+  const figsEl = $('figs');
+  const chipEls = [], groupEls = [];
+  REALMS.forEach((r, k) => {
+    const fs = FIGURES.filter(f => f.ri === k).sort((a, b) => a.y - b.y);
+    if (!fs.length) return;
+    const g = document.createElement('div'); g.className = 'fgroup';
+    g.innerHTML = `<h4><span class="sw" style="background:${r.color}"></span>${r.name}</h4>`;
+    const chips = document.createElement('div'); chips.className = 'chips';
+    for (const f of fs) {
+      const c = document.createElement('button'); c.type = 'button'; c.className = 'chip';
+      c.innerHTML = `${f.n}<small>${figWhen(f)}</small>`;
+      c.title = REGIONS[f.reg].name;
+      c.addEventListener('click', () => {
+        playing = false;
+        if (view !== WORLD && f.reg !== view) setView(WORLD);
+        setB(f.B + 1); f.flash = performance.now(); hoverFig = f;
+        if (truth === 'each') select(f.ri);
+        window.scrollTo({ top: canvas.getBoundingClientRect().top + scrollY - 20, behavior: reduceMotion ? 'auto' : 'smooth' });
+      });
+      chips.appendChild(c); chipEls.push([c, f, g]);
+    }
+    g.appendChild(chips); figsEl.appendChild(g); groupEls.push(g);
+  });
+  $('figSearch').addEventListener('input', filterFigs);
+  function filterFigs() {
+    const q = $('figSearch').value.trim().toLowerCase();
+    let n = 0;
+    for (const [c, f] of chipEls) {
+      const hit = !q || (f.n + ' ' + REALMS[f.ri].name + ' ' + REALMS[f.ri].trad + ' ' + REGIONS[f.reg].name + ' ' + figWhen(f)).toLowerCase().includes(q);
+      c.hidden = !hit; if (hit) n++;
+    }
+    for (const g of groupEls) g.hidden = ![...g.querySelectorAll('.chip')].some(c => !c.hidden);
+    $('figCount').textContent = q ? `${n} of ${FIGURES.length} figures` : `${FIGURES.length} figures`;
+  }
+  function updateChips() { for (const [c, f] of chipEls) c.classList.toggle('future', st.born < f.B); }
+
+  // ---------- Chart ----------
+  const svg = $('chart');
+  const NS = 'http://www.w3.org/2000/svg';
+  function buildChart() {
+    svg.innerHTML = '';
+    const x = b => b / TOTAL * 1000;
+    const sh = VSH[view], base = new Float64Array(N);
+    for (let k = 0; k < K; k++) {
+      const top = [], bot = [];
+      let any = false;
+      for (let i = 0; i < N; i++) {
+        const v = sh[i * K + k]; if (v > 0) any = true;
+        const y0 = 220 - base[i] * 220, y1 = 220 - (base[i] + v) * 220;
+        top.push(`${x(cumB[i]).toFixed(2)},${y1.toFixed(2)}`, `${x(cumB[i + 1]).toFixed(2)},${y1.toFixed(2)}`);
+        bot.push(`${x(cumB[i + 1]).toFixed(2)},${y0.toFixed(2)}`, `${x(cumB[i]).toFixed(2)},${y0.toFixed(2)}`);
+        base[i] += v;
+      }
+      if (!any) continue;
+      const p = document.createElementNS(NS, 'path');
+      p.setAttribute('d', 'M' + top.join('L') + 'L' + bot.reverse().join('L') + 'Z');
+      p.setAttribute('fill', REALMS[k].color);
+      svg.appendChild(p);
+    }
+    for (const [id, c, w] of [['cursor', '#0b0f1e', 3], ['cursor2', '#f1d58a', 1.5]]) {
+      const l = document.createElementNS(NS, 'line');
+      l.setAttribute('id', id); l.setAttribute('y1', 0); l.setAttribute('y2', 220);
+      l.setAttribute('stroke', c); l.setAttribute('stroke-width', w); l.setAttribute('vector-effect', 'non-scaling-stroke');
+      svg.appendChild(l);
+    }
+    $('chartLede').textContent = (view === WORLD ? 'The whole world. ' : REGIONS[view].name + ' only. ') + 'Each column is a slice of history holding the same number of births worldwide. Click anywhere to jump there.';
+    $('legend').innerHTML = REALMS.filter((r, k) => CD[view][N * K + k] > 1e6).map(r => `<span><i style="background:${r.color}"></i>${r.trad}</span>`).join('');
+    updateCursor();
+  }
+  (function buildAxes() {
+    const ticks = [[-190000, '190,000 BCE'], [-8000, '8000 BCE'], [-3000, '3000 BCE'], [1, '1 CE'], [1000, '1000'], [1500, '1500'], [1800, '1800'], [1900, '1900'], [2000, '2000']];
+    $('xt').innerHTML = ticks.map(([y, l], j) => `<span class="${j % 2 ? 'alt' : ''}" style="left:${(BofYear(y) / TOTAL * 100).toFixed(2)}%">${l}</span>`).join('');
+    const bands = [[-190000, -3000, 'Guesswork', 0.08], [-3000, 1500, 'Rough', 0.16], [1500, 1900, 'Fair', 0.28], [1900, 2026, 'Good', 0.45]];
+    $('conf').innerHTML = bands.map(([a, b, l, o]) => {
+      const x0 = BofYear(a) / TOTAL * 100, x1 = BofYear(b) / TOTAL * 100;
+      return `<span style="left:${x0}%;width:calc(${x1 - x0}% - 2px);background:rgba(241,213,138,${o})" title="Confidence: ${l}">${x1 - x0 > 6 ? 'Confidence: ' + l.toLowerCase() : l}</span>`;
+    }).join('');
+    svg.addEventListener('click', e => {
+      const rect = svg.getBoundingClientRect();
+      playing = false; setPlayLabel();
+      setB((e.clientX - rect.left) / rect.width * TOTAL);
+    });
+  })();
+  function updateCursor() {
+    const xv = (st.born / TOTAL * 1000).toFixed(2);
+    for (const id of ['cursor', 'cursor2']) { const l = document.getElementById(id); if (l) { l.setAttribute('x1', xv); l.setAttribute('x2', xv); } }
+  }
+
+  // ---------- Ancestors ----------
+  const GEN = 27;
+  const ancA = $('ancA'), ancB = $('ancB'), ancMix = $('ancMix');
+  ancA.innerHTML = REGIONS.map((r, i) => `<option value="${i}">${r.name}</option>`).join('');
+  ancB.innerHTML = '<option value="-1">nowhere else</option>' + REGIONS.map((r, i) => `<option value="${i}">${r.name}</option>`).join('');
+  ancA.value = String(RIDX.europe);
+  function ancShares(y, a, b, m) {
+    const sa = sharesAt(a, y);
+    if (b < 0) return sa;
+    const sb = sharesAt(b, y), s = new Float64Array(K);
+    for (let k = 0; k < K; k++) s[k] = m * sa[k] + (1 - m) * sb[k];
+    return s;
+  }
+  function renderAncestors() {
+    const a = +ancA.value, b = +ancB.value, m = +ancMix.value / 100;
+    $('ancMixWrap').hidden = b < 0;
+    $('ancMixLbl').textContent = `${Math.round(m * 100)} / ${Math.round((1 - m) * 100)}`;
+    const G = Math.floor((2000 - START) / GEN);
+    const avg = new Float64Array(K), first = new Int32Array(K).fill(-1);
+    for (let g = 1; g <= G; g++) {
+      const y = 2000 - GEN * g, s = ancShares(y, a, b, m);
+      for (let k = 0; k < K; k++) { avg[k] += s[k]; if (first[k] < 0 && s[k] >= 0.01) first[k] = g; }
+    }
+    for (let k = 0; k < K; k++) avg[k] /= G;
+    const pre = avg[UNKNOWN] + avg[FOLK];
+    $('ancHead').textContent = `Of your roughly ${G.toLocaleString('en-US')} generations of ancestors, ${Math.round(pre * 100)}% lived before any religion we can name, in The Unrecorded or the Spirit World.`;
+    const ord = [...Array(K).keys()].filter(k => avg[k] > 0.00005).sort((p, q) => avg[q] - avg[p]);
+    const mx = avg[ord[0]];
+    $('ancBars').innerHTML = ord.map(k => `<div class="bar"><span class="lbl">${REALMS[k].name}</span><span class="track"><span class="fill" style="display:block;width:${(avg[k] / mx * 100).toFixed(1)}%;background:${REALMS[k].color}"></span></span><span class="num">${pct(avg[k])}</span></div>`).join('');
+    const near = [...Array(K).keys()].filter(k => first[k] > 0 && k !== UNKNOWN).sort((p, q) => first[p] - first[q]);
+    $('ancNear').innerHTML = near.map(k => `<div class="near"><span class="sw" style="background:${REALMS[k].color}"></span><span>${REALMS[k].name}</span><span>${first[k] === 1 ? 'your parents\' generation' : '~' + first[k] + ' generations ago'} · ${fmtYear(2000 - GEN * first[k])}</span></div>`).join('');
+    // strip of the last 120 generations, oldest on the left
+    const strip = $('strip'); strip.innerHTML = '';
+    for (let c = 0; c < 120; c++) {
+      const g = 120 - c, s = ancShares(2000 - GEN * g, a, b, m);
+      let y0 = 0;
+      for (let k = 0; k < K; k++) {
+        if (s[k] < 0.002) continue;
+        const r = document.createElementNS(NS, 'rect');
+        r.setAttribute('x', c); r.setAttribute('width', 1.02); r.setAttribute('y', y0.toFixed(3)); r.setAttribute('height', (s[k] * 100 + 0.02).toFixed(3));
+        r.setAttribute('fill', REALMS[k].color);
+        strip.appendChild(r); y0 += s[k] * 100;
+      }
+    }
+    $('stripx').innerHTML = [120, 80, 40, 1].map(g => `<span>${fmtYear(2000 - GEN * g)}</span>`).join('');
+  }
+  [ancA, ancB, ancMix].forEach(el => el.addEventListener('input', renderAncestors));
+
+  // ---------- Controls ----------
+  const playBtn = $('play'), scrub = $('scrub');
+  const truthSel = $('truth'), viewSel = $('view');
+  truthSel.innerHTML = Object.entries(TRUTHS).map(([k, t]) => `<option value="${k}">${t.label}</option>`).join('');
+  viewSel.innerHTML = `<option value="${WORLD}">Whole world</option>` + REGIONS.map((r, i) => `<option value="${i}">${r.name}</option>`).join('');
+  function setPlayLabel() { playBtn.textContent = playing ? '❚❚ Pause' : B >= TOTAL ? '▶ Replay history' : '▶ Play'; }
+  function setB(v) {
+    B = Math.max(0, Math.min(TOTAL, v)); prevB = B;
+    st = stateAt(B, view);
+    seedTicker(); refreshDom();
+  }
+  function setView(v) {
+    view = v; viewSel.value = String(v);
+    st = stateAt(B, view);
+    rebuild(); buildChart(); seedTicker(); refreshDom();
+  }
+  function setTruth(t) {
+    truth = t; truthSel.value = t;
+    const sl = TRUTHS[t].slider; if (sl) truthS = sl.def;
+    hover = -1;
+    assignDests(); renderTruthPanel(); seedTicker(); refreshDom();
+  }
+  playBtn.addEventListener('click', () => {
+    if (!playing && B >= TOTAL) setB(0);
+    playing = !playing; last = performance.now(); setPlayLabel();
+  });
+  scrub.addEventListener('input', () => { playing = false; setPlayLabel(); setB(scrub.value / 10000 * TOTAL); });
+  $('speed').addEventListener('change', e => { speed = +e.target.value; });
+  truthSel.addEventListener('change', () => setTruth(truthSel.value));
+  viewSel.addEventListener('change', () => setView(+viewSel.value));
+  $('kids').addEventListener('change', e => { markKids = e.target.checked; });
+  $('ranges').addEventListener('change', e => { showRanges = e.target.checked; updateTable(); });
+  const ERAS = [['First humans', -190000], ['Out of Africa', -60000], ['Farming', -8000], ['Writing', -3200], ['Axial Age', -500], ['1 CE', 1], ['Rise of Islam', 632], ['1500', 1500], ['1900', 1900], ['Today', 2026]];
+  $('eras').innerHTML = ERAS.map(([l, y]) => `<button type="button" data-y="${y}">${l}</button>`).join('');
+  $('eras').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    playing = false; setPlayLabel(); setB(BofYear(+b.dataset.y));
+  });
+
+  // Links: #y1500, #y1500.islam, #y1500.islam.europe
+  function linkToken() {
+    const parts = ['y' + Math.round(st.year)];
+    if (truth !== 'each') parts.push(truth);
+    if (view !== WORLD) parts.push(REGIONS[view].k);
+    return parts.join('.');
+  }
+  function applyHash() {
+    const h = (location.hash || '').slice(1);
+    if (!h) return false;
+    let y = null, t = 'each', v = WORLD, hit = false;
+    for (const p of h.split('.')) {
+      if (/^y-?\d+$/.test(p)) { y = +p.slice(1); hit = true; }
+      else if (TRUTHS[p]) { t = p; hit = true; }
+      else if (RIDX[p] != null) { v = RIDX[p]; hit = true; }
+    }
+    if (!hit) return false;
+    if (v !== view) setView(v);
+    if (t !== truth) setTruth(t);
+    if (y != null) { playing = false; setB(BofYear(y)); }
+    return true;
+  }
+  window.addEventListener('hashchange', applyHash);
+  $('copyLink').addEventListener('click', () => {
+    const url = ARTIFACT_URL + '#' + linkToken();
+    const out = $('linkOut'), btn = $('copyLink');
+    const fallback = () => { out.hidden = false; out.value = url; out.select(); btn.textContent = 'Copy the link below'; };
+    try {
+      navigator.clipboard.writeText(url).then(() => { btn.textContent = 'Link copied'; out.hidden = true; setTimeout(() => { btn.textContent = 'Copy link to this view'; }, 2000); }, fallback);
+    } catch (e) { fallback(); }
+  });
+
+  // ---------- Hover ----------
+  function pick(ev) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = ev.clientX - rect.left, my = ev.clientY - rect.top;
+    let best = -1, bd = Infinity;
+    for (let d = 0; d < dests.length; d++) {
+      const L = DL[d]; if (!L || !(visCount[d] > 0)) continue;
+      const R = Math.max(unit * Math.sqrt(Math.max(visCount[d], 1)) + dotR * 3, 10);
+      const dist = Math.hypot(mx - L.x, my - L.y);
+      if (dist < R && dist / R < bd) { bd = dist / R; best = d; }
+    }
+    let fig = null, fd = 10;
+    for (const f of FIGURES) {
+      if (f.slot < 0 || st.born < f.B) continue;
+      const j = Math.min(f.slot, shown[f.ri] - 1);
+      if (j < 0 || !LIVE[f.ri][j]) continue;
+      const dd = Math.hypot(mx - PX[f.ri][j], my - PY[f.ri][j]);
+      if (dd < fd) { fd = dd; fig = f; }
+    }
+    return { d: best, fig, mx, my };
+  }
+  function origins(d) {
+    const c = new Float64Array(K); let t = 0;
+    for (let k = 0; k < K; k++) for (let j = 0; j < shown[k]; j++) if (DEST[k][j] === d) { c[k]++; t++; }
+    return [...Array(K).keys()].filter(k => c[k] > 0).sort((a, b) => c[b] - c[a]).slice(0, 3).map(k => `${REALMS[k].trad} ${Math.round(c[k] / t * 100)}%`).join(', ');
+  }
+  canvas.addEventListener('pointermove', ev => {
+    const p = pick(ev);
+    hover = p.d; hoverFig = p.fig;
+    if (p.d < 0) { tip.hidden = true; return; }
+    let html;
+    if (truth === 'each') {
+      const r = REALMS[p.d];
+      html = `<b>${r.name}</b>${r.trad}<br><span class="num">${fmtN(st.dead[p.d])}</span> dead · ${pct(st.dsum ? st.dead[p.d] / st.dsum : 0)}<br><span class="dim">Range ${rangeTxt(st.dead[p.d], st.err[p.d])}</span>`;
+    } else {
+      const d = dests[p.d];
+      html = `<b>${d.name}</b>${d.desc}<br><span class="num">≈${fmtN(visCount[p.d] * DOT)}</span><br><span class="dim">Mostly from: ${origins(p.d)}</span>`;
+    }
+    if (p.fig) html += `<br>★ ${esc(p.fig.n)}, d. ${figWhen(p.fig)}`;
+    tip.innerHTML = html; tip.hidden = false;
+    const tw = tip.offsetWidth;
+    tip.style.left = Math.max(8, Math.min(canvas.clientWidth - tw - 8, p.mx + 14)) + 'px';
+    tip.style.top = Math.max(8, p.my - 10) + 'px';
+  });
+  canvas.addEventListener('pointerleave', () => { hover = -1; hoverFig = null; tip.hidden = true; });
+  canvas.addEventListener('click', ev => { const p = pick(ev); if (p.d >= 0 && truth === 'each') select(p.d); });
+
+  let lastDom = 0;
+  function refreshDom() {
+    updateTable(); updateDetail(); updateChips(); updateCursor(); updateTruthCounts();
+    scrub.value = Math.round(st.born / TOTAL * 10000);
+    setPlayLabel();
+  }
+  function frame(now) {
+    const dt = Math.min(100, now - last); last = now;
+    if (playing) {
+      B = Math.min(TOTAL, B + dt / DURATION * TOTAL * speed);
+      st = stateAt(B, view);
+      for (const f of FIGURES) if (prevB < f.B && f.B <= B && (view === WORLD || f.reg === view)) { f.flash = now; pushArrival(f); }
+      prevB = B;
+      if (B >= TOTAL) { playing = false; setPlayLabel(); }
+    }
+    draw(now, dt);
+    if (now - lastDom > 180) { lastDom = now; refreshDom(); }
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', resize);
+  rebuild();
+  resize();
+  buildChart();
+  renderTruthPanel();
+  filterFigs();
+  renderAncestors();
+  if (!applyHash()) { seedTicker(); refreshDom(); }
+  requestAnimationFrame(frame);
+})();
+</script>
