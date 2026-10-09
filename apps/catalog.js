@@ -167,7 +167,7 @@ window.CATALOG = {
       made: 'SQLite Wasm, React, Canvas, Web Crypto', year: 2026 },
     { id: 'world-of-words', name: 'World of Words', subtitle: 'Deducible dictionary coordinate system', kind: 'app',
       access: 'open', url: 'https://world-of-words-orpin.vercel.app', devices: ['desktop'],
-      icon: 'icons/world-of-words.png', hue: ['#0b1a2e', '#48b0d5'],
+      media: {}, icon: 'icons/world-of-words.png', hue: ['#0b1a2e', '#48b0d5'],
       body: 'An alphabetical, mathematically deducible coordinate system mapped monotonically onto 3D globes of both the Earth and the Moon. Unlike what3words, if you know where you are, you can deduce where anything else is.',
       made: 'Cesium, Three.js, Lexicon algorithms', year: 2026 },
 
@@ -222,7 +222,7 @@ window.CATALOG = {
       body: 'A phone-sized wheel of the twelve animal signs.', made: 'Canvas', year: 2026 },
     { id: 'seti-sonify', name: 'SETI Solar Wind', subtitle: 'Space weather sonifier & telemetry DAW', kind: 'toy',
       access: 'open', url: 'https://seti-sonify.netlify.app', devices: ['desktop'],
-      icon: 'icons/seti-sonify.png', hue: ['#181008', '#f97316'],
+      media: {}, icon: 'icons/seti-sonify.png', hue: ['#181008', '#f97316'],
       body: 'Turns live NOAA SWPC DSCOVR telemetry and NASA CDAWeb HAPI solar-wind archives into 6-channel musical waveforms, audio scrubs, and offline WAV exports using Tone.js.',
       made: 'Tone.js, NASA/NOAA APIs, Web Audio', year: 2026 },
     { id: 'memebot', name: 'Memebot', subtitle: 'Animated pixel-face AI companion', kind: 'toy',

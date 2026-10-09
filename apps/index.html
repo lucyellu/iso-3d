@@ -170,10 +170,7 @@
   .shots:has(img.tall) { grid-auto-columns: min(40%, 170px); }
 
   @media (max-width: 760px) {
-    .legend { grid-template-columns: 1fr; gap: 6px; }
-    .legend div { padding: 9px 12px; align-items: center; border-radius: 14px; }
-    .legend i { display: none; }
-    .legend .chip { width: 64px; }
+    .legend { display: none; }
     header .tabs { display: none; }
     .tabs.m { display: inline-flex; margin-top: 18px; }
     .arrows { display: none; }
@@ -263,7 +260,7 @@ function icon(a, cls = 'ic') {
   return `<span class="${cls}" style="background:linear-gradient(135deg,${a.hue[0]},${a.hue[1]})" aria-hidden="true">${esc(a.name[0])}</span>`;
 }
 function media(a, cls = '') {
-  const m = a.media, poster = m.poster ? 'media/' + m.poster : '';
+  const m = a.media || {}, poster = m.poster ? 'media/' + m.poster : '';
   let inner;
   if (!poster) inner = `<div class="mono-ic" style="background:linear-gradient(135deg,${a.hue[0]},${a.hue[1]})">${esc(a.name[0])}</div>`;
   else if (m.fit) inner = `<img class="blur" src="${poster}" alt="" loading="lazy"><img class="fg" src="${poster}" alt="" loading="lazy">`;
