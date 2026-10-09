@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wiki Times</title>
+  <meta name="description" content="Read any article at any reading level, or in a different voice.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="./" aria-label="Wiki Times home">
+      <span class="mark">W</span><span class="name">Wiki Times</span>
+    </a>
+    <form id="urlForm" class="urlbar" autocomplete="off">
+      <input id="url" type="text" spellcheck="false" placeholder="Paste a link, or type a Wikipedia topic" aria-label="Article link or topic">
+      <button id="go" type="submit">Read</button>
+    </form>
+    <div class="actions">
+      <button class="icon" id="btnWords" title="Saved words" aria-label="Saved words"><span data-i="book"></span><span id="wordCount" class="badge" hidden>0</span></button>
+      <button class="icon" id="btnTheme" title="Toggle theme" aria-label="Toggle theme"><span data-i="moon"></span></button>
+      <button class="icon" id="btnSettings" title="Settings" aria-label="Settings"><span data-i="sliders"></span></button>
+    </div>
+  </header>
+
+  <main>
+    <section id="hero">
+      <h1>Read anything,<br><em>your way.</em></h1>
+      <p>Slide any article down to a kindergarten reading level, or sideways into a new voice: ELI5, greentext, postdoc, poetic.</p>
+      <div class="chips" id="examples"></div>
+    </section>
+
+    <article id="article" hidden>
+      <div class="kicker"><span id="source"></span><span id="gradeNow"></span></div>
+      <h1 id="title"></h1>
+      <div id="status" class="status" hidden></div>
+      <div id="reader" class="reader show-changes"></div>
+    </article>
+  </main>
+
+  <div id="dock" class="dock" hidden>
+    <div class="dock-top">
+      <div class="seg" role="tablist">
+        <button id="tabLevel" class="on" role="tab">Reading level</button>
+        <button id="tabVoice" role="tab">Voice</button>
+      </div>
+      <span id="blurb" class="blurb"></span>
+      <button class="icon small" id="btnChanges" title="Highlight changes" aria-label="Highlight changes" aria-pressed="true"><span data-i="eye"></span></button>
+    </div>
+    <div class="lens" id="lens" role="radiogroup"><span class="thumb" id="thumb"></span></div>
+  </div>
+
+  <div class="scrim" id="scrim" hidden></div>
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <div class="seg">
+        <button id="dtWords" class="on">Words</button>
+        <button id="dtSettings">Settings</button>
+      </div>
+      <button class="icon small" id="btnClose" aria-label="Close"><span data-i="x"></span></button>
+    </div>
+
+    <div id="paneWords" class="pane">
+      <p class="muted" id="wordsEmpty">Click any highlighted or underlined word in an article to save it here.</p>
+      <ul id="wordList" class="words"></ul>
+    </div>
+
+    <div id="paneSettings" class="pane" hidden>
+      <h3>AI</h3>
+      <p class="muted">Add a key for full rewrites and Voices. Without one, Wiki Times uses a free thesaurus (lite mode). Keys stay in this browser.</p>
+      <label>Provider
+        <select id="provider"></select>
+      </label>
+      <label>API key
+        <input id="apiKey" type="password" autocomplete="off" placeholder="Paste key">
+      </label>
+      <label>Model
+        <input id="model" type="text" spellcheck="false">
+      </label>
+      <div class="row">
+        <button class="btn" id="saveKey">Save</button>
+        <button class="btn ghost" id="testKey">Test</button>
+        <button class="btn ghost" id="clearKey">Clear</button>
+      </div>
+
+      <h3>Reading</h3>
+      <label>Text size <span id="sizeVal" class="muted"></span>
+        <input id="size" type="range" min="16" max="24" step="1">
+      </label>
+      <label>Typeface
+        <select id="face"><option value="serif">Serif</option><option value="sans">Sans</option></select>
+      </label>
+      <label>Lite mode strength <span id="strengthVal" class="muted"></span>
+        <input id="strength" type="range" min="10" max="100" step="5">
+      </label>
+      <p class="muted">How much of the above-grade vocabulary lite mode tries to swap (hardest first).</p>
+    </div>
+  </aside>
+
+  <div id="tip" class="tip" role="tooltip"></div>
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="lexicon.js"></script>
+  <script src="engine.js"></script>
+  <script src="llm.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
