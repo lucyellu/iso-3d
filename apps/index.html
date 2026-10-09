@@ -166,7 +166,8 @@
   .d-desc { font-size: 16px; line-height: 1.65; color: var(--ink-2); margin: 20px 0 0; max-width: 640px; }
   .shots { display: grid; grid-auto-flow: column; grid-auto-columns: min(70%, 300px); gap: 10px; overflow-x: auto; margin-top: 20px; scrollbar-width: thin; }
   .shots img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); }
-  .shots img.tall { aspect-ratio: 390 / 600; object-position: top; }
+  .shots img.tall { aspect-ratio: 1290 / 2796; object-position: top; }
+  .shots:has(img.tall) { grid-auto-columns: min(40%, 170px); }
 
   @media (max-width: 760px) {
     .legend { grid-template-columns: 1fr; gap: 6px; }
@@ -251,7 +252,7 @@ const host = u => { try { return new URL(u, location.href).host.replace(/^www\./
 function access(a) {
   if (a.access === 'play') return { cls: 'play', label: 'Play', cta: 'Play in your browser', how: 'Runs here',
     long: 'It runs right here on lucylu.org, in your browser. Nothing to install and no account. It opens in a new tab.' };
-  if (a.access === 'open') return { cls: 'open', label: 'Open ↗', cta: `Open ${host(a.url)} ↗`, how: host(a.url),
+  if (a.access === 'open') return { cls: 'open', label: 'Open ↗', cta: 'Open ↗', how: host(a.url),
     long: `A live web app on its own site, ${host(a.url)}. It opens in a new tab; nothing to install.` };
   const vid = a.media.youtube;
   return { cls: 'watch', label: 'Watch', cta: vid ? 'Watch gameplay' : 'No footage yet', how: 'Retired · video', disabled: !vid,
