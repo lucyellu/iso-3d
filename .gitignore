@@ -1,3 +1,5 @@
 ref/
 *.ico
 Ambient_and_SFX/
+# Local drafts (e.g. prehistoria-draft002/), never published
+*-draft[0-9]*/
