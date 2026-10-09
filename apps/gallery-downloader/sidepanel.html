@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>Gallery Image Downloader</title>
+    <link rel="stylesheet" href="sidepanel.css">
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand" aria-label="Gallery Image Downloader">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="img">
+              <path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 17.5v-11Z"></path>
+              <path d="m7.8 16.8 3.15-3.55 2.2 2.25 1.4-1.75 2.65 3.05"></path>
+              <circle cx="14.8" cy="8.6" r="1.15"></circle>
+            </svg>
+          </span>
+          <span>
+            <strong>Gallery</strong>
+            <small id="pageHost">Current tab</small>
+          </span>
+        </div>
+        <button class="icon-button" id="refreshButton" type="button" title="Scan tab" aria-label="Scan tab">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 12a8 8 0 1 1-2.35-5.65"></path>
+            <path d="M20 4v6h-6"></path>
+          </svg>
+        </button>
+      </header>
+
+      <section class="scan-strip" aria-live="polite">
+        <div>
+          <strong id="visibleCount">0</strong>
+          <span id="totalCount">of 0 images</span>
+        </div>
+        <div>
+          <strong id="selectedCount">0</strong>
+          <span>selected</span>
+        </div>
+      </section>
+
+      <main class="content">
+        <section class="quickbar" aria-label="Gallery controls">
+          <button class="primary-button quick-download" id="downloadAllButton" type="button" title="Download all visible" aria-label="Download all visible">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v11"></path>
+              <path d="m7 10 5 5 5-5"></path>
+              <path d="M5 21h14"></path>
+            </svg>
+            Download all
+          </button>
+          <button class="primary-button quick-download" id="downloadZipButton" type="button" title="Download all visible as one ZIP" aria-label="Download all visible as one ZIP">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6a2 2 0 0 1 2-2h5l2 2h5a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path>
+              <path d="M12 10v5"></path>
+              <path d="m10 13 2 2 2-2"></path>
+            </svg>
+            Download ZIP
+          </button>
+        </section>
+
+        <details class="settings" id="settingsPanel">
+          <summary>
+            <span>Settings</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m8 10 4 4 4-4"></path>
+            </svg>
+          </summary>
+          <section class="controls" aria-label="Filters and settings">
+            <label class="search-field">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="m20 20-3.8-3.8"></path>
+              </svg>
+              <input id="urlFilter" type="search" placeholder="Filter URL, alt, filename">
+            </label>
+
+            <div class="type-shortcuts" role="group" aria-label="Image type filters">
+              <label class="chip-check">
+                <input class="typeShortcut" type="checkbox" value="jpeg" checked>
+                <span>JPG</span>
+              </label>
+              <label class="chip-check">
+                <input class="typeShortcut" type="checkbox" value="png" checked>
+                <span>PNG</span>
+              </label>
+              <label class="chip-check">
+                <input class="typeShortcut" type="checkbox" value="webp" checked>
+                <span>WEBP</span>
+              </label>
+              <label class="chip-check">
+                <input class="typeShortcut" type="checkbox" value="other" checked>
+                <span>Other</span>
+              </label>
+            </div>
+
+            <label class="size-slider">
+              <span>Minimum size <strong id="minSizeValue">50px+</strong></span>
+              <input id="minSizeRange" type="range" min="0" max="1600" step="50" value="50">
+            </label>
+
+            <div class="filter-grid">
+              <label>
+                <span>Sort</span>
+                <select id="sortMode">
+                  <option value="content">Photos first</option>
+                  <option value="area">Largest</option>
+                  <option value="position">Position</option>
+                  <option value="width">Width</option>
+                  <option value="height">Height</option>
+                  <option value="name">Name</option>
+                  <option value="type">Type</option>
+                </select>
+              </label>
+              <label class="check compact-check">
+                <input id="visibleOnly" type="checkbox">
+                <span>Visible only</span>
+              </label>
+              <label class="check compact-check">
+                <input id="dedupeVariants" type="checkbox" checked>
+                <span>Only largest of duplicates</span>
+              </label>
+              <label class="check compact-check">
+                <input id="hideChrome" type="checkbox" checked>
+                <span>Hide site graphics</span>
+              </label>
+              <label class="check compact-check">
+                <input id="fullRes" type="checkbox" checked>
+                <span>Full resolution</span>
+              </label>
+              <label class="check compact-check">
+                <input id="mainContentOnly" type="checkbox" checked>
+                <span>Skip related sections</span>
+              </label>
+            </div>
+
+            <label class="size-slider">
+              <span>Columns <strong id="columnCount">4</strong></span>
+              <input id="columnsRange" type="range" min="1" max="8" step="1" value="4">
+            </label>
+
+            <label class="search-field save-to-field">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              </svg>
+              <input id="downloadFolder" type="text" placeholder="Save to Downloads root"
+                     title="Subfolder inside your Downloads folder. Leave blank to save directly to Downloads.">
+            </label>
+
+            <div class="filter-grid">
+              <label class="check compact-check">
+                <input id="askWhereToSave" type="checkbox">
+                <span>Ask where to save</span>
+              </label>
+              <label class="check compact-check">
+                <input id="keepAnimated" type="checkbox" checked>
+                <span>Keep animation</span>
+              </label>
+            </div>
+
+            <div class="settings-actions">
+              <button class="secondary-button" id="reverseButton" type="button">Reverse sort</button>
+              <button class="secondary-button" id="saveDefaultsButton" type="button">Save default</button>
+              <label class="download-format">
+                <span>Download as</span>
+                <select id="downloadFormat">
+                  <option value="auto">Auto JPG/PNG</option>
+                  <option value="jpeg">Always JPG</option>
+                  <option value="png">Always PNG</option>
+                  <option value="webp">Always WEBP</option>
+                  <option value="original">Original file</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="hidden-selection-controls" hidden>
+              <button id="selectAllButton" type="button">Select visible</button>
+              <button id="clearSelectionButton" type="button">Clear selection</button>
+              <button id="downloadButton" type="button">Selected</button>
+            </div>
+          </section>
+        </details>
+
+        <section class="state" id="statePanel">
+          <div class="spinner" aria-hidden="true"></div>
+          <strong id="stateTitle">Scanning images</strong>
+          <span id="stateMessage">Looking through the active tab.</span>
+        </section>
+
+        <section class="gallery" id="gallery" aria-label="Found images"></section>
+      </main>
+    </div>
+
+    <template id="imageCardTemplate">
+      <article class="image-card">
+        <label class="select-hit">
+          <input class="card-check" type="checkbox">
+          <span class="checkmark" aria-hidden="true"></span>
+        </label>
+        <button class="preview-button" type="button" title="Open image preview">
+          <img class="thumb" alt="">
+        </button>
+        <div class="card-body">
+          <div class="card-title-row">
+            <strong class="file-name"></strong>
+            <span class="type-pill"></span>
+          </div>
+          <div class="meta"></div>
+          <div class="source-line"></div>
+          <div class="card-actions">
+            <button class="mini-button copy-url" type="button" title="Copy URL" aria-label="Copy URL">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 9h9v11H9z"></path>
+                <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+            <button class="mini-button open-url" type="button" title="Open image" aria-label="Open image">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14 4h6v6"></path>
+                <path d="M10 14 20 4"></path>
+                <path d="M20 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4"></path>
+              </svg>
+            </button>
+            <button class="mini-button reverse-search" type="button" title="Reverse image search" aria-label="Reverse image search">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="m20 20-3.8-3.8"></path>
+                <path d="M8.5 11h5M11 8.5v5"></path>
+              </svg>
+            </button>
+            <button class="mini-button download-one" type="button" title="Download image" aria-label="Download image">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v11"></path>
+                <path d="m7 10 5 5 5-5"></path>
+                <path d="M5 21h14"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <dialog class="preview-dialog" id="previewDialog">
+      <div class="dialog-topbar">
+        <strong id="previewTitle"></strong>
+        <button class="icon-button" id="closePreviewButton" type="button" title="Close preview" aria-label="Close preview">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18"></path>
+          </svg>
+        </button>
+      </div>
+      <img id="previewImage" alt="">
+      <p id="previewMeta"></p>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="sidepanel.js"></script>
+  </body>
+</html>
