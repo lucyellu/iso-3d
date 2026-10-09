@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>List of works by Lucy Lu – Wiki</title>
+<meta name="description" content="Software Lucy Lu built in September 2026: commits, dates, live links and descriptions.">
+<meta name="theme-color" content="#f8f9fa">
+<link rel="canonical" href="https://lucylu.org/wiki/works.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Lucy Lu">
+<meta property="og:title" content="List of works by Lucy Lu – Wiki">
+<meta property="og:description" content="Software Lucy Lu built in September 2026: commits, dates, live links and descriptions.">
+<meta property="og:url" content="https://lucylu.org/wiki/works.html">
+<meta property="og:image" content="https://lucylu.org/wiki/media/an-open-gate.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="main">
+<div class="content">
+
+<h1>List of works by Lucy Lu</h1>
+<div class="from">Last updated October 2026</div>
+
+<p>This list covers the software Lucy Lu worked on during September 2026, ordered by her own commit count.
+Dates and counts come straight from each repository's git log; commits by collaborators are credited to them. Descriptions come from her own READMEs and commit messages.
+Earlier work is on the <a href="index.html">main page</a> and the <a href="https://lucylu.org/apps/">apps page</a>.</p>
+
+<div class="scroll">
+<table class="wikitable" id="works">
+  <thead><tr><th>Work</th><th>Try it</th><th>Repository</th><th>Commits</th><th>First</th><th>Last</th><th>Description</th></tr></thead>
+  <tbody></tbody>
+</table>
+</div>
+
+<h2>Deployed sites</h2>
+<ul>
+  <li><a href="https://lucylu.org/apps/#jelly-toss">Jelly Toss</a></li>
+  <li><a href="https://myspot-web.netlify.app/">myspot</a></li>
+  <li><a href="https://final-drafter.vercel.app/">Final Drafter</a></li>
+    <li><a href="https://bookreader-af115.web.app/">Booklit</a></li>
+  <li><a href="https://cohere-main.netlify.app/">Cohere</a></li>
+  <li><a href="https://www.playstockwave.com/">Stockwave</a></li>
+  <li><a href="https://lucylu.org/apps/#snark-weather">Snark Weather</a></li>
+  <li><a href="https://lucylu.org/apps/#breathe">Breathe</a></li>
+  <li><a href="https://lucylu.org/apps/#cereal">Milk &amp; Letters</a>, <a href="https://lucylu.org/apps/#paper-sim">Paper Sim</a>, <a href="https://lucylu.org/apps/#noteforge">NoteForge Piano</a>, <a href="https://lucylu.org/apps/#atlas-library">Atlas Library</a></li>
+  <li><a href="https://www.lulucy.org/3d-table">3D Periodic Table</a></li>
+  <li>App Store, as Paperbox Studio: Lunescape, Starbreaker, Math Gym (no longer listed)</li>
+  <li><a href="https://lucylu.org/apps/">The full Apps &amp; Games page</a>, <a href="https://lucylu.org/">Impossible Waterway (lucylu.org)</a> and <a href="https://www.lulucy.org/">lulucy.org</a></li>
+</ul>
+
+</div>
+</div>
+<script src="data.js"></script>
+<script src="shell.js"></script>
+<script>
+(function () {
+  // Titles and one-line descriptions, from READMEs and commit messages.
+  var INFO = {
+    "jelly": ["Jelly Toss", "Physics toy: throw jelly candies onto plates. Mobile joystick, 3D-printable models, Trophy Room."],
+    "fly-sim": ["Fly Sim", "Fruit-fly connectomes driving an embodied fly, with Victorian bell domes and Sims-style need bars."],
+    "fly-dome": ["Fly Dome", "Companion to Fly Sim: CT-style brain scanner, feeding and grooming behaviour, glassy wings."],
+    "iso-3d": ["Impossible Waterway", "Escher-style isometric waterway in Three.js. Her homepage at lucylu.org."],
+    "myspot": ["myspot", "Personal music player for her Suno catalogue; became a 24/7 radio station with neural-voice DJs."],
+    "paper-sim": ["Paper Sim", "Sandbox for paper folding and packaging dielines."],
+    "timepieces": ["Timepieces", "Photoreal 3D models of record-thin watches: Bulgari Octo Finissimo, Richard Mille RM UP-01."],
+    "musicathon": ["Musicathon", "Concert discovery with JamBase sync, and a hard kill switch for paid API calls."],
+    "anim/scale": ["Atlas of Scale", "Interactive atlas of sizes, masses and (later) temperatures."],
+    "website": ["lulucy.org (rebuild)", "Her site, plus rebuilt pages for Paperbox Studio and Neuralens."],
+    "cereal": ["Cereal", "3D milk and oat letters."],
+    "piano/stemdeck": ["Stemdeck", "Stem-separation experiment that grew into NoteForge Piano."],
+    "piano": ["NoteForge Piano", "YouTube stem separation to MIDI, with a piano-roll studio."],
+    "dither": ["Dither", "Dither experiments: Ashplate, Bayer Court, and a small light."],
+    "fiction/final-drafter": ["Final Drafter", "Writing tool; gained a three-act story-spine timeline."],
+    "book_app": ["Booklit", "Read-aloud ebook reader."],
+    "anim": ["anim", "Animations and paintings, including Nocturne in Neon & Rain."]
+  };
+  // Live, hosted versions, from the "my websites" note and each repo's deploy config.
+  var LIVE = {
+    "jelly": "https://lucylu.org/apps/#jelly-toss",
+    "iso-3d": "https://lucylu.org/",
+    "myspot": "https://myspot-web.netlify.app/",
+    "paper-sim": "https://lucylu.org/apps/#paper-sim",
+    "piano": "https://lucylu.org/apps/#noteforge",
+    "anim/scale": "https://lucylu.org/apps/#atlas-library",
+    "cereal": "https://lucylu.org/apps/#cereal",
+    "website": "https://www.lulucy.org/",
+    "fiction/final-drafter": "https://final-drafter.vercel.app/",
+    "book_app": "https://bookreader-af115.web.app/",
+    "musicathon": "https://cohere-main.netlify.app/"
+  };
+  // Public source on GitHub.
+  var SRC = {
+    "iso-3d": "https://github.com/lucyellu/iso-3d",
+    "myspot": "https://github.com/lucyellu/myspot",
+    "paper-sim": "https://github.com/lucyellu/paper-sim",
+    "musicathon": "https://github.com/lucyellu/cohere"
+  };
+  var by = {};
+  window.SEPT.days.forEach(function (d) {
+    d.commits.forEach(function (c) {
+      var r = by[c.repo] || (by[c.repo] = { repo: c.repo, url: c.url, n: 0, first: d.day, last: d.day });
+      r.n++; r.last = d.day;
+    });
+  });
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function fmt(day) { return new Date(day + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
+  var rows = Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return b.n - a.n; });
+  document.querySelector("#works tbody").innerHTML = rows.map(function (r) {
+    var info = INFO[r.repo] || [r.repo.split("/").pop(), ""];
+    var live = LIVE[r.repo] ? '<a href="' + esc(LIVE[r.repo]) + '">' + esc(LIVE[r.repo].replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")) + "</a>" : '<span class="empty">not yet</span>';
+    return "<tr><td><i>" + esc(info[0]) + "</i></td><td>" + live + "</td><td>" + (SRC[r.repo] ? '<a href="' + esc(SRC[r.repo]) + '"><code>' + esc(r.repo) + "</code></a>" : "<code>" + esc(r.repo) + '</code> <span class="sig">private</span>') + "</td>" +
+      '<td class="num">' + r.n + "</td><td>" + fmt(r.first) + "</td><td>" + fmt(r.last) + "</td><td>" + esc(info[1]) + "</td></tr>";
+  }).join("");
+})();
+</script>
+</body>
+</html>
