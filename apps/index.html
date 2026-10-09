@@ -100,8 +100,21 @@
   .media video { opacity: 0; transition: opacity .4s; }
   .media.playing video { opacity: 1; }
   .media.phone > .blur { filter: blur(22px) saturate(1.2) brightness(.8); transform: scale(1.2); }
-  .media.phone > .ph { left: 50%; top: 8%; height: 92%; width: auto; aspect-ratio: 390 / 844; transform: translateX(-50%); border-radius: 18px 18px 0 0;
-    box-shadow: 0 0 0 5px #111, 0 18px 40px rgba(0,0,0,.5); object-position: top; }
+  /* phone mockup: a fixed-ratio frame; the screen is cropped to it, never stretched */
+  .dev { position: absolute; left: var(--dl, 50%); top: var(--dt, 8%); height: var(--dh, 92%); aspect-ratio: 780 / 1688; transform: translateX(-50%);
+    border-radius: 13% / 6%; background: #000; overflow: hidden; z-index: 1;
+    box-shadow: 0 0 0 5px #0d0d0f, 0 0 0 6.5px #55575c, 0 24px 50px rgba(0,0,0,.55), 0 4px 12px rgba(0,0,0,.4); }
+  .dev img, .dev video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .dev.b { display: none; z-index: 0; }
+  .hero .media.phone { --dh: 104%; --dt: 13%; --dl: 65%; }
+  .hero .media.phone .dev.b { display: block; height: 92%; top: 34%; left: 87%; }
+  .hero.phone .txt { right: 48%; flex-direction: column; align-items: flex-start; gap: 14px; }
+  .hero.phone .pill.big { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .d-media.phone { --dh: 90%; --dt: 7%; --dl: 36%; }
+  .d-media.phone .dev.b { display: block; height: 90%; top: 14%; left: 64%; }
+  /* 4:3 captures: whole frame shown over a blurred copy instead of being cropped */
+  .media.fit > .blur { filter: blur(22px) saturate(1.2) brightness(.8); transform: scale(1.2); }
+  .media.fit > .fg, .media.fit > video { object-fit: contain; }
   .media .mono-ic { position: absolute; inset: 0; display: grid; place-items: center; font-size: 64px; font-weight: 200; color: rgba(255,255,255,.9); }
   .badge { position: absolute; top: 10px; left: 10px; padding: 5px 9px; border-radius: 999px; background: rgba(14,24,23,.62); color: #fff;
     backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-size: 9px; }
@@ -165,6 +178,11 @@
     .arrows { display: none; }
     .hero .txt { flex-direction: column; align-items: flex-start; padding: 18px; }
     .hero { aspect-ratio: 4 / 5; }
+    .hero .media.phone { --dh: 64%; --dt: 5%; --dl: 50%; }
+    .hero .media.phone .dev.b { display: none; }
+    .hero.phone .txt { right: 0; }
+    .d-media.phone { --dl: 50%; --dh: 86%; }
+    .d-media.phone .dev.b { display: none; }
     .d-body { padding: 20px 18px 26px; }
     .d-media.phone { aspect-ratio: 1; }
     .shelf-h { flex-wrap: wrap; row-gap: 2px; }
@@ -247,10 +265,15 @@ function media(a, cls = '') {
   const m = a.media, poster = m.poster ? 'media/' + m.poster : '';
   let inner;
   if (!poster) inner = `<div class="mono-ic" style="background:linear-gradient(135deg,${a.hue[0]},${a.hue[1]})">${esc(a.name[0])}</div>`;
-  else if (m.phone) inner = `<img class="blur" src="${poster}" alt="" loading="lazy"><img class="ph" src="${poster}" alt="" loading="lazy">`;
+  else if (m.fit) inner = `<img class="blur" src="${poster}" alt="" loading="lazy"><img class="fg" src="${poster}" alt="" loading="lazy">`;
   else inner = `<img src="${poster}" alt="" loading="lazy">`;
-  if (m.video) inner += `<video muted loop playsinline preload="none" data-src="media/${m.video}"${m.phone ? ' class="ph"' : ''}></video>`;
-  return `<div class="media${m.phone ? ' phone' : ''} ${cls}">${inner}</div>`;
+  const vid = m.video ? `<video muted loop playsinline preload="none" data-src="media/${m.video}"></video>` : '';
+  if (m.phone && poster) {
+    const b = m.shots && m.shots[0] ? `<div class="dev b"><img src="media/${m.shots[0]}" alt="" loading="lazy"></div>` : '';
+    return `<div class="media phone ${cls}"><img class="blur" src="${poster}" alt="" loading="lazy">${b}<div class="dev a"><img src="${poster}" alt="" loading="lazy">${vid}</div></div>`;
+  }
+  inner += vid;
+  return `<div class="media${m.phone ? ' phone' : ''}${m.fit ? ' fit' : ''} ${cls}">${inner}</div>`;
 }
 function button(a, big) {
   const x = access(a);
@@ -262,7 +285,7 @@ function button(a, big) {
 document.getElementById('featured').innerHTML = featured.map(id => byId[id]).filter(Boolean).map(a => {
   const x = access(a);
   const eyebrow = { play: 'Play in your browser', open: 'Live on the web', watch: 'Watch it in action' }[a.access];
-  return `<article class="hero" data-id="${a.id}" data-kind="${a.kind}" tabindex="0" aria-label="${esc(a.name)}: details">
+  return `<article class="hero${a.media && a.media.phone ? ' phone' : ''}" data-id="${a.id}" data-kind="${a.kind}" tabindex="0" aria-label="${esc(a.name)}: details">
     ${media(a)}
     <div class="txt"><div><div class="mono eyebrow">${eyebrow}</div><h2>${esc(a.name)}</h2><p>${esc(a.subtitle)}</p></div>${button(a, true)}</div>
   </article>`;
