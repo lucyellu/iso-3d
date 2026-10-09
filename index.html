@@ -2453,7 +2453,7 @@ const soundBtn = $('soundBtn');
 let soundOn = false;
 try { soundOn = localStorage.getItem('harbour-sound') !== 'off'; } catch (e) { soundOn = true; }
 const amb = { ctx: null, gain: 0, bufs: {}, beds: {}, layerW: {} };
-const SFX = ['tick', 'bubbles', 'drop1', 'drop2', 'drop3', 'splash', 'bigsplash', 'swoosh1', 'swoosh2', 'swoosh3', 'swoosh4'];
+const SFX = ['tick', 'bubbles', 'drop1', 'drop2', 'drop3', 'bigsplash', 'swoosh1', 'swoosh2', 'swoosh3', 'swoosh4'];
 // time of day → its own bed under the sea and waterfall (rain gets synthesized rain instead)
 const LAYER = { day: 'morning', dusk: 'afternoon', night: 'night' };
 const BED_XF = 3;
@@ -2562,18 +2562,9 @@ function gullCall(when, vol, pan) {
     t += len + 0.07 + Math.random() * 0.08;
   }
 }
-// the paper boat hitting the pool: a burst of white water and a low plop
-function splashdown(vol) {
-  const ctx = amb.ctx, t = ctx.currentTime;
-  vol *= sfxLevel();
-  const src = ctx.createBufferSource(); src.buffer = amb.white;
-  const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(3800, t); f.frequency.exponentialRampToValueAtTime(380, t + 0.6);
-  const e = ctx.createGain(); e.gain.setValueAtTime(0, t); e.gain.linearRampToValueAtTime(vol, t + 0.012); e.gain.exponentialRampToValueAtTime(0.001, t + 0.75);
-  src.connect(f).connect(e).connect(amb.master); src.start(t, Math.random()); src.stop(t + 0.8);
-  const o = ctx.createOscillator(), og = ctx.createGain(); o.type = 'sine';
-  o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(110, t + 0.18);
-  og.gain.setValueAtTime(vol * 0.9, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
-  o.connect(og).connect(amb.master); o.start(t); o.stop(t + 0.25);
+// the paper boat hitting the pool: Dragon Studio rock splash
+function splashdown(vol = 0.9) {
+  sfx('bigsplash', { vol, rate: jitter(0.04), toMaster: true });
 }
 const fallPt = new THREE.Vector3(), tmpEar = new THREE.Vector3();
 function updateAmbience(dt, fpOn) {
@@ -2611,8 +2602,7 @@ function updateAmbience(dt, fpOn) {
     if (Math.random() < gullAmt) gullCall(t + 0.05, 0.03 + Math.random() * 0.025, Math.random() * 1.6 - 0.8);
     amb.nextGull = t + 8 + Math.random() * 14;
   }
-  if (A.phase === 'settle' && amb.lastPhase === 'fall') { splashdown(1.1); sfx('splash', { vol: 1.9, rate: jitter(0.05), toMaster: true });
-    sfx('bigsplash', { vol: 0.5, rate: jitter(0.04), toMaster: true }); }
+  if (A.phase === 'settle' && amb.lastPhase === 'fall') splashdown(0.9);
   amb.lastPhase = A.phase;
 }
 function setSound(on, fromClick) {
