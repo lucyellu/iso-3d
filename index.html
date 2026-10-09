@@ -90,7 +90,12 @@
     color: rgba(239,233,220,.75); text-decoration: none; }
   .pip-bar button:hover, .pip-bar a:hover { background: rgba(255,255,255,.1); color: #fff; }
   .pip-body { position: relative; aspect-ratio: 16 / 9; background: #000; }
-  .pip[data-kind="doc"] .pip-body { aspect-ratio: auto; height: min(62vh, 560px); background: #fff; }
+  .pip[data-kind="doc"] { width: min(560px, calc(100vw - 32px)); }
+  .pip[data-kind="doc"] .pip-body { aspect-ratio: auto; height: min(68vh, 640px); background: #fff; }
+  /* drag the top-left corner to resize (the window sits bottom-right, so it grows up and left); the size lasts until the page reloads */
+  .pip-grip { position: absolute; left: 0; top: 0; width: 18px; height: 18px; z-index: 2; cursor: nwse-resize; touch-action: none;
+    background: linear-gradient(135deg, rgba(239,233,220,.45) 0 12%, transparent 12% 26%, rgba(239,233,220,.45) 26% 36%, transparent 36%); }
+  .pip.big .pip-grip, .pip[data-kind="form"] .pip-grip { display: none; }
   .pip iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   .pip.dragging iframe { pointer-events: none; }
   .pip.big { left: 24px !important; top: 24px !important; right: 24px; bottom: 24px; width: auto; }
@@ -200,6 +205,7 @@
     <button id="pipClose" title="Close" aria-label="Close">✕</button>
   </div>
   <div class="pip-body" id="pipBody"></div>
+  <div class="pip-grip" id="pipGrip" title="Drag to resize" aria-hidden="true"></div>
 </section>
 
 <nav class="chapters" id="chapters" aria-label="Sections"></nav>
@@ -224,11 +230,11 @@ const SITE = {
   name: 'Lucy Lu',
   role: '3D artist · engineer',
   chapters: [
-    { title: 'Hello', body: '3D animator turned indie app and game developer, currently studying numbers and making things. Animated on Beat Bugs (Netflix) and Little Charmers (Nick Jr., Treehouse TV); studied at Vancouver Film School and the University of Alberta. There is also a mock encyclopedia article about me, written from the year 2071.',
+    { title: 'Hello', body: '3D animator turned indie app and game developer, currently studying numbers and making things. Animated on Beat Bugs (Netflix) and Little Charmers (Nick Jr., Treehouse TV); studied at Vancouver Film School and the University of Alberta. There is also a wiki-style page about my work.',
       links: [{ label: 'Beat Bugs', href: 'https://www.imdb.com/title/tt4716268/', embed: 'https://youtu.be/K_Ev_Es7onw' },
               { label: 'Little Charmers', href: 'https://tv.apple.com/ca/show/little-charmers/umc.cmc.42f7s22iilj9baf1briddwzu8', embed: 'https://youtu.be/3yhwtlq6M1Y' },
               { label: 'Freelance reel', href: 'https://vimeo.com/lucylu' },
-              { label: 'Prehistoria wiki', href: 'prehistoria/', embed: 'prehistoria/', kind: 'doc' }],
+              { label: 'Wiki', href: 'wiki/', embed: 'wiki/', kind: 'doc' }],
       view: { yaw: 0, pitch: 0 } },
     { title: 'Games & Apps', body: 'Games, web apps and small toys, most of which run right in your browser: a fast-forward paper trading game, a daily Morse puzzle, a planet’s worth of sensors. Lunescape and Starbreaker were Paperbox Studio’s iPad games; they’ve retired, but you can still watch them played.',
       links: [{ label: 'Browse all', href: 'apps/', newTab: true },
@@ -2015,7 +2021,7 @@ function embedFor(l) {
   if (/\.pdf$/i.test(p) && !matchMedia('(pointer: coarse)').matches) return { kind: 'doc', src: u.href + (u.hash ? '' : '#view=FitH') };
   return null;
 }
-const pip = { el: $('pip'), open: false, kind: '', pos: null };
+const pip = { el: $('pip'), open: false, kind: '', pos: null, size: null };
 // phones and tablets only allow muted autoplay, so clips start muted there and with sound on desktop
 const CLIP_MUTE = matchMedia('(hover: none) and (pointer: coarse)').matches ? 1 : 0;
 function openPip(em, label, href) {
@@ -2036,7 +2042,7 @@ function openPip(em, label, href) {
     };
     if (em.kind === 'video') f.addEventListener('load', () => [300, 1200, 2500].forEach(t => setTimeout(() => { if (f.isConnected) kick(); }, t)));
   }
-  pip.open = true; pip.kind = em.kind;
+  pip.open = true; pip.kind = em.kind; sizePip();
   if (em.kind === 'video' && CLIP_MUTE) setBig(true);   // YouTube picks quality by player size, so phones get the big player
   if (!wasOpen) {
     el.hidden = false; el.classList.add('enter');
@@ -2092,7 +2098,13 @@ function setBig(on) {
   pip.el.classList.toggle('big', on);
   $('pipBig').textContent = on ? '⤡' : '⤢';
   $('pipBig').title = on ? 'Back to small' : 'Full size'; $('pipBig').setAttribute('aria-label', $('pipBig').title);
-  placePip();
+  sizePip(); placePip();
+}
+// a resized window keeps its width (and, for pages, its height); clips keep their 16:9 shape
+function sizePip() {
+  const s = pip.el.classList.contains('big') || pip.kind === 'form' ? null : pip.size;
+  pip.el.style.width = s ? s.w + 'px' : '';
+  $('pipBody').style.height = s && pip.kind === 'doc' ? s.h + 'px' : '';
 }
 // a dragged window keeps its spot (pulled back on screen if the window shrinks)
 function placePip() {
@@ -2129,6 +2141,24 @@ $('pipOut').addEventListener('click', () => closePip());
   });
   const end = e => { if (drag && e.pointerId === drag.id) { drag = null; pip.el.classList.remove('dragging'); } };
   bar.addEventListener('pointerup', end); bar.addEventListener('pointercancel', end);
+  const grip = $('pipGrip');
+  let rs = null;
+  grip.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || pip.el.classList.contains('big')) return;
+    const r = pip.el.getBoundingClientRect(), bh = $('pipBody').getBoundingClientRect().height;
+    rs = { id: e.pointerId, x: e.clientX, y: e.clientY, w: r.width, h: bh, bar: r.height - bh, right: r.right, bottom: r.bottom };   // the bottom-right corner stays put
+    grip.setPointerCapture(e.pointerId); pip.el.classList.add('dragging'); e.preventDefault();
+  });
+  grip.addEventListener('pointermove', e => {
+    if (!rs || e.pointerId !== rs.id) return;
+    pip.size = { w: Math.round(Math.min(Math.max(280, rs.w - (e.clientX - rs.x)), rs.right - 8)),
+                 h: Math.round(Math.min(Math.max(180, rs.h - (e.clientY - rs.y)), rs.bottom - rs.bar - 8)) };
+    sizePip();
+    const r = pip.el.getBoundingClientRect();
+    pip.pos = { x: rs.right - r.width, y: rs.bottom - r.height }; placePip();
+  });
+  const endResize = e => { if (rs && e.pointerId === rs.id) { rs = null; pip.el.classList.remove('dragging'); } };
+  grip.addEventListener('pointerup', endResize); grip.addEventListener('pointercancel', endResize);
   addEventListener('resize', () => { if (pip.open) placePip(); });
 }
 function goChapter(i, fromClick) {
