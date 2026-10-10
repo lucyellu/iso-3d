@@ -233,7 +233,8 @@
 
 <script src="catalog.js"></script>
 <script>
-const { apps, featured } = window.CATALOG;
+const { featured } = window.CATALOG;
+const apps = window.CATALOG.apps.filter(a => !a.hidden);   // hidden: true keeps an entry in catalog.js but off the page
 const byId = Object.fromEntries(apps.map(a => [a.id, a]));
 const SHELVES = [
   { kind: 'game', title: 'Games', blurb: 'Puzzles, a trading game and two retired iPad titles.' },
