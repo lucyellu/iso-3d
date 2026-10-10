@@ -17,7 +17,7 @@ window.CATALOG = {
     // ── Games ───────────────────────────────────────────────
     { id: 'jelly-toss', name: 'Jelly Toss', subtitle: 'A very small world with excellent bounce', kind: 'game',
       access: 'open', url: 'https://jelly.scottsun.io', devices: ['desktop', 'phone'],
-      media: { poster: 'jelly-toss.jpg', video: 'jelly-toss.mp4' }, hue: ['#c2457a', '#ffb3c9'],
+      media: { poster: 'jelly-toss.jpg' }, hue: ['#c2457a', '#ffb3c9'],
       body: 'Wander a 7 cm jelly around a warm wooden tabletop. Try the swing and the trampoline, pull it by the crown and let go, and watch the wobble travel through it.',
       made: 'Three.js, TypeScript · with Scott Sun', year: 2026 },
     { id: 'memory-towers', name: 'Memory Towers', subtitle: 'Left or right, all the way up', kind: 'game',
@@ -93,7 +93,7 @@ window.CATALOG = {
       made: 'React 18, 3Dmol.js, TypeScript', year: 2026 },
     { id: 'world-of-words', name: 'World of Words', subtitle: 'Deducible dictionary coordinate system', kind: 'app',
       access: 'open', url: 'https://world-of-words-orpin.vercel.app', devices: ['desktop'],
-      media: {}, icon: 'icons/world-of-words.png', hue: ['#0b1a2e', '#48b0d5'],
+      media: { poster: 'world-of-words.jpg' }, icon: 'icons/world-of-words.png', hue: ['#0b1a2e', '#48b0d5'],
       body: 'An alphabetical, mathematically deducible coordinate system mapped monotonically onto 3D globes of both the Earth and the Moon. Unlike what3words, if you know where you are, you can deduce where anything else is.',
       made: 'Cesium, Three.js, Lexicon algorithms', year: 2026 },
     { id: 'booklit', name: 'Booklit', subtitle: 'Reading tracker and 3D shelf', kind: 'app',
