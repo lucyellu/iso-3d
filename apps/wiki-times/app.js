@@ -1,4 +1,4 @@
-/* Wiki Times UI. Original text appears instantly; each paragraph is swapped in as it is ready. */
+/* Reading Level UI. Original text appears instantly; each paragraph is swapped in as it is ready. */
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
@@ -341,7 +341,7 @@
       Object.assign(A, a, { topics: Engine.articleTopics(a.paras) });
       cache.clear();
       $('title').textContent = A.title; $('source').textContent = A.source;
-      document.title = `${A.title} · Wiki Times`;
+      document.title = `${A.title} · Reading Level`;
       $('dock').hidden = false;
       buildLens();
       render();

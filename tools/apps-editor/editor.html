@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Apps editor</title>
+<style>
+  :root { color-scheme: dark; --bg:#1b2a28; --card:#24373b; --line:rgba(255,255,255,.12); --ink:#efe9dc; --dim:rgba(239,233,220,.6); --gold:#f2d98c; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.4 system-ui,sans-serif; background:var(--bg); color:var(--ink); height:100vh; display:grid; grid-template-columns: minmax(520px, 46%) 1fr; }
+  #left { overflow:auto; padding:0 14px 60px; }
+  #right { border-left:1px solid var(--line); display:flex; flex-direction:column; min-width:0; }
+  #right iframe { flex:1; border:0; background:#fff; }
+  .bar { position:sticky; top:0; z-index:5; background:var(--bg); padding:12px 0; display:flex; gap:10px; align-items:center; border-bottom:1px solid var(--line); }
+  .bar b { flex:1; }
+  button, select, input { font:inherit; color:inherit; background:#2f4548; border:1px solid var(--line); border-radius:7px; padding:5px 8px; }
+  button { cursor:pointer; } button:hover { border-color:var(--gold); }
+  #save { background:var(--gold); color:#1d1a12; font-weight:700; border:0; padding:8px 18px; }
+  #save[disabled] { opacity:.4; cursor:default; }
+  h2 { margin:22px 0 6px; font-size:15px; color:var(--gold); text-transform:uppercase; letter-spacing:.12em; }
+  .row { display:grid; grid-template-columns: 18px 30px 1.1fr 1.6fr auto auto auto; gap:6px; align-items:center; padding:5px; border:1px solid transparent; border-radius:9px; background:var(--card); margin-bottom:4px; }
+  .row.drag { opacity:.4; } .row.over { border-color:var(--gold); }
+  .row.changed { border-left:3px solid var(--gold); }
+  .grip { cursor:grab; color:var(--dim); text-align:center; }
+  .row img, .row .ph { width:30px; height:30px; border-radius:7px; object-fit:cover; background:#444; }
+  .row input { width:100%; min-width:0; }
+  .row.hid input, .row.hid img, .row.hid .ph { opacity:.4; }
+  .eye { padding:3px 7px; } .eye.off { color:#ff9a8a; }
+  .star { padding:3px 7px; color:var(--dim); } .star.on { color:var(--gold); }
+  .empty { color:var(--dim); padding:10px; border:1px dashed var(--line); border-radius:9px; }
+  #msg { color:var(--dim); font-size:13px; }
+  @media (max-width:1100px) { body { grid-template-columns:1fr; height:auto; } #right { display:none; } }
+</style></head><body>
+<div id="left">
+  <div class="bar"><b>Apps editor</b><span id="msg"></span><button id="mob">Phone preview</button><button id="save" disabled>Save</button></div>
+  <p style="color:var(--dim)">Drag rows to reorder (drop on another shelf to move it). Edit names and subtitles in place. ★ = featured at the top. Hidden apps stay in the file but vanish from the site. Save writes <code>apps/catalog.js</code> on this computer only; the previous version is kept in <code>tools/apps-editor/catalog.backup.js</code>. Nothing is pushed to GitHub.</p>
+  <div id="shelves"></div>
+</div>
+<div id="right"><iframe id="pv" src="/apps/"></iframe></div>
+<script>
+const KINDS = [['game','Games'],['app','Apps'],['toy','Toys & experiments']];
+let apps = [], featured = [], orig = '';
+const $ = s => document.querySelector(s);
+const snap = () => JSON.stringify({apps: apps.map(a => [a.id,a.name,a.subtitle,a.kind,!!a.hidden]), featured});
+async function load() {
+  const src = await (await fetch('/apps/catalog.js?_=' + Date.now())).text();
+  const window = {}; new Function('window', src)(window);
+  apps = window.CATALOG.apps.map(a => ({id:a.id, name:a.name, subtitle:a.subtitle, kind:a.kind, hidden:!!a.hidden, icon:a.icon}));
+  featured = [...window.CATALOG.featured];
+  orig = snap(); render();
+}
+function dirty() { const d = snap() !== orig; $('#save').disabled = !d; $('#msg').textContent = d ? 'unsaved changes' : ''; }
+function render() {
+  const origMap = {}; JSON.parse(orig).apps.forEach(r => origMap[r[0]] = r);
+  $('#shelves').innerHTML = '';
+  for (const [k, title] of KINDS) {
+    const h = document.createElement('h2'); h.textContent = title; $('#shelves').append(h);
+    const box = document.createElement('div'); box.dataset.kind = k; $('#shelves').append(box);
+    const list = apps.filter(a => a.kind === k);
+    if (!list.length) box.innerHTML = '<div class="empty">Empty shelf. Drop an app here.</div>';
+    for (const a of list) {
+      const r = document.createElement('div'); r.className = 'row'; r.draggable = true; r.dataset.id = a.id;
+      const o = origMap[a.id]; if (o && (o[1] !== a.name || o[2] !== a.subtitle || o[4] !== !!a.hidden)) r.classList.add('changed');
+      r.innerHTML = `<span class="grip">⋮⋮</span>${a.icon ? `<img src="/apps/${a.icon}" alt="">` : '<span class="ph"></span>'}
+        <input class="n" value=""><input class="s" value=""><button class="star" title="Featured">★</button><button class="eye" title="Hide from the site"></button>
+        <select>${KINDS.map(([v,l]) => `<option value="${v}"${v===a.kind?' selected':''}>${l.split(' ')[0]}</option>`).join('')}</select>`;
+      r.querySelector('.n').value = a.name; r.querySelector('.s').value = a.subtitle;
+      r.querySelector('.n').oninput = e => { a.name = e.target.value; dirty(); };
+      r.querySelector('.s').oninput = e => { a.subtitle = e.target.value; dirty(); };
+      const ey = r.querySelector('.eye'); ey.textContent = a.hidden ? 'Hidden' : 'Shown'; ey.classList.toggle('off', !!a.hidden); r.classList.toggle('hid', !!a.hidden);
+      ey.onclick = () => { a.hidden = !a.hidden; render(); dirty(); };
+      const st = r.querySelector('.star'); if (featured.includes(a.id)) st.classList.add('on');
+      st.onclick = () => { featured = featured.includes(a.id) ? featured.filter(x => x !== a.id) : [...featured, a.id]; st.classList.toggle('on'); dirty(); };
+      r.querySelector('select').onchange = e => { a.kind = e.target.value; render(); dirty(); };
+      box.append(r);
+    }
+  }
+  dirty();
+}
+let dragId = null;
+document.addEventListener('dragstart', e => { const r = e.target.closest && e.target.closest('.row'); if (!r) return; dragId = r.dataset.id; r.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; });
+document.addEventListener('dragend', () => { dragId = null; document.querySelectorAll('.drag,.over').forEach(x => x.classList.remove('drag','over')); });
+document.addEventListener('dragover', e => { if (!dragId) return; e.preventDefault(); document.querySelectorAll('.over').forEach(x => x.classList.remove('over')); const t = e.target.closest('.row') || e.target.closest('[data-kind]'); if (t) t.classList.add('over'); });
+document.addEventListener('drop', e => {
+  if (!dragId) return; e.preventDefault();
+  const a = apps.find(x => x.id === dragId), row = e.target.closest('.row'), box = e.target.closest('[data-kind]');
+  if (row && row.dataset.id === dragId) return;
+  const kind = row ? apps.find(x => x.id === row.dataset.id).kind : (box && box.dataset.kind); if (!kind) return;
+  apps = apps.filter(x => x !== a); a.kind = kind;
+  const at = row ? apps.findIndex(x => x.id === row.dataset.id) : -1;
+  if (at >= 0) apps.splice(at, 0, a); else apps.push(a);
+  render();
+});
+$('#save').onclick = async () => {
+  $('#save').disabled = true; $('#msg').textContent = 'saving…';
+  const r = await fetch('/__save', {method:'POST', body: JSON.stringify({apps, featured})});
+  if (r.ok) { orig = snap(); render(); $('#msg').textContent = 'saved'; $('#pv').src = '/apps/?nocache=' + Date.now(); }
+  else { $('#msg').textContent = 'save failed: ' + await r.text(); $('#save').disabled = false; }
+};
+let phone = false;
+$('#mob').onclick = () => { phone = !phone; $('#pv').style.maxWidth = phone ? '390px' : ''; $('#pv').style.margin = phone ? '0 auto' : ''; $('#mob').textContent = phone ? 'Full-width preview' : 'Phone preview'; };
+addEventListener('beforeunload', e => { if (!$('#save').disabled) e.preventDefault(); });
+load();
+</script></body></html>

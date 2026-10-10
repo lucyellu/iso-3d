@@ -160,7 +160,7 @@ window.CATALOG = {
       body: '124 instruments through which the planet senses the world, from seismometers to sea-floor microphones, arranged as senses rather than scientific disciplines.',
       made: 'Static site', year: 2026 },
     { id: 'wiki-times', name: 'Reading Level', subtitle: 'Text at any reading level', kind: 'app', access: 'play', url: 'wiki-times/', devices: ['desktop', 'phone'],
-      media: {}, hue: ['#1f3a34', '#e8d9b0'],
+      media: { poster: 'wiki-times.jpg' }, hue: ['#1f3a34', '#e8d9b0'],
       note: 'Free mode swaps in easier words. Paste your own AI key in Settings for full rewrites and Voices (greentext, ELI5, postdoc and more); the key stays in your browser.',
       body: 'Open any Wikipedia article or web page and slide it from kindergarten to 8th grade, or switch to a Voice. Hard words you are meant to learn are underlined and save as flashcards.', made: 'Plain JavaScript, word-frequency data, optional bring-your-own AI key', year: 2026 },
     { id: 'myspot', name: 'My Spot', subtitle: 'A player for a very big music library', kind: 'app',
