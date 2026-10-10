@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>Bulgari Octo Finissimo Ultra COSC (Ref. 104081) - PST Live Clock</title>
+  <link rel="icon" type="image/x-icon" href="watch_icon.ico">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+    
+    :root {
+      --bg-dark: #07080a;
+      --panel-bg: rgba(16, 18, 22, 0.78);
+      --border-ti: rgba(200, 210, 220, 0.14);
+      --gold: #d4af37;
+      --gold-light: #f3e5ab;
+      --ti-metal: #8a8e94;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 50% 30%, rgba(28, 32, 40, 0.6) 0%, rgba(7, 8, 10, 0.95) 70%),
+        radial-gradient(circle at 80% 80%, rgba(212, 175, 55, 0.03) 0%, transparent 50%);
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    .font-cinzel { font-family: 'Cinzel', serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    .gold-gradient {
+      background: linear-gradient(135deg, #f5d77f 0%, #d4af37 50%, #aa8012 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .titanium-glass {
+      background: var(--panel-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-ti);
+      box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.85);
+    }
+
+    /* 3D Stage & Viewport */
+    .watch-stage {
+      perspective: 1400px;
+      perspective-origin: center center;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .watch-3d-model {
+      transform-style: preserve-3d;
+      will-change: transform;
+      transition: transform 0.08s cubic-bezier(0.1, 0.9, 0.2, 1);
+    }
+
+    .watch-canvas-container {
+      position: relative;
+      width: min(88vw, 76vh, 580px);
+      aspect-ratio: 1 / 1;
+      margin: 0 auto;
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: 
+        0 30px 80px -20px rgba(0, 0, 0, 0.95),
+        0 0 1px 1px rgba(255, 255, 255, 0.08),
+        inset 0 0 40px rgba(0, 0, 0, 0.6);
+      background: radial-gradient(circle at center, #15171c 0%, #090a0d 85%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+
+    canvas:active {
+      cursor: grabbing;
+    }
+
+    /* Dynamic 3D lighting sheen */
+    .sheen-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: 36px;
+      mix-blend-mode: overlay;
+      opacity: 0.65;
+      transition: background 0.1s linear;
+    }
+
+    /* Range styling */
+    input[type=range] {
+      accent-color: #d4af37;
+    }
+
+    /* Smooth drawer transition */
+    .drawer-panel {
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Subtle pulsing ring */
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 0.8; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.08); }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 3s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-between p-3 sm:p-5 relative select-none">
+
+  <!-- Minimal Floating Header -->
+  <header class="w-full max-w-4xl flex items-center justify-between z-20 pt-1 pb-2">
+    <!-- Brand Title -->
+    <div class="flex items-center gap-3">
+      <div class="flex flex-col">
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] sm:text-xs uppercase tracking-[0.25em] text-[#d4af37] font-semibold">Bvlgari</span>
+          <span class="w-1 h-1 rounded-full bg-[#d4af37]/80"></span>
+          <span class="text-[10px] sm:text-xs tracking-wider text-slate-400 font-medium">1.70 MM</span>
+        </div>
+        <h1 class="text-sm sm:text-lg font-cinzel tracking-widest font-bold text-white uppercase leading-tight">
+          OCTO FINISSIMO <span class="gold-gradient font-light">ULTRA</span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- Live PST Digital Clock Badge -->
+    <div class="flex items-center gap-2.5 titanium-glass px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full">
+      <div class="flex items-center gap-1.5">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span id="tzBadge" class="text-[10px] sm:text-xs font-mono tracking-wider text-emerald-400 font-medium">PST LIVE</span>
+      </div>
+      <div class="h-3.5 w-px bg-white/20"></div>
+      <div id="liveDigitalTime" class="font-mono text-xs sm:text-sm font-semibold text-white tracking-widest">
+        --:--:-- --
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Centerpiece: 3D Manipulable Watch Stage -->
+  <main class="w-full flex-1 flex flex-col items-center justify-center my-auto relative z-10 py-2">
+    
+    <div class="watch-stage w-full flex items-center justify-center" id="watchStage">
+      <!-- 3D Transform Model Container -->
+      <div class="watch-3d-model" id="watchModel">
+        <div class="watch-canvas-container" id="watchFrame">
+          <canvas id="watchCanvas" width="1024" height="1024"></canvas>
+          
+          <!-- Dynamic Light Specular Sheen Layer -->
+          <div class="sheen-overlay" id="sheenOverlay"></div>
+
+          <!-- Discreet Floating Readout Overlay -->
+          <div class="absolute bottom-3.5 left-4 right-4 flex items-center justify-between pointer-events-none px-1">
+            <span class="text-[10px] font-mono tracking-wider text-white/40 bg-black/50 px-2 py-0.5 rounded-md backdrop-blur-md">
+              CALIBRE BVL 180
+            </span>
+            <span id="regulatorReadoutMini" class="text-[10px] font-mono tracking-wider text-[#d4af37]/90 bg-black/50 px-2 py-0.5 rounded-md backdrop-blur-md">
+              --:-- PST
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Gesture Guidance Pill (Discreet, auto-fades) -->
+    <div id="gestureHint" class="mt-3 flex items-center gap-2 text-[11px] font-mono text-slate-400/80 bg-white/5 border border-white/10 px-3.5 py-1 rounded-full backdrop-blur-md transition-opacity duration-700">
+      <span>🖱️ Orbit: Drag</span>
+      <span class="text-white/20">&bull;</span>
+      <span>🔍 Zoom: Scroll / Pinch</span>
+      <span class="text-white/20">&bull;</span>
+      <span>✋ Pan: Right-Drag</span>
+      <span class="text-white/20">&bull;</span>
+      <span>⟲ Reset: 2x Tap</span>
+    </div>
+
+  </main>
+
+  <!-- Minimal Bottom Floating Dock -->
+  <footer class="w-full max-w-2xl flex items-center justify-center gap-2 sm:gap-3 z-20 pb-2">
+    <!-- Camera View Controls -->
+    <div class="flex items-center titanium-glass p-1 sm:p-1.5 rounded-2xl gap-1">
+      <button onclick="setCameraPreset('front')" id="btnCamFront" title="Straight Front View" class="px-2.5 py-1.5 rounded-xl text-xs font-medium transition bg-white/20 text-white shadow-sm">Front</button>
+      <button onclick="setCameraPreset('angle')" id="btnCamAngle" title="3D Isometric Angle" class="px-2.5 py-1.5 rounded-xl text-xs font-medium transition text-slate-400 hover:text-white hover:bg-white/10">3D Angle</button>
+      <button onclick="setCameraPreset('profile')" id="btnCamProfile" title="1.70 mm World Record Ultra-Thin Edge" class="px-2.5 py-1.5 rounded-xl text-xs font-medium transition text-slate-400 hover:text-white hover:bg-white/10">1.70mm Edge</button>
+      <button onclick="setCameraPreset('macro')" id="btnCamMacro" title="Macro Dial View" class="px-2.5 py-1.5 rounded-xl text-xs font-medium transition text-slate-400 hover:text-white hover:bg-white/10">Macro</button>
+      <button onclick="reset3DView()" title="Reset 3D View" class="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition" aria-label="Reset View">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      </button>
+    </div>
+
+    <!-- Escapement Ticking Sound -->
+    <button id="btnSound" onclick="toggleTickingSound()" title="Escapement Audio (28,800 vph)" class="titanium-glass p-2 sm:px-3 sm:py-2 rounded-2xl flex items-center gap-1.5 text-xs text-slate-300 hover:text-white hover:bg-white/10 transition">
+      <span id="soundIcon" class="text-sm">&#128263;</span>
+      <span id="soundLabel" class="hidden sm:inline">Sound</span>
+    </button>
+
+    <!-- Expand Options & Rigging Drawer Button (Default: Collapsed) -->
+    <button onclick="toggleDrawer()" id="btnOpenOptions" class="titanium-glass px-3.5 py-2 rounded-2xl flex items-center gap-2 text-xs font-medium text-amber-300 hover:bg-amber-400/10 border border-amber-400/30 transition shadow-lg">
+      <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
+      <span>Rigging & Options</span>
+    </button>
+  </footer>
+
+  <!-- ======================================================== -->
+  <!-- COLLAPSIBLE RIGGING & TELEMETRY DRAWER (DEFAULT COLLAPSED) -->
+  <!-- ======================================================== -->
+  
+  <!-- Backdrop Overlay -->
+  <div id="drawerBackdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeDrawer()"></div>
+
+  <!-- Sliding Drawer Sheet -->
+  <aside id="optionsDrawer" class="drawer-panel fixed top-0 right-0 bottom-0 max-w-md w-full titanium-glass shadow-2xl z-50 transform translate-x-full flex flex-col overflow-hidden max-sm:top-auto max-sm:bottom-0 max-sm:inset-x-0 max-sm:h-[85vh] max-sm:rounded-t-3xl max-sm:translate-x-0 max-sm:translate-y-full">
+    
+    <!-- Drawer Header -->
+    <div class="flex items-center justify-between p-5 border-b border-white/10">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-[#d4af37]"></span>
+        <h2 class="text-sm uppercase tracking-[0.2em] font-semibold text-white">Rigging & Telemetry</h2>
+      </div>
+      <button onclick="closeDrawer()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition" aria-label="Close options drawer">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- Drawer Scrollable Content -->
+    <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-5 text-xs">
+      
+      <!-- Hour Hand Readability / Motion Mode -->
+      <div class="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-white font-medium block">Hour Motion Mode</span>
+            <span class="text-[10px] text-slate-400 block">Prevents 11:45 resembling 12</span>
+          </div>
+          <button id="btnHourMotion" onclick="toggleHourMotionMode()" class="px-3 py-1.5 rounded-lg font-medium transition bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30">
+            Anchored Legible
+          </button>
+        </div>
+      </div>
+
+      <!-- Time Rigging Mode (Live PST vs Manual) -->
+      <div class="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col gap-3">
+        <div class="flex items-center justify-between border-b border-white/5 pb-2.5">
+          <span class="text-slate-300 font-medium">Time Source</span>
+          <div class="flex items-center gap-1.5">
+            <button id="btnModeLive" onclick="setMode('live')" class="px-3 py-1 rounded-lg font-semibold bg-[#d4af37] text-black transition">Live PST</button>
+            <button id="btnModeManual" onclick="setMode('manual')" class="px-3 py-1 rounded-lg font-medium bg-white/10 text-white transition">Manual</button>
+          </div>
+        </div>
+
+        <!-- Manual Sliders (disabled in live mode) -->
+        <div id="manualControls" class="flex flex-col gap-2.5 opacity-50 pointer-events-none transition-all duration-300 pt-1">
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-400">Hour Hand (0 - 11h)</span>
+              <span id="scrubHourVal" class="font-mono text-[#d4af37]">10</span>
+            </div>
+            <input type="range" id="scrubHour" min="0" max="11" step="1" value="10" oninput="onScrubInput()" class="w-full h-1.5 bg-white/10 rounded-lg cursor-pointer">
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-400">Minute Hand (0 - 59m)</span>
+              <span id="scrubMinuteVal" class="font-mono text-[#d4af37]">10</span>
+            </div>
+            <input type="range" id="scrubMinute" min="0" max="59" step="1" value="10" oninput="onScrubInput()" class="w-full h-1.5 bg-white/10 rounded-lg cursor-pointer">
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-400">Second Hand (0 - 59s)</span>
+              <span id="scrubSecondVal" class="font-mono text-[#d4af37]">00</span>
+            </div>
+            <input type="range" id="scrubSecond" min="0" max="59" step="1" value="0" oninput="onScrubInput()" class="w-full h-1.5 bg-white/10 rounded-lg cursor-pointer">
+          </div>
+        </div>
+
+        <!-- Presets -->
+        <div class="pt-2 border-t border-white/5">
+          <span class="text-[10px] text-slate-400 uppercase tracking-wider block mb-2">Benchmark Presets</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="setPresetTime(10, 10, 0)" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/15 text-left transition flex flex-col">
+              <span class="font-semibold text-white">10:10 Ref</span>
+              <span class="text-[10px] text-slate-400">Bulgari Showcase</span>
+            </button>
+            <button onclick="setPresetTime(8, 20, 0)" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/15 text-left transition flex flex-col">
+              <span class="font-semibold text-white">8:20 AM</span>
+              <span class="text-[10px] text-slate-400">Rigged Benchmark</span>
+            </button>
+            <button onclick="setPresetTime(12, 0, 0)" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/15 text-left transition flex flex-col">
+              <span class="font-semibold text-white">12:00 PM</span>
+              <span class="text-[10px] text-slate-400">High Noon</span>
+            </button>
+            <button onclick="setPresetTime(2, 50, 0)" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/15 text-left transition flex flex-col">
+              <span class="font-semibold text-white">2:50 PM</span>
+              <span class="text-[10px] text-slate-400">Alternate</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-Time Telemetry Cards -->
+      <div class="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col gap-3">
+        <div class="flex items-center justify-between border-b border-white/5 pb-2">
+          <span class="text-slate-300 font-medium">Subdial Angles</span>
+          <span id="dateReadout" class="font-mono text-[11px] text-slate-400">---</span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-white/5 p-2.5 rounded-lg">
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Top-Right (Hour)</span>
+            <div class="mt-1 flex items-baseline gap-1">
+              <span id="telemetryHour" class="font-mono text-xl font-bold text-white">--</span>
+              <span class="font-mono text-xs text-slate-400">hrs</span>
+            </div>
+            <span id="telemetryHourAngle" class="text-[10px] font-mono text-[#d4af37] block mt-0.5">0.0&deg;</span>
+          </div>
+
+          <div class="bg-white/5 p-2.5 rounded-lg">
+            <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Bottom-Right (Min)</span>
+            <div class="mt-1 flex items-baseline gap-1">
+              <span id="telemetryMinute" class="font-mono text-xl font-bold text-white">--</span>
+              <span class="font-mono text-xs text-slate-400">min</span>
+            </div>
+            <span id="telemetryMinuteAngle" class="text-[10px] font-mono text-[#d4af37] block mt-0.5">0.0&deg;</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Horological Metrology Specs -->
+      <div class="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col gap-2">
+        <span class="text-[10px] uppercase tracking-[0.2em] text-[#d4af37] font-semibold">Metrology Specs</span>
+        <div class="grid grid-cols-2 gap-y-1.5 gap-x-3 text-[11px] text-slate-300">
+          <div><span class="text-slate-500">Thickness:</span> 1.70 mm</div>
+          <div><span class="text-slate-500">Case Width:</span> 40.00 mm</div>
+          <div><span class="text-slate-500">Plate:</span> Tungsten Carbide</div>
+          <div><span class="text-slate-500">Bezel:</span> Sandblasted Ti</div>
+          <div><span class="text-slate-500">Oscillator:</span> 4 Hz (28,800 vph)</div>
+          <div><span class="text-slate-500">Power Reserve:</span> 50 Hours</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Drawer Footer -->
+    <div class="p-4 border-t border-white/10 bg-black/60 flex items-center justify-between text-slate-400 text-[11px]">
+      <span>Ref. 104081 COSC</span>
+      <button onclick="closeDrawer()" class="px-4 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium transition">
+        Done
+      </button>
+    </div>
+  </aside>
+
+  <!-- ======================================================== -->
+  <!-- JAVASCRIPT: 3D MANIPULATION, HIGH-DPI CANVAS & LIVE PST -->
+  <!-- ======================================================== -->
+  <script>
+    // --- 1. Coordinates Calibrated for High-Fidelity 1:1 Dial (Virtual 1024 Space) ---
+    const VIRTUAL_SIZE = 1024;
+    const PINION_HOUR = { x: 594, y: 425, radius: 46 };
+    const PINION_MIN = { x: 596, y: 574, radius: 46 }; // Centered concentric with 60/30 ticks & disc
+    const PINION_SEC = { x: 534, y: 602, radius: 18 };
+
+    const canvas = document.getElementById('watchCanvas');
+    const ctx = canvas.getContext('2d');
+    const watchStage = document.getElementById('watchStage');
+    const watchModel = document.getElementById('watchModel');
+    const sheenOverlay = document.getElementById('sheenOverlay');
+
+    // --- 2. State ---
+    let isLiveMode = true;
+    let hourMotionMode = 'stepped'; // 'stepped' anchors on hour marker; 'continuous' sweeps
+    let manualTime = { h: 10, m: 10, s: 0, ms: 0 };
+    let isSoundEnabled = false;
+    let audioCtx = null;
+    let lastTickSecond = -1;
+
+    // --- 3. 3D Camera & Maya-style Manipulation State ---
+    const camera = {
+      rotX: 0,
+      rotY: 0,
+      panX: 0,
+      panY: 0,
+      zoom: 1.0,
+      targetRotX: 0,
+      targetRotY: 0,
+      targetPanX: 0,
+      targetPanY: 0,
+      targetZoom: 1.0
+    };
+
+    // Load High-Res 2048 Texture with 1024 Fallback
+    const watchBg = new Image();
+    let bgLoaded = false;
+    watchBg.onload = () => { bgLoaded = true; };
+    watchBg.onerror = () => {
+      // Fallback to 1024
+      watchBg.src = 'watch_face_1024.png';
+    };
+    watchBg.src = 'watch_face_2048.png';
+
+    // --- 4. High-DPI Resolution Handling ---
+    function setupHighDPICanvas() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      canvas.width = Math.round(VIRTUAL_SIZE * dpr);
+      canvas.height = Math.round(VIRTUAL_SIZE * dpr);
+    }
+    window.addEventListener('resize', setupHighDPICanvas);
+    setupHighDPICanvas();
+
+    // --- 5. Maya-Style 3D Manipulation (Pointer Events & Touch Pinch Zoom) ---
+    const activePointers = new Map();
+    let startDist = 0;
+    let startZoom = 1.0;
+    let startMidpoint = { x: 0, y: 0 };
+    let lastPointerPos = { x: 0, y: 0 };
+    let isPanning = false;
+    let lastTapTime = 0;
+
+    watchStage.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      watchStage.setPointerCapture(e.pointerId);
+
+      // Fade out gesture hint upon first interaction
+      const hint = document.getElementById('gestureHint');
+      if (hint) hint.classList.add('opacity-0');
+
+      if (activePointers.size === 1) {
+        // Double-tap / double-click reset detection
+        const now = Date.now();
+        if (now - lastTapTime < 320) {
+          reset3DView();
+          lastTapTime = 0;
+          return;
+        }
+        lastTapTime = now;
+
+        // Check if user is panning (Right click, Middle click, Shift key, or Alt key)
+        isPanning = (e.button === 2 || e.button === 1 || e.shiftKey || (e.altKey && e.button === 1));
+        lastPointerPos = { x: e.clientX, y: e.clientY };
+      } else if (activePointers.size === 2) {
+        // Multi-touch: Initialize pinch-zoom and 2-finger pan
+        const [p1, p2] = Array.from(activePointers.values());
+        startDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        startZoom = camera.targetZoom;
+        startMidpoint = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+      }
+    });
+
+    watchStage.addEventListener('pointermove', (e) => {
+      if (!activePointers.has(e.pointerId)) return;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (activePointers.size === 1) {
+        const dx = e.clientX - lastPointerPos.x;
+        const dy = e.clientY - lastPointerPos.y;
+        lastPointerPos = { x: e.clientX, y: e.clientY };
+
+        if (isPanning) {
+          // Pan across X and Y
+          camera.targetPanX += dx * 0.9;
+          camera.targetPanY += dy * 0.9;
+        } else {
+          // 3D Tumble / Orbit (Pitch & Yaw)
+          camera.targetRotY += dx * 0.35;
+          camera.targetRotX -= dy * 0.35;
+          // Clamp to keep watch naturally oriented
+          camera.targetRotX = Math.max(-55, Math.min(55, camera.targetRotX));
+          camera.targetRotY = Math.max(-85, Math.min(85, camera.targetRotY));
+        }
+        updatePresetButtonStyles(null);
+      } else if (activePointers.size === 2) {
+        // Multi-touch Pinch to Zoom & Pan
+        const [p1, p2] = Array.from(activePointers.values());
+        const currentDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        if (startDist > 0) {
+          const factor = currentDist / startDist;
+          camera.targetZoom = Math.max(0.6, Math.min(4.5, startZoom * factor));
+        }
+
+        // 2-finger pan
+        const currentMid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+        camera.targetPanX += (currentMid.x - startMidpoint.x) * 0.6;
+        camera.targetPanY += (currentMid.y - startMidpoint.y) * 0.6;
+        startMidpoint = currentMid;
+        updatePresetButtonStyles(null);
+      }
+    });
+
+    function onPointerEnd(e) {
+      activePointers.delete(e.pointerId);
+      if (activePointers.size === 1) {
+        const remaining = Array.from(activePointers.values())[0];
+        lastPointerPos = { x: remaining.x, y: remaining.y };
+      }
+    }
+    watchStage.addEventListener('pointerup', onPointerEnd);
+    watchStage.addEventListener('pointercancel', onPointerEnd);
+
+    // Mouse Wheel Zoom
+    watchStage.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.12 : 0.89;
+      camera.targetZoom = Math.max(0.6, Math.min(4.5, camera.targetZoom * zoomFactor));
+      updatePresetButtonStyles(null);
+    }, { passive: false });
+
+    // Prevent default context menu on right-click drag
+    watchStage.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // 3D View Presets
+    function setCameraPreset(mode) {
+      if (mode === 'front') {
+        camera.targetRotX = 0;
+        camera.targetRotY = 0;
+        camera.targetPanX = 0;
+        camera.targetPanY = 0;
+        camera.targetZoom = 1.0;
+      } else if (mode === 'angle') {
+        camera.targetRotX = 20;
+        camera.targetRotY = -28;
+        camera.targetPanX = 0;
+        camera.targetPanY = 0;
+        camera.targetZoom = 1.05;
+      } else if (mode === 'profile') {
+        // Dramatic view showcasing the 1.70mm world record profile
+        camera.targetRotX = 6;
+        camera.targetRotY = 82;
+        camera.targetPanX = 0;
+        camera.targetPanY = 0;
+        camera.targetZoom = 1.35;
+      } else if (mode === 'macro') {
+        camera.targetRotX = 8;
+        camera.targetRotY = -10;
+        camera.targetPanX = 0;
+        camera.targetPanY = 0;
+        camera.targetZoom = 2.4;
+      }
+      updatePresetButtonStyles(mode);
+    }
+
+    function reset3DView() {
+      setCameraPreset('front');
+    }
+
+    function updatePresetButtonStyles(activeMode) {
+      const btns = {
+        'front': document.getElementById('btnCamFront'),
+        'angle': document.getElementById('btnCamAngle'),
+        'profile': document.getElementById('btnCamProfile'),
+        'macro': document.getElementById('btnCamMacro')
+      };
+      for (const [key, btn] of Object.entries(btns)) {
+        if (key === activeMode) {
+          btn.className = "px-2.5 py-1.5 rounded-xl text-xs font-medium transition bg-white/20 text-white shadow-sm";
+        } else {
+          btn.className = "px-2.5 py-1.5 rounded-xl text-xs font-medium transition text-slate-400 hover:text-white hover:bg-white/10";
+        }
+      }
+    }
+
+    // --- 6. Collapsible Drawer UI ---
+    function toggleDrawer() {
+      const drawer = document.getElementById('optionsDrawer');
+      const backdrop = document.getElementById('drawerBackdrop');
+      const isOpen = !drawer.classList.contains('translate-x-full') && !drawer.classList.contains('max-sm:translate-y-full');
+      
+      if (isOpen) {
+        closeDrawer();
+      } else {
+        openDrawer();
+      }
+    }
+
+    function openDrawer() {
+      const drawer = document.getElementById('optionsDrawer');
+      const backdrop = document.getElementById('drawerBackdrop');
+      drawer.classList.remove('translate-x-full', 'max-sm:translate-y-full');
+      backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function closeDrawer() {
+      const drawer = document.getElementById('optionsDrawer');
+      const backdrop = document.getElementById('drawerBackdrop');
+      drawer.classList.add('translate-x-full', 'max-sm:translate-y-full');
+      backdrop.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    // Close drawer on Escape key
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDrawer();
+    });
+
+    // --- 7. Pacific Time Engine ---
+    function getPacificTime() {
+      if (!isLiveMode) {
+        return {
+          hours: manualTime.h,
+          minutes: manualTime.m,
+          seconds: manualTime.s,
+          fractionalSeconds: manualTime.s + (manualTime.ms / 1000),
+          fractionalMinutes: manualTime.m + (manualTime.s / 60) + (manualTime.ms / 60000),
+          fractionalHours: (manualTime.h % 12) + (manualTime.m / 60) + (manualTime.s / 3600),
+          isPM: manualTime.h >= 12,
+          dateString: "MANUAL RIG"
+        };
+      }
+
+      const now = new Date();
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Los_Angeles',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: false,
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      });
+      
+      const parts = formatter.formatToParts(now);
+      let h = 0, m = 0, s = 0, weekday = '', month = '', day = '';
+      for (const p of parts) {
+        if (p.type === 'hour') h = parseInt(p.value, 10);
+        if (p.type === 'minute') m = parseInt(p.value, 10);
+        if (p.type === 'second') s = parseInt(p.value, 10);
+        if (p.type === 'weekday') weekday = p.value;
+        if (p.type === 'month') month = p.value;
+        if (p.type === 'day') day = p.value;
+      }
+      
+      const ms = now.getMilliseconds();
+      const fracSec = s + ms / 1000;
+      const fracMin = m + fracSec / 60;
+      const fracHour = (h % 12) + fracMin / 60;
+
+      return {
+        hours: h,
+        minutes: m,
+        seconds: s,
+        fractionalSeconds: fracSec,
+        fractionalMinutes: fracMin,
+        fractionalHours: fracHour,
+        isPM: h >= 12,
+        dateString: `${weekday}, ${month} ${day}`
+      };
+    }
+
+    // --- 8. Audio Escapement Synthesizer (4 Hz Tick-Tock) ---
+    function playEscapementTick(highPitch) {
+      if (!isSoundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(highPitch ? 2800 : 2100, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.015);
+
+        filter.type = 'bandpass';
+        filter.frequency.value = highPitch ? 3200 : 2400;
+        filter.Q.value = 8.0;
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.022);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.025);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function toggleTickingSound() {
+      isSoundEnabled = !isSoundEnabled;
+      const btn = document.getElementById('btnSound');
+      const icon = document.getElementById('soundIcon');
+      const label = document.getElementById('soundLabel');
+      if (isSoundEnabled) {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioCtx.resume();
+        icon.innerHTML = '&#128266;';
+        label.innerText = 'Sound On';
+        btn.classList.add('bg-[#d4af37]', 'text-black');
+        btn.classList.remove('bg-white/10', 'text-slate-300');
+      } else {
+        icon.innerHTML = '&#128263;';
+        label.innerText = 'Sound';
+        btn.classList.remove('bg-[#d4af37]', 'text-black');
+        btn.classList.add('bg-white/10', 'text-slate-300');
+      }
+    }
+
+    // --- 9. Drawing 3D Faceted Dauphine Hands ---
+    function drawDauphineHand(cx, cy, length, baseWidth, angleRad, dropShadowOffset = 2.5) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angleRad);
+
+      const halfW = baseWidth / 2;
+      const tailLen = length * 0.18;
+
+      // 1. Drop Shadow
+      ctx.save();
+      ctx.translate(dropShadowOffset, dropShadowOffset * 1.2);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.filter = 'blur(2.5px)';
+      ctx.beginPath();
+      ctx.moveTo(0, -length);
+      ctx.lineTo(halfW, 0);
+      ctx.lineTo(0, tailLen);
+      ctx.lineTo(-halfW, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // 2. Left Facet (Metallic Highlight)
+      const gradL = ctx.createLinearGradient(-halfW, 0, 0, 0);
+      gradL.addColorStop(0, '#757c85');
+      gradL.addColorStop(0.5, '#c5cbd3');
+      gradL.addColorStop(1, '#e8edf2');
+      ctx.fillStyle = gradL;
+      ctx.beginPath();
+      ctx.moveTo(0, -length);
+      ctx.lineTo(-halfW, 0);
+      ctx.lineTo(0, tailLen);
+      ctx.lineTo(0, -length);
+      ctx.closePath();
+      ctx.fill();
+
+      // 3. Right Facet (Anthracite Shadow)
+      const gradR = ctx.createLinearGradient(0, 0, halfW, 0);
+      gradR.addColorStop(0, '#1c1e22');
+      gradR.addColorStop(0.7, '#2b2e34');
+      gradR.addColorStop(1, '#3a3e46');
+      ctx.fillStyle = gradR;
+      ctx.beginPath();
+      ctx.moveTo(0, -length);
+      ctx.lineTo(0, tailLen);
+      ctx.lineTo(halfW, 0);
+      ctx.lineTo(0, -length);
+      ctx.closePath();
+      ctx.fill();
+
+      // 4. Center Ridge Line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.lineWidth = 0.75;
+      ctx.beginPath();
+      ctx.moveTo(0, -length);
+      ctx.lineTo(0, tailLen);
+      ctx.stroke();
+
+      // 5. Polished Pinion Cap with Jewel
+      const capRadius = baseWidth * 0.95;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.beginPath();
+      ctx.arc(0.5, 0.5, capRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      const capGrad = ctx.createRadialGradient(-1, -1, 0, 0, 0, capRadius);
+      capGrad.addColorStop(0, '#f0f3f6');
+      capGrad.addColorStop(0.6, '#9ca2aa');
+      capGrad.addColorStop(1, '#4b5058');
+      ctx.fillStyle = capGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, capRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Center ruby bearing
+      const rubyRadius = capRadius * 0.42;
+      const rubyGrad = ctx.createRadialGradient(-0.5, -0.5, 0, 0, 0, rubyRadius);
+      rubyGrad.addColorStop(0, '#ff477e');
+      rubyGrad.addColorStop(0.7, '#c9184a');
+      rubyGrad.addColorStop(1, '#590d22');
+      ctx.fillStyle = rubyGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, rubyRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // --- 10. Running Small Seconds Indicator (Strictly 1 rev per 60s) ---
+    function drawSmallSeconds(secFraction) {
+      ctx.save();
+      ctx.translate(PINION_SEC.x, PINION_SEC.y);
+
+      const angle = secFraction * (Math.PI * 2);
+      ctx.rotate(angle);
+
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -PINION_SEC.radius + 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -PINION_SEC.radius + 2);
+      ctx.stroke();
+
+      ctx.fillStyle = '#c5cbd3';
+      ctx.beginPath();
+      ctx.arc(0, 0, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // --- 11. Master Render Loop ---
+    function render() {
+      requestAnimationFrame(render);
+
+      // Smooth 3D Camera Interpolation
+      const lerp = 0.12;
+      camera.rotX += (camera.targetRotX - camera.rotX) * lerp;
+      camera.rotY += (camera.targetRotY - camera.rotY) * lerp;
+      camera.panX += (camera.targetPanX - camera.panX) * lerp;
+      camera.panY += (camera.targetPanY - camera.panY) * lerp;
+      camera.zoom += (camera.targetZoom - camera.zoom) * lerp;
+
+      // Apply CSS 3D Transforms on Model Container
+      watchModel.style.transform = `translate3d(${camera.panX}px, ${camera.panY}px, 0px) rotateX(${camera.rotX}deg) rotateY(${camera.rotY}deg) scale(${camera.zoom})`;
+
+      // Dynamic Specular Sheen Angle
+      const lightAngle = 135 + camera.rotY * 0.8 - camera.rotX * 0.5;
+      sheenOverlay.style.background = `linear-gradient(${lightAngle}deg, rgba(255,255,255,${0.14 + Math.abs(camera.rotY)*0.001}) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,${0.25 + Math.abs(camera.rotX)*0.002}) 100%)`;
+
+      // Clear High-DPI Canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.save();
+      // Scale virtual 1024 coordinate space to high-DPI canvas
+      const scaleDPR = canvas.width / VIRTUAL_SIZE;
+      ctx.scale(scaleDPR, scaleDPR);
+
+      // 1. Draw High-Res Photorealistic Background
+      if (bgLoaded) {
+        ctx.drawImage(watchBg, 0, 0, VIRTUAL_SIZE, VIRTUAL_SIZE);
+      } else {
+        ctx.fillStyle = '#1c1e22';
+        ctx.beginPath();
+        ctx.arc(512, 512, 450, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 2. Compute Live / Manual Time
+      const time = getPacificTime();
+      const nowSec = Math.floor(time.fractionalSeconds);
+      if (nowSec !== lastTickSecond) {
+        lastTickSecond = nowSec;
+        playEscapementTick(nowSec % 2 === 0);
+      }
+
+      // 3. Draw Small Running Seconds (1 rev per minute)
+      drawSmallSeconds(time.fractionalSeconds / 60);
+
+      // 4. Draw Hour Hand (Top-Right Subdial)
+      let effectiveHour;
+      if (hourMotionMode === 'stepped') {
+        effectiveHour = (time.hours % 12) + (time.minutes / 60) * 0.25;
+      } else {
+        effectiveHour = time.fractionalHours;
+      }
+      const hourAngleRad = (effectiveHour / 12) * Math.PI * 2;
+      drawDauphineHand(PINION_HOUR.x, PINION_HOUR.y, 38, 6.0, hourAngleRad);
+
+      // 5. Draw Minute Hand (Bottom-Right Subdial - Calibrated Pinion at 596, 574)
+      const minAngleRad = (time.fractionalMinutes / 60) * Math.PI * 2;
+      drawDauphineHand(PINION_MIN.x, PINION_MIN.y, 44, 6.2, minAngleRad);
+
+      ctx.restore();
+
+      // 6. Update Telemetry UI
+      updateUI(time);
+    }
+
+    function updateUI(time) {
+      const hStr = String(time.hours % 12 || 12).padStart(2, '0');
+      const mStr = String(time.minutes).padStart(2, '0');
+      const sStr = String(time.seconds).padStart(2, '0');
+      const ampm = time.isPM ? 'PM' : 'AM';
+
+      document.getElementById('liveDigitalTime').innerText = `${hStr}:${mStr}:${sStr} ${ampm}`;
+      document.getElementById('dateReadout').innerText = time.dateString;
+
+      document.getElementById('telemetryHour').innerText = hStr;
+      const hDeg = ((time.fractionalHours / 12) * 360).toFixed(1);
+      document.getElementById('telemetryHourAngle').innerText = `${hDeg}° (${time.fractionalHours.toFixed(2)}h)`;
+
+      document.getElementById('telemetryMinute').innerText = mStr;
+      const mDeg = ((time.fractionalMinutes / 60) * 360).toFixed(1);
+      document.getElementById('telemetryMinuteAngle').innerText = `${mDeg}° (${time.fractionalMinutes.toFixed(2)}m)`;
+
+      document.getElementById('regulatorReadoutMini').innerText = `${hStr}:${mStr} ${ampm} PST`;
+
+      if (!isLiveMode) {
+        document.getElementById('scrubHourVal').innerText = String(manualTime.h).padStart(2, '0');
+        document.getElementById('scrubMinuteVal').innerText = String(manualTime.m).padStart(2, '0');
+        document.getElementById('scrubSecondVal').innerText = String(manualTime.s).padStart(2, '0');
+      }
+    }
+
+    // Mode Toggle
+    function setMode(mode) {
+      isLiveMode = (mode === 'live');
+      const btnLive = document.getElementById('btnModeLive');
+      const btnManual = document.getElementById('btnModeManual');
+      const manualBox = document.getElementById('manualControls');
+      const tzBadge = document.getElementById('tzBadge');
+
+      if (isLiveMode) {
+        btnLive.className = "px-3 py-1 rounded-lg font-semibold bg-[#d4af37] text-black transition";
+        btnManual.className = "px-3 py-1 rounded-lg font-medium bg-white/10 text-white transition";
+        manualBox.classList.add('opacity-50', 'pointer-events-none');
+        tzBadge.innerText = 'PST LIVE';
+        tzBadge.className = 'text-[10px] sm:text-xs font-mono tracking-wider text-emerald-400 font-medium';
+      } else {
+        btnLive.className = "px-3 py-1 rounded-lg font-medium bg-white/10 text-white transition";
+        btnManual.className = "px-3 py-1 rounded-lg font-semibold bg-[#d4af37] text-black transition";
+        manualBox.classList.remove('opacity-50', 'pointer-events-none');
+        tzBadge.innerText = 'MANUAL';
+        tzBadge.className = 'text-[10px] sm:text-xs font-mono tracking-wider text-[#d4af37] font-medium';
+      }
+    }
+
+    function toggleHourMotionMode() {
+      hourMotionMode = (hourMotionMode === 'stepped') ? 'continuous' : 'stepped';
+      const btn = document.getElementById('btnHourMotion');
+      if (hourMotionMode === 'stepped') {
+        btn.innerText = 'Anchored Legible';
+        btn.className = 'px-3 py-1.5 rounded-lg font-medium transition bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30';
+      } else {
+        btn.innerText = 'Continuous Sweep';
+        btn.className = 'px-3 py-1.5 rounded-lg font-medium transition bg-white/10 text-slate-300 border border-white/10 hover:bg-white/20';
+      }
+    }
+
+    function onScrubInput() {
+      manualTime.h = parseInt(document.getElementById('scrubHour').value, 10);
+      manualTime.m = parseInt(document.getElementById('scrubMinute').value, 10);
+      manualTime.s = parseInt(document.getElementById('scrubSecond').value, 10);
+    }
+
+    function setPresetTime(h, m, s) {
+      setMode('manual');
+      manualTime.h = h;
+      manualTime.m = m;
+      manualTime.s = s;
+      document.getElementById('scrubHour').value = h;
+      document.getElementById('scrubMinute').value = m;
+      document.getElementById('scrubSecond').value = s;
+    }
+
+    // Auto fade gesture hint after 4.5 seconds
+    setTimeout(() => {
+      const hint = document.getElementById('gestureHint');
+      if (hint) hint.classList.add('opacity-0');
+    }, 4500);
+
+    // Kickoff
+    window.addEventListener('load', () => {
+      setupHighDPICanvas();
+      render();
+    });
+  </script>
+</body>
+</html>
