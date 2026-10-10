@@ -63,6 +63,12 @@
   .rail::-webkit-scrollbar { display: none; }
   .wrap { max-width: 1240px; margin: 0 auto; position: relative; }
   .featured { margin-top: 26px; }
+  .fnav { position: absolute; top: 50%; z-index: 4; width: 44px; height: 44px; margin-top: -31px; border-radius: 50%; display: grid; place-items: center;
+    background: rgba(14,24,23,.62); color: #fff; font-size: 20px; border: 1px solid rgba(255,255,255,.22); box-shadow: 0 8px 20px -8px rgba(0,0,0,.7);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: opacity .2s, background .2s; }
+  .fnav:hover { background: rgba(14,24,23,.85); }
+  .fnav.prev { left: calc(var(--gut) + 10px); } .fnav.next { right: calc(var(--gut) + 10px); }
+  .fnav[hidden] { display: none !important; }
   .featured .rail { grid-auto-columns: min(86%, 760px); }
   .hero { position: relative; scroll-snap-align: start; aspect-ratio: 16 / 9.4; border-radius: 28px; overflow: hidden; background: #222; color: #fff;
     text-align: left; box-shadow: 0 26px 50px -28px rgba(0,0,0,.7); border: 1px solid var(--line); isolation: isolate; }
@@ -219,7 +225,8 @@
   <div><span class="chip watch mono">Watch</span><span><b>Retired from the App Store</b><i>Can't be downloaded anymore; watch it being played.</i></span></div>
 </div>
 
-<section class="featured wrap" aria-label="Featured"><div class="rail" id="featured"></div></section>
+<section class="featured wrap" aria-label="Featured"><div class="rail" id="featured"></div>
+  <button class="fnav prev" aria-label="Previous featured app" hidden>←</button><button class="fnav next" aria-label="Next featured app">→</button></section>
 <main id="shelves"></main>
 
 <footer class="mono">
@@ -318,6 +325,21 @@ document.addEventListener('click', e => {
   document.querySelectorAll('.hero').forEach(h => h.hidden = k !== 'all' && h.dataset.kind !== k);
   document.querySelector('.featured').hidden = ![...document.querySelectorAll('.hero')].some(h => !h.hidden);
 });
+// ── featured arrows: step one hero at a time, hide at either end ──
+const fRail = document.getElementById('featured'), fPrev = document.querySelector('.fnav.prev'), fNext = document.querySelector('.fnav.next');
+function fSync() {
+  fPrev.hidden = fRail.scrollLeft < 4;
+  fNext.hidden = fRail.scrollLeft + fRail.clientWidth >= fRail.scrollWidth - 4;
+}
+[fPrev, fNext].forEach(b => b.addEventListener('click', () => {
+  const hero = fRail.querySelector('.hero:not([hidden])'); if (!hero) return;
+  fRail.scrollBy({ left: (b === fNext ? 1 : -1) * (hero.offsetWidth + 16), behavior: reduceMotion ? 'auto' : 'smooth' });
+}));
+fRail.addEventListener('scroll', fSync, { passive: true });
+addEventListener('resize', fSync);
+fSync();
+document.addEventListener('click', e => { if (e.target.closest('.tabs button')) setTimeout(fSync, 0); });
+
 document.addEventListener('click', e => {
   const b = e.target.closest('.arrows button'); if (!b) return;
   const rail = b.closest('.shelf').querySelector('.rail');
