@@ -193,7 +193,7 @@ window.CATALOG = {
       media: { poster: 'glow.jpg', video: 'glow.mp4' }, hue: ['#7a2a8a', '#ff8a5c'],
       body: 'A set of widgets (health stats, a focus timer, a music player) made of slow liquid gradients and film grain.', made: 'Three.js', year: 2026 },
     { id: 'seti-sonify', name: 'SETI Solar Wind', subtitle: 'Space weather sonifier & telemetry DAW', kind: 'toy',
-      access: 'open', url: 'https://seti-sonify.netlify.app', devices: ['desktop'],
+      access: 'open', url: 'https://seti-sound.netlify.app', devices: ['desktop'],
       media: {}, icon: 'icons/seti-sonify.png', hue: ['#181008', '#f97316'],
       body: 'Turns live NOAA SWPC DSCOVR telemetry and NASA CDAWeb HAPI solar-wind archives into 6-channel musical waveforms, audio scrubs, and offline WAV exports using Tone.js.',
       made: 'Tone.js, NASA/NOAA APIs, Web Audio', year: 2026 },
