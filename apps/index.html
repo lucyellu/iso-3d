@@ -244,8 +244,8 @@ const { featured } = window.CATALOG;
 const apps = window.CATALOG.apps.filter(a => !a.hidden);   // hidden: true keeps an entry in catalog.js but off the page
 const byId = Object.fromEntries(apps.map(a => [a.id, a]));
 const SHELVES = [
-  { kind: 'game', title: 'Games', blurb: 'Puzzles, a trading game and two retired iPad titles.' },
   { kind: 'app', title: 'Apps', blurb: 'Useful, mostly. Live on the web.' },
+  { kind: 'game', title: 'Games', blurb: 'Puzzles, a trading game and two retired iPad titles.' },
   { kind: 'toy', title: 'Toys & experiments', blurb: 'Small single-page things, all hosted here.' },
 ];
 const DEVICES = { desktop: 'Computer', phone: 'Phone', ipad: 'iPad' };
@@ -315,7 +315,7 @@ document.getElementById('shelves').innerHTML = SHELVES.map(s => {
 }).join('');
 
 // ── filter tabs ──
-const TABS = [['all', 'All'], ['game', 'Games'], ['app', 'Apps'], ['toy', 'Toys']];
+const TABS = [['all', 'All'], ['app', 'Apps'], ['game', 'Games'], ['toy', 'Toys']];
 document.querySelectorAll('.tabs').forEach(nav => nav.innerHTML = TABS.map(([k, l]) => `<button data-k="${k}" aria-pressed="${k === 'all'}">${l}</button>`).join(''));
 document.addEventListener('click', e => {
   const t = e.target.closest('.tabs button'); if (!t) return;

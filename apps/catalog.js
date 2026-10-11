@@ -12,7 +12,7 @@
 // hidden   — true keeps the entry here but leaves it off the page (the apps editor toggles this)
 // note     — a one-line heads-up shown under the button (slow first load, needs an account, ...)
 window.CATALOG = {
-  featured: ['snark-weather', 'breathe', 'starbreaker', 'world-sense'],
+  featured: ['snark-weather', '23andsee', 'paper-sim', 'world-sense', 'starbreaker'],
   apps: [
     // ── Games ───────────────────────────────────────────────
     { id: 'jelly-toss', name: 'Jelly Toss', subtitle: 'A very small world with excellent bounce', kind: 'game',
@@ -87,7 +87,7 @@ window.CATALOG = {
       made: 'React, Firebase', year: 2026 },
     { id: '23andsee', name: '23andsee', subtitle: 'Private offline genome comparison', kind: 'app',
       access: 'open', url: 'https://23andsee.vercel.app', devices: ['desktop'],
-      media: { poster: '23andsee.jpg' }, icon: 'icons/23andsee.png', hue: ['#0a0a0c', '#38bdf8'],
+      media: { poster: '23andsee.jpg', video: '23andsee.mp4' }, icon: 'icons/23andsee.png', hue: ['#0a0a0c', '#38bdf8'],
       note: 'Fully offline in-browser genome analysis. No data leaves your machine.',
       body: 'Local-first genome comparator for raw 23andMe exports. Analyzes chromosomes in client-side SQLite Wasm, identifies IBD segments and genetic kinship, and secures snapshots with AES-256-GCM encryption.',
       made: 'SQLite Wasm, React, Canvas, Web Crypto', year: 2026 },
@@ -234,5 +234,10 @@ window.CATALOG = {
     { id: 'js-piano', name: 'JS Piano', subtitle: 'A playable piano', kind: 'toy', hidden: true, access: 'play', url: 'js-piano/', devices: ['desktop'],
       media: { poster: 'js-piano.jpg', video: 'js-piano.mp4' }, hue: ['#1a1a1a', '#f0ece2'],
       body: 'Play with the mouse or your keyboard.', made: 'Plain JavaScript', year: 2026 },
+    { id: 'google-maps-driving', name: 'Google Maps Driving Game', subtitle: 'Drive down real streets', kind: 'toy',
+      access: 'watch', devices: ['desktop'], status: 'Prototype, video only',
+      media: { poster: 'google-maps-driving.jpg', youtube: '0YSLuEm-WVs' }, hue: ['#1f4d7a', '#8fd0f2'],
+      body: 'A prototype that lets you drive a car through real cities. Cesium streams Google’s photorealistic 3D tiles into Unity, so you can race down any street in the world with a freely moving camera, instead of the one-frame-per-second hops of Street View.',
+      made: 'Unity, Cesium for Unity, Google Photorealistic 3D Tiles', year: 2023 },
   ],
 };
