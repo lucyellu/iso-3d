@@ -89,6 +89,9 @@
   .arrows button { width: 34px; height: 34px; border-radius: 10px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); background: var(--card); border: 1px solid var(--line); color: var(--ink-2); }
   .arrows button:hover { color: #fff; }
   .shelf .rail { grid-auto-columns: min(82%, 330px); padding-top: 14px; }
+  /* one category picked: lay its cards out as a wrapping grid instead of a scrolling row */
+  main.grid .shelf .rail { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); overflow: visible; scroll-snap-type: none; }
+  main.grid .arrows { display: none; }
 
   .card { scroll-snap-align: start; display: flex; flex-direction: column; border-radius: var(--r); background: var(--card); border: 1px solid var(--line);
     overflow: hidden; text-align: left; transition: transform .25s, box-shadow .25s, border-color .25s; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
@@ -165,6 +168,16 @@
   .getit b { font-weight: 600; }
   .getit p { margin: 2px 0 0; color: var(--ink-2); }
   .getit .note { margin-top: 6px; color: var(--accent); }
+  /* add to home screen */
+  .a2hs { margin-top: 12px; }
+  .a2hs > button { min-width: 72px; min-height: 34px; padding: 0 22px; border-radius: 999px; border: 0; background: rgba(255,255,255,.14); color: #fff; font: inherit; font-size: 15px; font-weight: 700; letter-spacing: .02em; cursor: pointer; }
+  .a2hs > button:hover, .a2hs > button[aria-expanded="true"] { background: rgba(255,255,255,.22); }
+  .a2hs-steps { margin-top: 10px; padding: 16px 18px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255,255,255,.05); display: flex; gap: 16px; align-items: flex-start; }
+  .a2hs-steps .ic { width: 64px; height: 64px; border-radius: 15px; flex-shrink: 0; font-size: 28px; }
+  .a2hs-steps ol { margin: 0; padding-left: 18px; color: var(--ink-2); }
+  .a2hs-steps li { margin: 2px 0; }
+  .a2hs-steps b { color: #fff; font-weight: 600; }
+  .a2hs-steps .fine { margin: 8px 0 0; color: var(--ink-3); font-size: 12px; }
   .facts { margin: 20px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
   .facts div { padding: 12px 14px 12px 0; }
   .facts dt { color: var(--ink-3); }
@@ -321,6 +334,7 @@ document.addEventListener('click', e => {
   const t = e.target.closest('.tabs button'); if (!t) return;
   const k = t.dataset.k;
   document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
+  document.getElementById('shelves').classList.toggle('grid', k !== 'all');
   document.querySelectorAll('.shelf').forEach(s => s.hidden = k !== 'all' && s.dataset.kind !== k);
   document.querySelectorAll('.hero').forEach(h => h.hidden = k !== 'all' && h.dataset.kind !== k);
   document.querySelector('.featured').hidden = ![...document.querySelectorAll('.hero')].some(h => !h.hidden);
@@ -346,7 +360,7 @@ document.addEventListener('click', e => {
   rail.scrollBy({ left: +b.dataset.dir * rail.clientWidth * 0.8, behavior: reduceMotion ? 'auto' : 'smooth' });
 });
 
-// ── loops: featured ones play while on screen; shelf ones play on hover ──
+// ── loops: featured ones all play together while the row is on screen; shelf ones play on hover ──
 function play(m, on) {
   const v = m && m.querySelector('video'); if (!v) return;
   if (on && !reduceMotion) {
@@ -354,8 +368,8 @@ function play(m, on) {
     v.play().then(() => m.classList.add('playing')).catch(() => {});
   } else { v.pause(); m.classList.remove('playing'); }
 }
-const seen = new IntersectionObserver(es => es.forEach(e => play(e.target, e.isIntersecting && e.intersectionRatio > 0.6)), { threshold: [0, 0.6] });
-document.querySelectorAll('.hero .media').forEach(m => seen.observe(m));
+const seen = new IntersectionObserver(es => es.forEach(e => document.querySelectorAll('.hero .media').forEach(m => play(m, e.isIntersecting))));
+seen.observe(document.querySelector('.featured'));
 document.querySelectorAll('.card').forEach(c => {
   const m = c.querySelector('.media');
   c.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') play(m, true); });
@@ -376,6 +390,7 @@ function openSheet(id, autoplay) {
     <div class="d-body">
       <div class="d-top">${icon(a)}<div class="who"><h2 id="d-name">${esc(a.name)}</h2><div class="sub" style="white-space:normal">${esc(a.subtitle)}</div></div>${button(a, true)}</div>
       <div class="getit"><span class="chip ${x.cls} mono">${esc(x.label.replace(' ↗', ''))}</span><div><b>How to get it</b><p>${esc(x.long)}</p>${a.note ? `<p class="note">${esc(a.note)}</p>` : ''}</div></div>
+      ${a.access === 'watch' ? '' : `<div class="a2hs"><button type="button" data-a2hs="${a.id}" aria-expanded="false" aria-label="Get: add to your home screen">Get</button></div>`}
       <dl class="facts">
         <div><dt class="mono">Works on</dt><dd>${a.devices.map(d => DEVICES[d]).join(', ')}</dd></div>
         <div><dt class="mono">${a.access === 'open' ? 'Lives at' : 'Hosted'}</dt><dd>${a.access === 'open' ? esc(host(a.url)) : a.access === 'play' ? 'lucylu.org' : 'Not available'}</dd></div>
@@ -392,6 +407,39 @@ function openSheet(id, autoplay) {
   if (history.replaceState) history.replaceState(null, '', '#' + id);
   if (autoplay && m.youtube) startYT(dm.querySelector('.playbtn')); else play(dm, true);
 }
+// Steps differ by device and browser, so work out which one this is. Order matters: iOS Chrome/Firefox/Edge also say "Safari" in their user agent.
+function a2hsSteps(ua, platform, touch) {
+  const ios = /iPad|iPhone|iPod/.test(ua) || (platform === 'MacIntel' && touch > 1), android = /Android/i.test(ua);
+  const open = 'Open the app with the button above.';
+  const done = 'Confirm, and it appears on your home screen with its icon.';
+  if (ios) {
+    if (/CriOS/.test(ua)) return [open, 'Tap the <b>Share</b> button (the square with an arrow) in the address bar, or open the <b>⋯</b> menu and tap <b>Share</b>.', 'Tap <b>Add to Home Screen</b>, then <b>Add</b>.'];
+    if (/FxiOS/.test(ua)) return [open, 'Tap the <b>☰</b> menu, then <b>Share</b>.', 'Tap <b>Add to Home Screen</b>, then <b>Add</b>.'];
+    if (/EdgiOS/.test(ua)) return [open, 'Tap the <b>⋯</b> menu, then <b>Share</b>.', 'Tap <b>Add to Home Screen</b>, then <b>Add</b>.'];
+    return [open, 'Tap the <b>Share</b> button (the square with an arrow) in Safari.', 'Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.'];
+  }
+  if (android) {
+    if (/SamsungBrowser/.test(ua)) return [open, 'Tap the <b>☰</b> menu.', 'Tap <b>Add page to</b>, then <b>Home screen</b>.', done];
+    if (/Firefox/.test(ua)) return [open, 'Tap the <b>⋮</b> menu.', 'Tap <b>Install</b> (or <b>Add to Home screen</b>).', done];
+    if (/EdgA/.test(ua)) return [open, 'Tap the <b>☰</b> menu.', 'Tap <b>Add to phone</b>.', done];
+    return [open, 'Tap the <b>⋮</b> menu in Chrome.', 'Tap <b>Add to Home screen</b> (or <b>Install app</b>).', done];
+  }
+  if (/Edg\//.test(ua)) return [open, 'Click the <b>install</b> icon at the right of the address bar, or open <b>⋯ ▸ Apps ▸ Install this site as an app</b>.', 'Click <b>Install</b>. It gets its own window and a Start menu or Dock icon.'];
+  if (/Firefox/.test(ua)) return ['Firefox on a computer can’t install web apps, so this one is best opened in Chrome, Edge or Safari.', 'You can still bookmark it (<b>Ctrl/⌘ + D</b>), or open this page on your phone for the home-screen steps.'];
+  if (/Chrome/.test(ua)) return [open, 'Click the <b>install</b> icon at the right of the address bar, or open <b>⋮ ▸ Cast, save and share ▸ Install page as app</b>.', 'Click <b>Install</b>. It gets its own window and a Start menu or Dock icon.'];
+  return [open, 'In Safari on a Mac, choose <b>File ▸ Add to Dock</b>.', 'On an iPhone or iPad, open this page there for the home-screen steps.'];
+}
+// Browsers won't let one page install another as an app, so this shows the device's own steps and the icon that will land on the home screen.
+function toggleA2HS(btn) {
+  const box = btn.parentElement, open = btn.getAttribute('aria-expanded') !== 'true';
+  btn.setAttribute('aria-expanded', open);
+  box.querySelector('.a2hs-steps')?.remove();
+  if (!open) return;
+  const a = byId[btn.dataset.a2hs]; if (!a) return;
+  const steps = a2hsSteps(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
+  box.insertAdjacentHTML('beforeend', `<div class="a2hs-steps">${icon(a)}<div><ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol>
+    <p class="fine">${a.access === 'play' ? 'It gets the icon shown here and opens full screen, like an app.' : 'Add it from the app’s own page. The icon depends on what that site provides.'}</p></div></div>`);
+}
 function startYT(btn) {
   const dm = btn.closest('.media');
   play(dm, false);
@@ -403,6 +451,7 @@ sheet.addEventListener('close', () => { sheet.innerHTML = ''; if (history.replac
 sheet.addEventListener('click', e => {
   if (e.target === sheet) return closeSheet();   // the backdrop
   if (e.target.closest('.x')) return closeSheet();
+  const h = e.target.closest('[data-a2hs]'); if (h) return toggleA2HS(h);
   const y = e.target.closest('[data-yt]'); if (y) startYT(y);
   const w = e.target.closest('[data-watch]'); if (w) { e.preventDefault(); const p = sheet.querySelector('.playbtn'); if (p) startYT(p); }
 });

@@ -1,0 +1,22 @@
+{
+  "name": "Atlas Library",
+  "short_name": "Atlas Librar",
+  "description": "Scale, mass and temperature of everything",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#3b4a46",
+  "theme_color": "#3b4a46",
+  "icons": [
+    {
+      "src": "home-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "home-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

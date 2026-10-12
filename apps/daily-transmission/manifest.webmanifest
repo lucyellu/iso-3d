@@ -1,0 +1,22 @@
+{
+  "name": "Daily Morse",
+  "short_name": "Daily Morse",
+  "description": "A Morse code puzzle a day",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#16324a",
+  "theme_color": "#16324a",
+  "icons": [
+    {
+      "src": "home-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "home-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

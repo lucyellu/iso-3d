@@ -1,0 +1,22 @@
+{
+  "name": "Reading Level",
+  "short_name": "Reading Leve",
+  "description": "Text at any reading level",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1f3a34",
+  "theme_color": "#1f3a34",
+  "icons": [
+    {
+      "src": "home-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "home-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

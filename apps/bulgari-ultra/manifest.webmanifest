@@ -1,0 +1,22 @@
+{
+  "name": "Bulgari Octo Finissimo Ultra",
+  "short_name": "Bulgari Octo",
+  "description": "1.70 mm world record 3D clock",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#121418",
+  "theme_color": "#121418",
+  "icons": [
+    {
+      "src": "home-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "home-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

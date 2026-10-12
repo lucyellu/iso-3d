@@ -498,7 +498,14 @@ textarea.em-input { resize: vertical; min-height: 120px; }
   canvas { max-width: 100%; height: auto !important; }
 }
 </style>
-</head>
+    <!-- home-screen:start -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="home-icon-180.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="NoteForge Piano">
+    <!-- home-screen:end -->
+  </head>
 <body ondragover="event.preventDefault()" ondrop="handleDrop(event)">
 
 <!-- full-page video background -->

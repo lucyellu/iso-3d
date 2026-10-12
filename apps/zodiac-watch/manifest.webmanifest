@@ -1,0 +1,22 @@
+{
+  "name": "Zodiac Watch",
+  "short_name": "Zodiac Watch",
+  "description": "Twelve animals, one face",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#3a1a14",
+  "theme_color": "#3a1a14",
+  "icons": [
+    {
+      "src": "home-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "home-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

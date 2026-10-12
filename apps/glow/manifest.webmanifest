@@ -1,0 +1,22 @@
+{
+  "name": "Glow",
+  "short_name": "Glow",
+  "description": "Liquid gradient UI",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#7a2a8a",
+  "theme_color": "#7a2a8a",
+  "icons": [
+    {
+      "src": "home-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "home-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

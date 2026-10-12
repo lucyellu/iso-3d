@@ -12,7 +12,7 @@
 // hidden   — true keeps the entry here but leaves it off the page (the apps editor toggles this)
 // note     — a one-line heads-up shown under the button (slow first load, needs an account, ...)
 window.CATALOG = {
-  featured: ['snark-weather', '23andsee', 'paper-sim', 'world-sense', 'starbreaker'],
+  featured: ['snark-weather', '23andsee', 'paper-sim', 'world-sense', 'lunescape'],
   apps: [
     // ── Games ───────────────────────────────────────────────
     { id: 'jelly-toss', name: 'Jelly Toss', subtitle: 'A very small world with excellent bounce', kind: 'game',
@@ -34,7 +34,7 @@ window.CATALOG = {
       made: 'Unity, for iPhone and iPad · Paperbox Studio', year: 2023 },
     { id: 'lunescape', name: 'Lunescape', subtitle: 'Isometric farming and survival', kind: 'game',
       access: 'watch', devices: ['ipad'], status: 'Retired from the App Store',
-      media: { poster: 'lunescape.jpg', youtube: '8Jjn_P_nJzQ' }, hue: ['#b8653a', '#f2c28a'],
+      media: { poster: 'lunescape.jpg', video: 'lunescape.mp4', fit: true, youtube: '8Jjn_P_nJzQ' }, hue: ['#b8653a', '#f2c28a'],
       body: 'Keep a homestead going in a sunbaked low-poly world: plant and water crops, keep the animals fed, craft tools, and watch your health and energy as the days pass.',
       made: 'Unity, for iPad · Paperbox Studio', year: 2022 },
     { id: 'daily-transmission', name: 'Daily Morse', subtitle: 'A Morse code puzzle a day', kind: 'game',

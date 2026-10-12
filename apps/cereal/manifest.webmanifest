@@ -1,0 +1,22 @@
+{
+  "name": "Milk & Letters",
+  "short_name": "Milk & Lette",
+  "description": "A cozy word game in a bowl of cereal",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e9a56b",
+  "theme_color": "#e9a56b",
+  "icons": [
+    {
+      "src": "home-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "home-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

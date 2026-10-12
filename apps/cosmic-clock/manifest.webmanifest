@@ -1,0 +1,22 @@
+{
+  "name": "Cosmic Age Clock",
+  "short_name": "Cosmic Age C",
+  "description": "Now, against the age of the universe",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0e1430",
+  "theme_color": "#0e1430",
+  "icons": [
+    {
+      "src": "home-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "home-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

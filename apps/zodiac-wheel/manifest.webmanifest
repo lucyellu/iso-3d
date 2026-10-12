@@ -1,0 +1,22 @@
+{
+  "name": "Zodiac Wheel",
+  "short_name": "Zodiac Wheel",
+  "description": "The twelve animals",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#4a1a1a",
+  "theme_color": "#4a1a1a",
+  "icons": [
+    {
+      "src": "home-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "home-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
