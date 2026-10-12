@@ -95,14 +95,46 @@
   /* drag the top-left corner to resize (the window sits bottom-right, so it grows up and left); the size lasts until the page reloads */
   .pip-grip { position: absolute; left: 0; top: 0; width: 18px; height: 18px; z-index: 2; cursor: nwse-resize; touch-action: none;
     background: linear-gradient(135deg, rgba(239,233,220,.45) 0 12%, transparent 12% 26%, rgba(239,233,220,.45) 26% 36%, transparent 36%); }
-  .pip.big .pip-grip, .pip[data-kind="form"] .pip-grip { display: none; }
+  .pip.big .pip-grip, .pip[data-kind="form"] .pip-grip, .pip[data-kind="profile"] .pip-grip { display: none; }
   .pip iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   .pip.dragging iframe { pointer-events: none; }
   .pip.big { left: 24px !important; top: 24px !important; right: 24px; bottom: 24px; width: auto; }
   .pip.big .pip-body { flex: 1; aspect-ratio: auto; height: auto; }
   .pip.big .pip-bar { cursor: default; }
   .pip[data-kind="form"] .pip-body { aspect-ratio: auto; background: none; }
-  .pip[data-kind="form"] #pipBig, .pip[data-kind="form"] #pipOut { display: none; }
+  .pip[data-kind="form"] #pipBig, .pip[data-kind="form"] #pipOut, .pip[data-kind="profile"] #pipBig, .pip[data-kind="profile"] #pipOut { display: none; }
+  /* Contact: "Show all" lays every link out as tiles. Phones and short landscape screens keep the plain chips. */
+  .card .tiles-toggle { color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; padding: 7px 12px; border: 1px dashed var(--ink-dim); border-radius: 999px; background: transparent; cursor: pointer; transition: background .2s, color .2s; }
+  .card .tiles-toggle:hover { background: var(--ink); color: #111; }
+  .tiles { position: fixed; right: 26px; bottom: 84px; width: min(600px, calc(100vw - 500px)); min-width: 360px; z-index: 6; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    transition: opacity .25s ease, transform .25s ease; }
+  .tiles[hidden] { display: none; }
+  .tiles.enter { opacity: 0; transform: translateY(10px); }
+  .tile { text-align: left; font: inherit; position: relative; display: grid; justify-items: start; align-content: space-between; gap: 6px; min-height: 118px; padding: 14px; border-radius: 12px; color: #efe9dc; text-decoration: none; cursor: pointer;
+    background: rgba(14, 18, 17, 0.92); border: 1px solid rgba(255,255,255,.1); box-shadow: 0 10px 30px rgba(0,0,0,.35); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: transform .2s, border-color .2s; }
+  .tile:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .tile .mono { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font: 400 18px "Instrument Serif", serif; color: var(--accent-ink); background: var(--accent); }
+  .tile b { font-size: 14px; font-weight: 700; }
+  .tile span { font-size: 12px; color: rgba(239,233,220,.65); }
+  .tile .go { font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--accent); }
+  .tile .x { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-size: 12px; line-height: 1; color: rgba(239,233,220,.55); background: none; border: 0; cursor: pointer; }
+  .tile .x:hover { background: rgba(255,255,255,.12); color: #fff; }
+  .tile.wide { grid-column: span 3; padding: 0; min-height: 0; overflow: hidden; }
+  .tile.wide .prev { position: relative; width: 100%; aspect-ratio: 16 / 6; overflow: hidden; background: #000; }
+  .tile.wide iframe { position: absolute; left: 0; top: 0; width: 400%; height: 400%; border: 0; transform: scale(.25); transform-origin: 0 0; pointer-events: none; }
+  .tile.wide .cap { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 14px; box-sizing: border-box; }
+  .tile.wide .cap b { flex: 1; }
+  @media (max-width: 767px), (max-height: 599px) { .card .tiles-toggle, .tiles { display: none !important; } }
+  /* the labelled button that opens whatever is in the window as a full page in a new tab */
+  .pip-bar a#pipOut { width: auto; padding: 0 11px; font-size: 12px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.1); color: #efe9dc; }
+  .pip-bar a#pipOut:hover { background: rgba(255,255,255,.2); }
+  .pip[data-kind="profile"] { width: min(340px, calc(100vw - 32px)); }
+  .pip[data-kind="profile"] .pip-body { aspect-ratio: auto; background: none; }
+  .pip-profile { display: grid; justify-items: center; gap: 4px; padding: 10px 20px 22px; text-align: center; }
+  .pip-profile .mono { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font: 400 30px "Instrument Serif", serif; color: var(--accent-ink); background: var(--accent); margin-bottom: 8px; }
+  .pip-profile b { font-size: 17px; font-weight: 700; }
+  .pip-profile span { font-size: 13px; color: rgba(239,233,220,.65); }
+  .pip-profile a { margin-top: 14px; padding: 10px 22px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 13px; font-weight: 700; text-decoration: none; }
   .pip-form { display: grid; gap: 12px; padding: 6px 16px 16px; }
   .pip-form label { display: grid; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(239,233,220,.7); }
   .pip-form label i { font-style: normal; font-weight: 500; letter-spacing: .04em; text-transform: none; opacity: .6; margin-left: 6px; }
@@ -201,7 +233,7 @@
   <div class="pip-bar" id="pipBar">
     <span class="pip-title" id="pipTitle"></span>
     <button id="pipBig" title="Full size" aria-label="Full size">⤢</button>
-    <a id="pipOut" target="_blank" rel="noopener" title="Open in a new tab" aria-label="Open in a new tab">↗</a>
+    <a id="pipOut" target="_blank" rel="noopener" title="Open in a new tab" aria-label="Open in a new tab">Open ↗</a>
     <button id="pipClose" title="Close" aria-label="Close">✕</button>
   </div>
   <div class="pip-body" id="pipBody"></div>
@@ -255,16 +287,17 @@ const SITE = {
       view: { yaw: -0.3, pitch: -0.25 } },
     { title: 'Contact', body: 'Say hello. I read everything, eventually, once the boat comes back around.',
       links: [{ label: 'Email', href: '#message', form: true },
-              { label: 'GitHub', href: 'https://github.com/lucyellu' },
-              { label: 'Instagram', href: 'https://instagram.com/lucyellu' },
-              { label: 'YouTube', href: 'https://www.youtube.com/@lucyxlu' },
-              { label: 'X', href: 'https://x.com/laissez_fairie' },
-              { label: 'LinkedIn', href: 'https://www.linkedin.com/in/lucyluprofile/' },
-              { label: 'lulucy.org', href: 'https://www.lulucy.org' }
+              { label: 'GitHub', href: 'https://github.com/lucyellu', profile: 'lucyellu' },
+              { label: 'Instagram', href: 'https://instagram.com/lucyellu', profile: '@lucyellu' },
+              { label: 'YouTube', href: 'https://www.youtube.com/@lucyxlu', profile: '@lucyxlu' },
+              { label: 'X', href: 'https://x.com/laissez_fairie', profile: '@laissez_fairie' },
+              { label: 'LinkedIn', href: 'https://www.linkedin.com/in/lucyluprofile/', profile: 'Lucy Lu' },
+              { label: 'lulucy.org', href: 'https://www.lulucy.org', embed: 'https://www.lulucy.org', kind: 'doc' }
               // hidden for now:
               // { label: 'Vimeo', href: 'https://vimeo.com/lucylu' },
               // { label: 'TikTok', href: 'https://www.tiktok.com/@x.ellu' },
               ],
+      tiles: true,   // shows a "Show all" toggle (larger screens only) that lays every link out as tiles
       view: { yaw: 0.25, pitch: 0.12, zoom: 0.3, focus: 'lookout' } },
   ],
 };
@@ -1980,23 +2013,69 @@ function renderCard(i, instant) {
   const fill = () => {
     $('kicker').textContent = `${String(i + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`;
     $('title').textContent = c.title; $('body').textContent = c.body;
-    const ul = $('links'); ul.innerHTML = '';
+    const ul = $('links'); ul.innerHTML = ''; hideTiles(true);
     for (const l of c.links) {
       const li = document.createElement('li'); const a = document.createElement('a'); a.href = l.href; a.textContent = l.label;
       if (l.newTab || /^https?:/.test(l.href)) { a.target = '_blank'; a.rel = 'noopener'; }
       const em = embedFor(l); if (em) { a.dataset.embed = em.kind; a.dataset.i = c.links.indexOf(l); }
       li.appendChild(a); ul.appendChild(li);
     }
+    if (c.tiles) {
+      const li = document.createElement('li'), b = document.createElement('button');
+      b.type = 'button'; b.className = 'tiles-toggle'; b.textContent = '▦ Show all'; b.setAttribute('aria-expanded', 'false');
+      b.addEventListener('click', () => tilesEl.hidden ? showTiles(c) : hideTiles());
+      li.appendChild(b); ul.appendChild(li);
+    }
     card.classList.remove('out');
   };
   if (instant) return fill();
   card.classList.add('out'); setTimeout(fill, 260);
 }
+// ── Contact tiles: every link at once, as small cards. Click a tile to open it; the tiny ✕ drops it from the view ──
+const tilesEl = document.createElement('section'); tilesEl.className = 'tiles'; tilesEl.id = 'tiles'; tilesEl.hidden = true; tilesEl.setAttribute('aria-label', 'All links');
+document.body.appendChild(tilesEl);
+function showTiles(c) {
+  closePip();
+  tilesEl.replaceChildren();
+  for (const l of c.links) {
+    const em = embedFor(l); if (!em) continue;
+    const t = document.createElement(em.kind === 'form' ? 'button' : 'a'); t.className = 'tile';
+    if (em.kind === 'form') t.type = 'button'; else { t.href = l.href; t.target = '_blank'; t.rel = 'noopener'; }
+    const label = l.label, handle = em.kind === 'profile' ? em.handle : em.kind === 'form' ? 'Send a message' : l.href.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+    if (em.kind === 'doc') {   // a site that allows framing gets a live preview
+      t.classList.add('wide');
+      const pv = document.createElement('div'); pv.className = 'prev';
+      const f = document.createElement('iframe'); f.src = em.src.replace(/#.*/, ''); f.loading = 'lazy'; f.tabIndex = -1; f.title = label; f.setAttribute('aria-hidden', 'true'); pv.appendChild(f);
+      const cap = document.createElement('div'); cap.className = 'cap';
+      cap.innerHTML = '<b></b><span class="go">Open ↗</span>'; cap.querySelector('b').textContent = handle;
+      t.append(pv, cap);
+    } else {
+      t.innerHTML = '<div class="mono"></div><div><b></b><br><span></span></div><span class="go">' + (em.kind === 'form' ? 'Write ↗' : 'Open ↗') + '</span>';
+      t.querySelector('.mono').textContent = label[0]; t.querySelector('b').textContent = handle; t.querySelector('div:nth-child(2) span').textContent = label;
+    }
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '✕'; x.title = 'Hide'; x.setAttribute('aria-label', 'Hide ' + label);
+    x.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); t.remove(); if (!tilesEl.children.length) hideTiles(); });
+    t.appendChild(x);
+    if (em.kind === 'form') t.addEventListener('click', () => { hideTiles(); openPip(em, label, l.href); });
+    else t.addEventListener('click', () => setTimeout(() => hideTiles(), 0));
+    tilesEl.appendChild(t);
+  }
+  tilesEl.hidden = false; tilesEl.classList.add('enter');
+  requestAnimationFrame(() => requestAnimationFrame(() => tilesEl.classList.remove('enter')));
+  const b = document.querySelector('.tiles-toggle'); if (b) { b.textContent = '▦ Hide'; b.setAttribute('aria-expanded', 'true'); }
+}
+function hideTiles(quiet) {
+  tilesEl.hidden = true; tilesEl.replaceChildren();
+  const b = document.querySelector('.tiles-toggle'); if (b && !quiet) { b.textContent = '▦ Show all'; b.setAttribute('aria-expanded', 'false'); }
+}
+addEventListener('keydown', e => { if (e.key === 'Escape' && !tilesEl.hidden) hideTiles(); });
 // ── Floating player: YouTube / Vimeo clips and PDFs open in a small window over the harbour ──
 // Worked out from the link's href. A link can also name a clip separately with { embed: url }, so the
 // button plays the clip while ↗ still goes to href; a plain YouTube/Vimeo/PDF address works there too.
 function embedFor(l) {
   if (l.form) return { kind: 'form' };
+  // Instagram, X, LinkedIn, GitHub and YouTube channel pages refuse to be framed, so they get a small profile card with an Open button instead
+  if (l.profile) return { kind: 'profile', handle: l.profile };
   if (l.embed) return embedFor({ href: l.embed }) || { src: l.embed, kind: l.kind || 'video' };
   let u; try { u = new URL(l.href, location.href); } catch (e) { return null; }
   if (!/^https?:$/.test(u.protocol)) return null;
@@ -2030,7 +2109,15 @@ function openPip(em, label, href) {
   $('pipTitle').textContent = em.kind === 'form' ? 'Send me a message' : label;
   $('pipOut').href = href;
   if (em.kind === 'form') $('pipBody').replaceChildren(contactForm);
-  else {
+  else if (em.kind === 'profile') {
+    const d = document.createElement('div'); d.className = 'pip-profile';
+    const m = document.createElement('div'); m.className = 'mono'; m.textContent = label[0];
+    const b = document.createElement('b'); b.textContent = em.handle;
+    const n = document.createElement('span'); n.textContent = label;
+    const o = document.createElement('a'); o.href = href; o.target = '_blank'; o.rel = 'noopener'; o.textContent = `Open ${label} ↗`;
+    o.addEventListener('click', () => closePip());
+    d.append(m, b, n, o); $('pipBody').replaceChildren(d);
+  } else {
     const f = document.createElement('iframe');
     f.src = em.src; f.title = label; f.allow = 'autoplay; fullscreen; picture-in-picture; encrypted-media'; f.allowFullscreen = true;
     $('pipBody').replaceChildren(f);
@@ -2102,7 +2189,7 @@ function setBig(on) {
 }
 // a resized window keeps its width (and, for pages, its height); clips keep their 16:9 shape
 function sizePip() {
-  const s = pip.el.classList.contains('big') || pip.kind === 'form' ? null : pip.size;
+  const s = pip.el.classList.contains('big') || pip.kind === 'form' || pip.kind === 'profile' ? null : pip.size;
   pip.el.style.width = s ? s.w + 'px' : '';
   $('pipBody').style.height = s && pip.kind === 'doc' ? s.h + 'px' : '';
 }
