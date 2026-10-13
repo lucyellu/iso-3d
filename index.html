@@ -2185,7 +2185,7 @@ contactForm.addEventListener('submit', async e => {
     const res = await fetch(`https://formsubmit.co/ajax/${CONTACT_TO}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ email, name: name || '(not given)', message: f.message.value.trim() || '(No message, just their email.)',
-        _subject: `Message from the harbour${name ? ' · ' + name : ''}`, _template: 'table', _captcha: 'false' }),
+        _subject: `Message from lucylu.org${name ? ' · ' + name : ''}`, _template: 'table', _captcha: 'false' }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || String(data.success) !== 'true') throw new Error(data.message || res.status);
