@@ -2150,7 +2150,7 @@ function openPip(em, label, href) {
 // The very first message sends an activation email to the inbox below; click its link once and the rest come through.
 // The address is pieced together so it never sits in the page as plain text for scrapers. Once activated, FormSubmit
 // offers a random alias for it: put that here instead and the real address leaves the page entirely.
-const CONTACT_TO = ['info', 'elludesign.com'].join('@');
+const CONTACT_TO = ['lucyluprofile', 'gmail.com'].join('@');
 const contactForm = document.createElement('form');
 contactForm.className = 'pip-form';
 contactForm.innerHTML = `
@@ -2176,7 +2176,7 @@ contactForm.addEventListener('submit', async e => {
     contactForm.reset();
     status.textContent = `Sent. Thanks, I'll write back to ${email}.`;
   } catch (err) {
-    status.innerHTML = `That didn't go through. Try again in a moment, or find me on <a href="https://www.linkedin.com/in/lucyluprofile/" target="_blank" rel="noopener">LinkedIn</a>.`;
+    status.innerHTML = `That didn't go through. Try again in a moment, or email me at <a href="mailto:${CONTACT_TO}">${CONTACT_TO}</a>.`;
   }
   send.disabled = false;
 });
