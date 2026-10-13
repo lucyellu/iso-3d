@@ -260,6 +260,7 @@ const SHELVES = [
   { kind: 'app', title: 'Apps', blurb: 'Useful, mostly. Live on the web.' },
   { kind: 'game', title: 'Games', blurb: 'Puzzles, a trading game and two retired iPad titles.' },
   { kind: 'toy', title: 'Toys & experiments', blurb: 'Small single-page things, all hosted here.' },
+  { kind: 'archive', title: 'Archive', blurb: 'Older, smaller and unfinished things, kept for completeness.' },
 ];
 const DEVICES = { desktop: 'Computer', phone: 'Phone', ipad: 'iPad' };
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -328,7 +329,7 @@ document.getElementById('shelves').innerHTML = SHELVES.map(s => {
 }).join('');
 
 // ── filter tabs ──
-const TABS = [['all', 'All'], ['app', 'Apps'], ['game', 'Games'], ['toy', 'Toys']];
+const TABS = [['all', 'All'], ['app', 'Apps'], ['game', 'Games'], ['toy', 'Toys'], ['archive', 'Archive']];
 document.querySelectorAll('.tabs').forEach(nav => nav.innerHTML = TABS.map(([k, l]) => `<button data-k="${k}" aria-pressed="${k === 'all'}">${l}</button>`).join(''));
 document.addEventListener('click', e => {
   const t = e.target.closest('.tabs button'); if (!t) return;
