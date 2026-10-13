@@ -11,3 +11,8 @@ assets/resume.*
 assets/linkedin-profile-2026.pdf
 cv/*.pdf
 assets/*.md
+
+# Old pages and work in progress, kept locally only
+archive/
+apps/bulgari-ultra/
+apps/capture_*.png

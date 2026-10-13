@@ -1,10 +1,6 @@
-# Impossible Harbour
+# lucylu.org
 
-An Escher-style isometric waterway loop built in Three.js, used as a personal site for [Lucy Lu](https://www.lulucy.org). Live at [lucylu.org](https://lucylu.org).
-
-The homepage (`index.html`) sets the loop on a harbour pier over open water: a planar-reflection sea with boat wakes and rain rings, weathered concrete and rusted steel, and Sunrise / Dusk / Rain / Night lighting. The original version is kept at `waterway.html`. The canal climbs all the way round and still ends up back where it started. The illusion only closes at the true isometric angle (35.26° up, 45° round). When you drag the view, the arms re-proportion so the loop keeps closing.
-
-A boat rides the loop, tips over a sluice gate at the top of the waterfall, and comes back around. Each section of the site glides the camera to its own angle or close-up.
+The personal website of [Lucy Lu](https://lucylu.org). The homepage (`index.html`) is an interactive 3D scene built in Three.js with Sunrise / Dusk / Rain / Night lighting. Each section of the site moves the camera to its own view. Other pages: `apps/`, `cv/`, `text/` (a plain-text version) and `writing/`.
 
 ## Sections
 
@@ -35,7 +31,7 @@ python -m http.server 8765
 # then open http://localhost:8765/
 ```
 
-On Windows, `launch-waterway.bat` starts that server if it isn't already running and opens the page in a normal Chrome window, so DevTools are available. `setup-desktop-shortcut.ps1` builds `waterway.ico` from `waterway-icon.png` and puts an **Impossible Waterway** shortcut on the Desktop that runs the launcher.
+On Windows, `launch-waterway.bat` starts that server if it isn't already running and opens the page in a normal Chrome window, so DevTools are available. `setup-desktop-shortcut.ps1` builds `waterway.ico` from `waterway-icon.png` and puts an desktop shortcut on the Desktop that runs the launcher.
 
 ## Sound
 
