@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Impossible Harbour</title>
+<title>Lucy Lu - Personal Website</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -262,15 +265,16 @@ const SITE = {
   name: 'Lucy Lu',
   role: '3D artist · engineer',
   chapters: [
-    { title: 'Hello', body: '3D animator turned indie app and game developer, currently studying numbers and making things. Animated on Beat Bugs (Netflix) and Little Charmers (Nick Jr., Treehouse TV); studied at Vancouver Film School and the University of Alberta. There is also a wiki-style page about my work.',
+    { title: 'Hello', body: 'I’m a 3D animator and software developer. I animated on Beat Bugs (Netflix) and Little Charmers (Nick Jr., Treehouse TV), ran Paperbox Studio, a design studio that also released three iPad games, and now build web applications and interactive 3D. Studied biology at the University of Alberta and 3D animation at Vancouver Film School.',
       links: [{ label: 'Beat Bugs', href: 'https://www.imdb.com/title/tt4716268/', embed: 'https://youtu.be/K_Ev_Es7onw' },
               { label: 'Little Charmers', href: 'https://tv.apple.com/ca/show/little-charmers/umc.cmc.42f7s22iilj9baf1briddwzu8', embed: 'https://youtu.be/3yhwtlq6M1Y' },
               { label: 'Freelance reel', href: 'https://vimeo.com/lucylu' },
-              { label: 'Wiki', href: 'wiki/', embed: 'wiki/', kind: 'doc' }],
+              { label: 'CV', href: 'cv/', embed: 'cv/', kind: 'doc' }],
       view: { yaw: 0, pitch: 0 } },
-    { title: 'Games & Apps', body: 'Games, web apps and small toys, most of which run right in your browser: a fast-forward paper trading game, a daily Morse puzzle, a planet’s worth of sensors. Lunescape and Starbreaker were Paperbox Studio’s iPad games; they’ve retired, but you can still watch them played.',
+    { title: 'Games & Apps', body: 'Web apps, games and small toys, most of which run right here. They include a private, offline genome comparison and a 3D explorer for the Yamanaka stem-cell factors. Paperbox Studio’s retired iPad games, Lunescape and Starbreaker, are still watchable.',
       links: [{ label: 'Browse all', href: 'apps/', newTab: true },
-              { label: 'Stockwave', href: 'https://www.playstockwave.com/' },
+              { label: '23andsee', href: 'apps/#23andsee' },
+              { label: 'OSKM Explorer', href: 'apps/#yamanaka-viewer' },
               { label: 'Starbreaker', href: 'apps/#starbreaker', embed: 'https://youtu.be/ELOKL_uuzIE' },
               { label: 'Lunescape', href: 'apps/#lunescape', embed: 'https://youtu.be/8Jjn_P_nJzQ' }],
       view: { yaw: 0.42, pitch: 0.06 } },
@@ -285,7 +289,7 @@ const SITE = {
               { label: 'Colab', href: 'https://colab.research.google.com/drive/1rCmKD5afjBGVD_aEKufKGqePYt_Jmh0w?usp=sharing' },
               { label: 'Code on GitHub', href: 'https://github.com/lucyellu/A-Novel-Sieve-in-the-Study-of-Prime-Numbers' }],
       view: { yaw: -0.3, pitch: -0.25 } },
-    { title: 'Contact', body: 'Say hello. I read everything, eventually, once the boat comes back around.',
+    { title: 'Contact', body: '',
       links: [{ label: 'Email', href: '#message', form: true },
               { label: 'GitHub', href: 'https://github.com/lucyellu', profile: 'lucyellu' },
               { label: 'Instagram', href: 'https://instagram.com/lucyellu', profile: '@lucyellu' },
@@ -2012,7 +2016,7 @@ function renderCard(i, instant) {
   [...chapNav.children].forEach((b, j) => b.setAttribute('aria-current', j === i ? 'true' : 'false'));
   const fill = () => {
     $('kicker').textContent = `${String(i + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`;
-    $('title').textContent = c.title; $('body').textContent = c.body;
+    $('title').textContent = c.title; $('body').textContent = c.body; $('body').hidden = !c.body;
     const ul = $('links'); ul.innerHTML = ''; hideTiles(true);
     for (const l of c.links) {
       const li = document.createElement('li'); const a = document.createElement('a'); a.href = l.href; a.textContent = l.label;

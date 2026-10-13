@@ -1,6 +1,11 @@
 ref/
 *.ico
+!/favicon.ico
 Ambient_and_SFX/
 # Local drafts (e.g. prehistoria-draft002/), never published
 *-draft[0-9]*/
 tools/apps-editor/catalog.backup.js
+
+# Personal resume files (contain a personal email); never publish
+assets/resume.*
+assets/linkedin-profile-2026.pdf
