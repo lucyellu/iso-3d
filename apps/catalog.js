@@ -66,7 +66,7 @@ window.CATALOG = {
     { id: 'yamanaka-viewer', name: 'OSKM Explorer', subtitle: 'Yamanaka stem cell factors in 3D', kind: 'app',
       access: 'play', url: 'yamanaka-viewer/', devices: ['desktop'],
       media: { poster: 'yamanaka-viewer.jpg', shots: ['yamanaka-viewer-2.jpg'] }, icon: 'icons/yamanaka-viewer.png', hue: ['#0f172a', '#38bdf8'],
-      body: 'Interactive WebGL 3D molecular visualization of the four Yamanaka cellular reprogramming factors (Oct4, Sox2, Klf4, and c-Myc) bound to target DNA, with structural coordinates from RCSB Protein Data Bank.',
+      body: 'Interactive 3D view of the four Yamanaka reprogramming factors (Oct4, Sox2, Klf4, c-Myc) as DNA-bound crystal structures from the RCSB Protein Data Bank (1GT0, 4M9E, 1NKP, 1O4A).',
       made: 'React 18, 3Dmol.js, TypeScript', year: 2026 },
     { id: 'studio-hub', name: 'Studio Hub', subtitle: 'Screenplays, books, and their films side by side', kind: 'app',
       access: 'open', url: 'https://github.com/lucyellu/final-drafter', devices: ['desktop'],
