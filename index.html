@@ -2150,7 +2150,7 @@ function openPip(em, label, href) {
 // The very first message sends an activation email to the inbox below; click its link once and the rest come through.
 // The address is pieced together so it never sits in the page as plain text for scrapers. Once activated, FormSubmit
 // offers a random alias for it: put that here instead and the real address leaves the page entirely.
-const CONTACT_TO = ['hello', 'lucylu.org'].join('@');
+const CONTACT_TO = ['lucylu.contact', 'gmail.com'].join('@');
 const contactForm = document.createElement('form');
 contactForm.className = 'pip-form';
 contactForm.innerHTML = `
