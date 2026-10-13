@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading Level Slider - Lucy Lu</title>
+<meta name="description" content="Show HN: The Wiki Times – Read Any Article at Your Grade Level (K-8) I built a tool that rewrites any article to match your reading level by intelligently swapp">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  :root { color-scheme: light dark; }
+  body { max-width: 38em; margin: 0 auto; padding: 2em 1em 4em; font: 18px/1.55 Georgia, "Times New Roman", serif; }
+  h1 { font-size: 1.6em; margin: .2em 0 .2em; }
+  h2 { font-size: 1.15em; margin: 1.6em 0 .3em; }
+  img { max-width: 100%; height: auto; }
+  blockquote { margin-left: 0; padding-left: 1em; border-left: 3px solid #8884; }
+  .note { font-size: .9em; opacity: .75; }
+</style>
+</head>
+<body>
+<p class="note"><a href="/writing/">&larr; Writing</a></p>
+<h1>Reading Level Slider</h1>
+<p class="note">2025-12-19</p>
+<h1>Show HN: The Wiki Times – Read Any Article at Your Grade Level (K-8)</h1>
+<p>I built a tool that rewrites any article to match your reading level by intelligently swapping vocabulary while preserving meaning and layout.</p>
+<p><strong>Live demo:</strong></p>
+<blockquote>
+<p>Try it: <a href="/apps/wiki-times/">the Reading Level app</a>.</p>
+</blockquote>
+<h2>The Problem Nobody Talks About</h2>
+<p>54% of American adults read below a 6th-grade level, and low literacy affects 130 million adults in the U.S. Despite this, almost all online content is written at college level or higher. News sites, Wikipedia, Substack posts – they&#39;re all optimized for advanced readers.</p>
+<p>This isn&#39;t just an education issue – it&#39;s an accessibility crisis. We have screen readers for the blind, captions for the deaf, but almost nothing for the reading-challenged.</p>
+<h2>How It Works</h2>
+<p>The Wiki Times uses a two-tier approach:</p>
+<ol>
+<li><strong>LLM rewrites</strong> (optional): Use DeepSeek/OpenAI/Claude to rewrite entire articles at specific grade levels (K-8). Fast, coherent, contextually aware.</li>
+<li><strong>Datamuse fallback</strong>: No API key? No problem. The tool uses Datamuse&#39;s free thesaurus API to swap individual words based on syllable count and complexity. It&#39;s surprisingly effective and requires zero setup.</li>
+</ol>
+<p>The key insight: <strong>vocabulary drives readability</strong>, not sentence structure. By keeping layout constant and only adjusting word choice, readers get a consistent experience across grade levels.</p>
+<h2>Features</h2>
+<ul>
+<li><strong>Grade slider</strong> (K-8): Scroll or use arrow keys to adjust complexity in real-time</li>
+<li><strong>Visual diff system</strong>: Color-coded highlights show which words changed and why</li>
+<li><strong>Multicolor mode</strong>: Rainbow hash-based coloring so identical words stay the same color across grades (makes tracking substitutions easier)</li>
+<li><strong>Flashcard system</strong>: Click any highlighted word to save it for vocabulary practice</li>
+<li><strong>Side-by-side comparison</strong>: See how &quot;utilize&quot; becomes &quot;use&quot; as you slide down grades</li>
+<li><strong>Works with any URL</strong>: Wikipedia, blogs, Substack, news sites</li>
+<li></li>
+</ul>
+<h2>The Tech Stack</h2>
+<p>Single HTML file. No build process. Uses:</p>
+<ul>
+<li>Tailwind CSS for styling</li>
+<li>Wikipedia API for structured content</li>
+<li>Jina Reader proxy for general web pages</li>
+<li>Datamuse API for synonym laddering (free, 100k requests/day)</li>
+<li>Optional LLM integration (bring your own key)</li>
+</ul>
+<p>All API keys stored locally in browser – never touches a server.</p>
+<h2>Why Care</h2>
+<p>The &quot;readability crisis&quot; isn&#39;t just about education – it&#39;s information access. When health information, voting guides, and financial advice are all written at college level, you&#39;ve created a two-tier information economy.</p>
+<p>This tool doesn&#39;t dumb things down – it translates complexity. The facts stay the same. The meaning stays the same. Only the vocabulary changes.</p>
+<p>Try it with a complex Wikipedia article. Slide from grade 8 down to kindergarten. Watch &quot;approximately&quot; become &quot;about.&quot; See &quot;utilize&quot; turn into &quot;use.&quot; Notice how the article is still accurate, still informative, just more accessible.</p>
+<h2>Open Questions</h2>
+<ul>
+<li>Should browsers have this built in?</li>
+<li>Could this help ESL learners?</li>
+<li>What&#39;s the right balance between simplification and precision?</li>
+<li>How do we handle domain-specific terminology (medical, legal, technical)?</li>
+</ul>
+<p>The code is rough but functional. I&#39;d love feedback, especially from educators, accessibility advocates, or anyone working on literacy issues.</p>
+<p><em>Note: This was built in a weekend. The UI is newspaper-themed because I like the aesthetic. The real innovation is the vocabulary ladder algorithm that preserves meaning while adjusting complexity.</em></p>
+<blockquote>
+<p><strong>[Custom HTML embed #2]</strong> — saved as <code>.embed2.html</code></p>
+</blockquote>
+
+</body>
+</html>

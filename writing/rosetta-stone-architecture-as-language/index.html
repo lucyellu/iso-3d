@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rosetta Stone: Architecture as Language - Lucy Lu</title>
+<meta name="description" content="While working on the Vesuvius Challenge to read the Herculaneum scrolls, I kept encountering early writing systems—not just as symbols, but as systems . The Ros">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  :root { color-scheme: light dark; }
+  body { max-width: 38em; margin: 0 auto; padding: 2em 1em 4em; font: 18px/1.55 Georgia, "Times New Roman", serif; }
+  h1 { font-size: 1.6em; margin: .2em 0 .2em; }
+  h2 { font-size: 1.15em; margin: 1.6em 0 .3em; }
+  img { max-width: 100%; height: auto; }
+  blockquote { margin-left: 0; padding-left: 1em; border-left: 3px solid #8884; }
+  .note { font-size: .9em; opacity: .75; }
+</style>
+</head>
+<body>
+<p class="note"><a href="/writing/">&larr; Writing</a></p>
+<h1>Rosetta Stone: Architecture as Language</h1>
+<p class="note">2025-12-22</p>
+<p>While working on the <a href="https://scrollprize.org/">Vesuvius Challenge</a> to read the Herculaneum scrolls, I kept encountering early writing systems—not just as symbols, but as <em>systems</em>. The Rosetta Stone is the most famous example, yet I realized I had understood it mostly as a metaphor (“a Rosetta Stone for X”) rather than as an engineered artifact.</p>
+<p>The stone contains a decree issued in 196 BC affirming the cult of Ptolemy V. The content itself is administrative and unremarkable. What matters is how it is encoded.</p>
+<p>The same decree appears three times, representing three distinct data structures:</p>
+<ol>
+<li><strong>Hieroglyphs</strong> — Ceremonial, invariant, optimized for permanence and ritual context.</li>
+<li><strong>Demotic Egyptian</strong> — Compressed, operational, optimized for everyday administration and speed.</li>
+<li><strong>Ancient Greek</strong> — Explicit, linear, optimized for precision and governmental interoperability.</li>
+</ol>
+<p>This is usually framed as &quot;translation.&quot; But structurally, it is closer to <strong>representation learning</strong>.</p>
+<p>Each script encodes the same semantic content at a different level of abstraction, optimized for a different inference task and audience. Meaning is conserved, but the <em>affordances</em> change.</p>
+<p>Visually, the stone reads like a branching system: sparse symbolic forms at the top, dense explicit forms at the bottom. This is not unlike a modern model stack, where the same signal is re-expressed across layers—compressed, expanded, or reweighted depending on the goal.</p>
+<h2>The Multi-Architectural Analogy</h2>
+<p>This is where the comparison to modern AI becomes concrete rather than poetic. In contemporary machine learning, we see a similar &quot;trilingual&quot; split in how we process information:</p>
+<ul>
+<li><strong>Convolutional Networks (CNNs):</strong> Compress spatial information into invariant, symbolic features (similar to the structural permanence of <strong>Hieroglyphs</strong>).</li>
+<li><strong>Recurrent Models (RNNs):</strong> Preserve sequence and local context over time (similar to the running flow of <strong>Demotic</strong>).</li>
+<li><strong>Transformers:</strong> Expose global structure explicitly via attention mechanisms, allowing for precise alignment (similar to the explicit clarity of <strong>Greek</strong>).</li>
+</ul>
+<p>All three architectures can operate on the same input. What differs is not the data, but how it is represented and navigated.</p>
+<p>Seen this way, the Rosetta Stone is not just multilingual. It is <strong>multi-architectural</strong>.</p>
+<p>It demonstrates something humans figured out early and AI is now rediscovering: <strong>the hard part is not generating content, but choosing the right representation for the reader, the task, and the medium.</strong></p>
+<p>This is why architecture and language keep converging—whether in temples, administrative scrolls, or neural networks. Each is an attempt to stabilize meaning while allowing it to travel across contexts.</p>
+<p>The Rosetta Stone worked because it did not privilege a single encoding. It accepted redundancy as the price of understanding.</p>
+<p>That remains true.</p>
+<p><img src="/writing/img/acd371_d6e19f7d1876450cba1ff3c8c913becb_mv2.webp" alt=""></p>
+<p><strong>Gallery (3-col):</strong></p>
+<ul>
+<li>acd371_1872392fb54446eaa272d6365308aad7~mv2.jpg</li>
+<li>acd371_76f85021078d4095aeb59530f4d62edf~mv2.jpg</li>
+<li>acd371_3093c5fefcbf4cbbbc44dc2b67637ff4~mv2.jpg</li>
+</ul>
+<p><img src="/writing/img/acd371_5a12e667685f453fbb68e45ff732ab05_mv2.webp" alt=""></p>
+<p>I thought it&#39;d be fun to recreate this but representing the common neural networks CNN, RNN, and transformers.</p>
+<p><strong>Gallery (3-col):</strong></p>
+<ul>
+<li>acd371_3aa2de3936f54b90ba8d236f25128364~mv2.jpg</li>
+<li>acd371_e81a39bb97324cefa8e14e2d7590d3a1~mv2.png</li>
+<li>acd371_38a452713bbb4f38b7dd5d1fc1d43715~mv2.png</li>
+</ul>
+<p>Download the original rosetta stone model <a href="https://sketchfab.com/3d-models/the-rosetta-stone-1e03509704a3490e99a173e53b93e282#download">here</a></p>
+<p><img src="/writing/img/acd371_4005ce6ce6d647e696fdff248ec4fec4_mv2.webp" alt=""></p>
+<h2>Sources</h2>
+<p><strong>History / Writing Systems</strong></p>
+<ul>
+<li><strong>British Museum:</strong> <a href="https://www.britishmuseum.org/collection/egypt/explore-rosetta-stone">Explore the Rosetta Stone</a></li>
+<li><strong>Parkinson, R. (1999):</strong> <em>Cracking Codes: The Rosetta Stone and Decipherment</em></li>
+<li><strong>Allen, J. P. (2013):</strong> <em>Middle Egyptian: An Introduction to the Language and Culture of Hieroglyphs</em></li>
+</ul>
+<p><strong>Representation &amp; AI</strong></p>
+<ul>
+<li><strong>Bengio, Y., Courville, A., Vincent, P. (2013):</strong> <a href="https://arxiv.org/abs/1206.5538">Representation Learning: A Review and New Perspectives</a></li>
+<li><strong>LeCun, Y., Bengio, Y., Hinton, G. (2015):</strong> <a href="https://www.nature.com/articles/nature14539">Deep Learning</a></li>
+<li><strong>Vaswani et al. (2017):</strong> <a href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a></li>
+</ul>
+<p><strong>AI &amp; Art / Systems Thinking</strong></p>
+<ul>
+<li><strong>Manovich, L. (2018):</strong> <em>AI Aesthetics</em></li>
+<li><strong>Mitchell, M. (2019):</strong> <em>Artificial Intelligence: A Guide for Thinking Humans</em></li>
+<li><strong>McLuhan, M. (1964):</strong> <em>Understanding Media</em></li>
+</ul>
+<h2>Notes</h2>
+<ul>
+<li><strong>Date Verified:</strong> 196 BC is the correct year for the Memphis Decree (the text on the stone).</li>
+<li><strong>Vesuvius Challenge:</strong> I linked explicitly to the Vesuvius Challenge (Herculaneum scrolls) in the intro to ground your &quot;work on the scrolls&quot; comment.</li>
+<li><strong>Script Functions:</strong> The characterization of Demotic as &quot;everyday/administrative&quot; vs Hieroglyphs as &quot;priestly/ritual&quot; is historically accurate and strengthens your &quot;compression vs. symbol&quot; argument.</li>
+<li><strong>Links:</strong> The links provided are the canonical sources (ArXiv for the papers, British Museum for the artifact).</li>
+</ul>
+<p><a href="https://www.youtube.com/watch?v=e5XMdsprAMo">How ancient Herculaneum papyrus scrolls were deciphered</a></p>
+<p>This video is relevant because it details the Vesuvius Challenge mentioned in your intro, showing how AI &quot;representation learning&quot; was literally used to uncover the ink in the carbonized Herculaneum scrolls.</p>
+
+</body>
+</html>
