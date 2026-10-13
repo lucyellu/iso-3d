@@ -31,7 +31,7 @@ python -m http.server 8765
 # then open http://localhost:8765/
 ```
 
-On Windows, `launch-waterway.bat` starts that server if it isn't already running and opens the page in a normal Chrome window, so DevTools are available. `setup-desktop-shortcut.ps1` builds `waterway.ico` from `waterway-icon.png` and puts an desktop shortcut on the Desktop that runs the launcher.
+On Windows, `launch-site.bat` starts that server if it isn't already running and opens the page in a normal Chrome window, so DevTools are available. `setup-desktop-shortcut.ps1` puts a "lucylu.org" shortcut on the Desktop (using `favicon.ico`) that runs the launcher.
 
 ## Sound
 
