@@ -9,3 +9,4 @@ tools/apps-editor/catalog.backup.js
 # Personal resume files (contain a personal email); never publish
 assets/resume.*
 assets/linkedin-profile-2026.pdf
+cv/*.pdf
