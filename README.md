@@ -9,7 +9,7 @@ A boat rides the loop, tips over a sluice gate at the top of the waterfall, and 
 ## Sections
 
 1. **Hello:** 3D animation work on Beat Bugs (Netflix) and Little Charmers (Nick Jr., Treehouse TV)
-2. **Games & Apps:** links to the app store at `apps/`
+2. **Apps:** links to the app store at `apps/`
 3. **Writing:** recent posts from lulucy.org
 4. **Math:** *On the Prime Pairs*, with Suqin Ao
 5. **Contact:** email form, GitHub, YouTube, X, Instagram, LinkedIn

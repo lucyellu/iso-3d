@@ -21,7 +21,7 @@
   }
   body[data-time="day"] { --ink: #1f2b29; --ink-dim: rgba(31, 43, 41, 0.66); }
   /* light text over white clouds: a soft dark halo (two wide, one tight) keeps it readable without a visible box */
-  body:not([data-time="day"]) :is(.brand, .crumb, .card h1, .card p, .kicker, .card a, .hint) {
+  body:not([data-time="day"]) :is(.brand, .crumb, .card h1, .card p, .kicker, .card a, .hint, .textlink) {
     text-shadow: 0 0 1px rgba(14,24,23,.7), 0 0 4px rgba(14,24,23,.6), 0 0 12px rgba(14,24,23,.55), 0 0 28px rgba(14,24,23,.45); }
   body:not([data-time="day"]) { --ink-dim: rgba(239, 233, 220, 0.82); }
   /* soft dark fade behind the header so it holds up over bright clouds */
@@ -162,6 +162,8 @@
   .chapters button[aria-current="true"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 5px; height: 2px; background: var(--accent); border-radius: 2px; }
 
   .hint { position: fixed; right: 26px; bottom: 30px; z-index: 4; font-size: 12px; color: var(--ink-dim); letter-spacing: .04em; transition: opacity .4s; }
+  .textlink { position: fixed; left: 26px; bottom: 30px; z-index: 4; font-size: 12px; color: var(--ink-dim); letter-spacing: .04em; text-decoration: underline; text-underline-offset: 3px; }
+  .textlink:hover { color: var(--ink); }
   .angle { position: fixed; left: 50%; top: 84px; transform: translateX(-50%); z-index: 4; font-size: 11px; letter-spacing: .22em;
     text-transform: uppercase; padding: 8px 14px; border-radius: 999px; background: var(--pill); color: #efe9dc;
     border: 1px solid var(--pill-line); opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
@@ -197,6 +199,7 @@
     .chapters { bottom: 14px; }
     .chapters button { min-width: 0; padding: 10px 14px 12px; }
     .hint { display: none; }
+    .textlink { left: 16px; bottom: auto; top: 64px; }
     .angle { top: 28vh; bottom: auto; }
     .pip { right: 16px; bottom: 76px; }
     .pip.big { left: 8px !important; top: 8px !important; right: 8px; bottom: 8px; }
@@ -244,9 +247,10 @@
 </section>
 
 <nav class="chapters" id="chapters" aria-label="Sections"></nav>
+<a class="textlink" href="text/">Text version</a>
 <div class="hint" id="hint">Drag to turn it · tap the water</div>
 <div class="angle" id="angle">35.26° up · 45° round · the only angle where it closes</div>
-<div class="fallback" id="fallback">This page needs WebGL to draw its impossible harbour.</div>
+<div class="fallback" id="fallback">This page needs WebGL to draw its impossible harbour. <a href="text/">Read the text version</a>.</div>
 
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/" } }
@@ -271,7 +275,7 @@ const SITE = {
               { label: 'Freelance reel', href: 'https://vimeo.com/lucylu' },
               { label: 'CV', href: 'cv/', embed: 'cv/', kind: 'doc' }],
       view: { yaw: 0, pitch: 0 } },
-    { title: 'Games & Apps', body: 'Web apps, games and small toys, most of which run right here. They include a private, offline genome comparison and a 3D explorer for the Yamanaka stem-cell factors. Paperbox Studio’s retired iPad games, Lunescape and Starbreaker, are still watchable.',
+    { title: 'Apps', body: 'Web apps, games and small toys, most of which run right here. They include a private, offline genome comparison and a 3D explorer for the Yamanaka stem-cell factors. Paperbox Studio’s retired iPad games, Lunescape and Starbreaker, are still watchable.',
       links: [{ label: 'Browse all', href: 'apps/', newTab: true },
               { label: '23andsee', href: 'apps/#23andsee' },
               { label: 'OSKM Explorer', href: 'apps/#yamanaka-viewer' },

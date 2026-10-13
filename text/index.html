@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucy Lu - Personal Website (text version)</title>
+<meta name="description" content="Lucy Lu: 3D animator and software developer. A plain-text version of lucylu.org.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  :root { color-scheme: light dark; }
+  body { max-width: 38em; margin: 0 auto; padding: 2em 1em 4em; font: 18px/1.5 Georgia, "Times New Roman", serif; }
+  h1 { font-size: 1.6em; margin: 0 0 .2em; }
+  h2 { font-size: 1.05em; margin: 1.8em 0 .3em; }
+  ul { padding-left: 1.2em; }
+  .note { font-size: .9em; opacity: .75; }
+</style>
+</head>
+<body>
+<h1>Lucy Lu</h1>
+<p class="note">Plain version of <a href="/">lucylu.org</a>, which is an interactive 3D scene.</p>
+
+<p>I'm a 3D animator and software developer in Metro Vancouver. I animated on <a href="https://www.imdb.com/title/tt4716268/">Beat Bugs</a> (Netflix) and Little Charmers (Nick Jr., Treehouse TV), ran Paperbox Studio, a design studio that also released three iPad games, and now build web applications and interactive 3D. I studied biology at the University of Alberta and 3D animation at Vancouver Film School.</p>
+
+<p>My <a href="/cv/">CV</a> has the details.</p>
+
+<h2>Things I've made</h2>
+<p>Everything here runs in a browser. The full list, with videos, is at <a href="/apps/">lucylu.org/apps</a>.</p>
+<ul>
+  <li><a href="/apps/#23andsee">23andsee</a>: compares raw 23andMe genome exports entirely offline, in the browser. Nothing leaves your machine.</li>
+  <li><a href="/apps/#yamanaka-viewer">OSKM Explorer</a>: the four Yamanaka reprogramming factors in 3D.</li>
+  <li><a href="/apps/#world-sense">Earth's Sensorium</a>: 124 live instruments that measure the planet.</li>
+  <li><a href="/apps/#paper-sim">Paper Sim</a>: fold paper and boxes in 3D, then flatten them back to the pattern.</li>
+  <li><a href="/apps/#atlas-library">Atlas Library</a>: the scale of everything, from electrons to galaxies.</li>
+  <li><a href="/apps/#starbreaker">Starbreaker</a> and <a href="/apps/#lunescape">Lunescape</a>: Paperbox Studio's retired iPad games, with gameplay video.</li>
+</ul>
+
+<h2>Writing and math</h2>
+<ul>
+  <li><a href="https://www.lulucy.org/post/study-of-prime-pairs-paper"><i>On the Prime Pairs</i></a>, with Suqin Ao: a modified Sieve of Eratosthenes connecting the Twin Prime Conjecture with Goldbach's conjecture. <a href="https://github.com/lucyellu/A-Novel-Sieve-in-the-Study-of-Prime-Numbers">Code</a>.</li>
+  <li><a href="https://www.lulucy.org/post/rosetta-stone-architecture-as-language">The Rosetta Stone as architecture</a></li>
+  <li><a href="https://www.lulucy.org/post/the-geminids-a-yearly-delivery-of-non-earth-material-we-barely-instrument">The Geminids</a></li>
+  <li><a href="https://www.lulucy.org/lately">All posts</a></li>
+</ul>
+
+<h2>Contact</h2>
+<ul>
+  <li id="mailItem" hidden><a id="mail" href="#">Email</a></li>
+  <li><a href="https://www.linkedin.com/in/lucyluprofile/">LinkedIn</a></li>
+  <li><a href="https://github.com/lucyellu">GitHub</a></li>
+  <li><a href="https://www.youtube.com/@lucyxlu">YouTube</a></li>
+  <li><a href="https://instagram.com/lucyellu">Instagram</a></li>
+</ul>
+<script>
+  // address assembled here so it isn't sitting in the HTML for scrapers
+  var a = document.getElementById('mail'), at = ['info', 'elludesign.com'].join('@');
+  a.href = 'mailto:' + at; a.textContent = at;
+  document.getElementById('mailItem').hidden = false;
+</script>
+</body>
+</html>
