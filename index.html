@@ -73,6 +73,7 @@
   .seg button, .pill { white-space: nowrap; padding: 7px 12px; border-radius: 7px; font-size: 12px; font-weight: 500; color: rgba(239,233,220,.78); }
   .seg button:hover, .pill:hover { color: #fff; }
   .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+  a.pill { color: rgba(239,233,220,.78); text-decoration: none; }
   .pill { white-space: nowrap; background: var(--pill); border: 1px solid var(--pill-line); border-radius: 10px; padding: 11px 14px;
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 
@@ -241,6 +242,7 @@
   <div class="seg" id="modeSeg" role="group" aria-label="Camera mode">
     <button data-mode="still" aria-pressed="true">Still</button><button data-mode="ride">Ride</button><button data-mode="fp">First person</button>
   </div>
+  <a class="pill" id="searchBtn" href="search/" title="Search apps and writing">⌕ Search</a>
   <button class="pill" id="trueAngle" title="Snap back to the true angle">⌖ True angle</button>
   <button class="pill" id="soundBtn" aria-pressed="false" title="Harbour sounds and interface cues"><span class="snd-ico" aria-hidden="true"></span><span class="snd-lbl">Sound off</span></button>
 </header>

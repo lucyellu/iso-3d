@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search - Lucy Lu</title>
+<meta name="description" content="Search lucylu.org: apps, games, writing and the CV.">
+<link rel="canonical" href="https://lucylu.org/search/">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  :root { color-scheme: light dark; }
+  body { max-width: 38em; margin: 0 auto; padding: 2em 1em 4em; font: 18px/1.5 Georgia, "Times New Roman", serif; }
+  h1 { font-size: 1.6em; margin: .2em 0 .5em; }
+  input { width: 100%; box-sizing: border-box; font: inherit; padding: .5em .7em; border: 1px solid #8888; border-radius: 6px; background: transparent; color: inherit; }
+  ol { list-style: none; padding: 0; margin: 1.2em 0 0; }
+  li { margin: 0 0 1.1em; }
+  li a.t { font-size: 1.05em; }
+  li p { margin: .15em 0 0; }
+  mark { background: #f2d98c80; color: inherit; border-radius: 2px; }
+  .note { font-size: .9em; opacity: .75; }
+</style>
+<script data-goatcounter="https://lucylu.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<p class="note"><a href="/">&larr; lucylu.org</a></p>
+<h1>Search</h1>
+<form role="search" onsubmit="return false"><input id="q" type="search" name="q" placeholder="Try “arc agi3”, “primes” or “genome”" autocomplete="off" autofocus aria-label="Search lucylu.org"></form>
+<p class="note" id="status" aria-live="polite">Loading…</p>
+<ol id="results"></ol>
+
+<script src="/apps/catalog.js"></script>
+<script>
+// Searches the apps in /apps/catalog.js plus every page listed in /sitemap.xml, so new apps and posts show up without extra work.
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+// lowercase, punctuation to spaces; the squashed form lets "arc agi3" match "ARC-AGI-3"
+const norm = s => String(s ?? '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const squash = s => norm(s).replace(/ /g, '');
+const KIND = { app: 'App', game: 'Game', toy: 'Toy', archive: 'Archive' };
+
+const docs = (window.CATALOG?.apps || []).filter(a => !a.hidden).map(a => ({
+  title: a.name, sub: a.subtitle, text: [a.body, a.made, a.note, a.id].join(' '), year: a.year,
+  url: '/apps/#' + a.id, label: KIND[a.kind] || 'App',
+  go: a.access === 'play' ? { href: '/apps/' + a.url, text: 'Play' } : a.access === 'open' ? { href: a.url, text: 'Open ↗' } : null,
+}));
+
+async function loadPages() {
+  const sm = await fetch('/sitemap.xml').then(r => r.text());
+  const urls = [...sm.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => new URL(m[1]).pathname).filter(p => p !== '/apps/' && p !== '/search/');
+  const pages = await Promise.all(urls.map(p => fetch(p).then(r => r.ok ? r.text() : '').catch(() => '').then(html => {
+    if (!html) return null;
+    const d = new DOMParser().parseFromString(html, 'text/html');
+    d.querySelectorAll('script, style, noscript').forEach(n => n.remove());
+    const desc = d.querySelector('meta[name="description"]')?.content || '';
+    const title = (d.title || p).replace(/ - Lucy Lu$/, '');
+    return { title, sub: desc, text: d.body?.textContent.replace(/\s+/g, ' ') || '', url: p,
+      label: p.startsWith('/writing/') ? 'Writing' : 'Page' };
+  })));
+  docs.push(...pages.filter(Boolean));
+}
+
+// edit distance with swapped neighbours counted as one typo ("rpelay" → "replay"); gives up once it passes max
+function typos(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let pp = null, p = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const c = [i];
+    let low = i;
+    for (let j = 1; j <= b.length; j++) {
+      c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (pp && i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) c[j] = Math.min(c[j], pp[j - 2] + 1);
+      low = Math.min(low, c[j]);
+    }
+    if (low > max) return max + 1;
+    pp = p; p = c;
+  }
+  return p[b.length];
+}
+// short words have to be spelled right; longer ones may have one typo, or two from 7 letters up
+const allowed = t => t.length < 4 || /^\d+$/.test(t) ? 0 : t.length < 7 ? 1 : 2;
+function fields(doc) {
+  return doc.f ||= [[doc.title, 10], [doc.sub, 4], [doc.text, 1]].map(([s, w]) => {
+    const n = norm(s);
+    return { n, sq: n.replace(/ /g, ''), w, words: [...new Set(n.split(' '))].filter(x => x.length > 2) };
+  });
+}
+// returns the score (0 = no match) and the words in the doc that matched with a typo, for highlighting
+function score(doc, terms) {
+  let total = 0;
+  const near = [];
+  for (const t of terms) {
+    let best = 0;
+    for (const f of fields(doc)) {
+      if (f.n.includes(t) || f.sq.includes(t)) best = Math.max(best, f.w * ((' ' + f.n).includes(' ' + t) ? 2 : 1));
+    }
+    const max = allowed(t);
+    if (!best && max) {
+      for (const f of fields(doc)) {
+        for (const w of f.words) {
+          // also try just the start of a longer word, so "repla" and "replya" both find "replay"
+          const d = Math.min(typos(t, w, max), w.length > t.length ? typos(t, w.slice(0, t.length), max) : max + 1);
+          if (d <= max && f.w / (d + 1) > best) { best = f.w / (d + 1); near.push(w); }
+        }
+      }
+    }
+    if (!best) return { s: 0 };   // every word has to match somewhere
+    total += best;
+  }
+  return { s: total, near };
+}
+// a short excerpt around the first match, with the query words highlighted
+function snippet(doc, terms) {
+  const src = doc.sub && terms.some(t => norm(doc.sub).includes(t)) ? doc.sub : (doc.text || doc.sub);
+  const low = src.toLowerCase();
+  let at = -1;
+  for (const t of terms) { const i = low.search(new RegExp('\\b' + t)); if (i >= 0 && (at < 0 || i < at)) at = i; }
+  let s = src;
+  if (at > 90) s = '…' + src.slice(src.lastIndexOf(' ', at - 60) + 1);
+  if (s.length > 220) s = s.slice(0, s.lastIndexOf(' ', 220)) + '…';
+  return mark(s, terms);
+}
+function mark(s, terms) {
+  const words = terms.filter(t => t.length > 1).map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const e = esc(s);
+  return words.length ? e.replace(new RegExp('(' + words.join('|') + ')', 'gi'), '<mark>$1</mark>') : e;
+}
+
+const q = document.getElementById('q'), out = document.getElementById('results'), status = document.getElementById('status');
+let ready = false;
+function run() {
+  const raw = q.value.trim(), terms = norm(raw).split(' ').filter(Boolean);
+  if (history.replaceState) history.replaceState(null, '', raw ? '?q=' + encodeURIComponent(raw) : location.pathname);
+  if (!terms.length) { out.innerHTML = ''; status.textContent = ready ? `${docs.length} apps and pages to search.` : 'Loading…'; return; }
+  const hits = docs.map(d => ({ d, ...score(d, terms) })).filter(h => h.s).sort((a, b) => b.s - a.s);
+  status.textContent = hits.length ? `${hits.length} result${hits.length > 1 ? 's' : ''}` : `Nothing found for “${raw}”.`;
+  out.innerHTML = hits.map(({ d, near }) => { const w = [...terms, ...near]; return `<li><a class="t" href="${esc(d.url)}">${mark(d.title, w)}</a>
+    <span class="note">${esc(d.label)}${d.year ? ' · ' + d.year : ''}${d.go ? ` · <a href="${esc(d.go.href)}"${d.go.href.startsWith('http') ? ' target="_blank" rel="noopener"' : ''}>${esc(d.go.text)}</a>` : ''}</span>
+    <p>${snippet(d, w)}</p></li>`; }).join('');
+}
+q.value = new URLSearchParams(location.search).get('q') || '';
+q.addEventListener('input', run);
+run();
+loadPages().catch(() => {}).finally(() => { ready = true; run(); });
+</script>
+</body>
+</html>
